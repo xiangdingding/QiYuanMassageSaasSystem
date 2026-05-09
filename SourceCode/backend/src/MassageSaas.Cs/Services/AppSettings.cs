@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace MassageSaas.Cs.Services;
 
 public class AppSettings

@@ -6,7 +6,8 @@
       "Bash(npm install *)",
       "Bash(npm --version)",
       "Bash(npm -w platform-admin run build)",
-      "Bash(npm -w shop-admin run build)"
+      "Bash(npm -w shop-admin run build)",
+      "Bash(curl -s -X POST http://localhost:5050/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"admin@123\"}')"
     ]
   }
 }

@@ -1,10 +1,13 @@
+using MassageSaas.Shared.Appointments;
 using MassageSaas.Shared.Auth;
 using MassageSaas.Shared.Commissions;
 using MassageSaas.Shared.Common;
+using MassageSaas.Shared.DayCloses;
 using MassageSaas.Shared.Members;
 using MassageSaas.Shared.Orders;
 using MassageSaas.Shared.Queue;
 using MassageSaas.Shared.Reports;
+using MassageSaas.Shared.Rooms;
 using MassageSaas.Shared.Services;
 using MassageSaas.Shared.Staff;
 using MassageSaas.Shared.Stores;
@@ -139,4 +142,49 @@ public interface IApiClient
 
     [Get("/subscriptions/me")]
     Task<TenantSubscriptionStatusDto> GetMySubscriptionAsync();
+
+    [Patch("/orders/{orderId}/items/{itemId}/transfer")]
+    Task<OrderDto> TransferTechnicianAsync(long orderId, long itemId, [Body] TransferTechnicianRequest req);
+
+    [Get("/appointments")]
+    Task<PagedResult<AppointmentDto>> GetAppointmentsAsync(
+        [Query] long? storeId = null,
+        [Query] string? status = null,
+        [Query] DateTime? from = null,
+        [Query] DateTime? to = null,
+        [Query] int page = 1,
+        [Query] int pageSize = 20);
+
+    [Post("/appointments/{id}/confirm")]
+    Task<AppointmentDto> ConfirmAppointmentAsync(long id, [Body] ConfirmAppointmentRequest req);
+
+    [Post("/appointments/{id}/arrive")]
+    Task<AppointmentDto> ArriveAppointmentAsync(long id);
+
+    [Post("/appointments/{id}/cancel")]
+    Task<AppointmentDto> CancelAppointmentAsync(long id, [Body] CancelAppointmentRequest req);
+
+    [Get("/rooms")]
+    Task<List<RoomDto>> GetRoomsAsync([Query] long storeId, [Query] bool includeInactive = false);
+
+    [Post("/rooms")]
+    Task<RoomDto> CreateRoomAsync([Body] CreateRoomRequest req);
+
+    [Put("/rooms/{id}")]
+    Task<RoomDto> UpdateRoomAsync(long id, [Body] UpdateRoomRequest req);
+
+    [Delete("/rooms/{id}")]
+    Task DeleteRoomAsync(long id);
+
+    [Get("/day-closes/preview")]
+    Task<DayClosePreviewDto> GetDayClosePreviewAsync([Query] long storeId, [Query] DateTime? date = null);
+
+    [Post("/day-closes")]
+    Task<DayCloseDto> SubmitDayCloseAsync([Body] SubmitDayCloseRequest req);
+
+    [Get("/day-closes")]
+    Task<List<DayCloseDto>> GetDayCloseHistoryAsync(
+        [Query] long storeId,
+        [Query] DateTime? from = null,
+        [Query] DateTime? to = null);
 }

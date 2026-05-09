@@ -1,8 +1,9 @@
-function yuanToReadable(amount: number): string {
-  // 避免小数点引起朗读歧义："328元5角" 优于 "¥328.5"
-  const yuan = Math.floor(amount);
-  const jiao = Math.round((amount - yuan) * 10);
-  return jiao === 0 ? `${yuan} 元` : `${yuan} 元 ${jiao} 角`;
+import { api, yuanToReadable } from '../../../utils/api';
+
+interface PerfResp {
+  todayAmount: number;
+  todayCommission: number;
+  monthAmount: number;
 }
 
 Page({
@@ -12,21 +13,36 @@ Page({
     monthAmount: 0,
     todayAmountText: '0 元',
     todayCommissionText: '0 元',
-    monthAmountText: '0 元'
+    monthAmountText: '0 元',
+    loading: false
   },
   onShow() {
-    // P5：替换为真实 API
-    const today = 328.5;
-    const todayCommission = 98.5;
-    const month = 8450;
-    this.setData({
-      todayAmount: today,
-      todayCommission,
-      monthAmount: month,
-      todayAmountText: yuanToReadable(today),
-      todayCommissionText: yuanToReadable(todayCommission),
-      monthAmountText: yuanToReadable(month)
-    });
+    this.refresh();
+  },
+  async refresh() {
+    const user = wx.getStorageSync('user');
+    if (!user) {
+      this.setData({
+        todayAmountText: '未登录',
+        todayCommissionText: '未登录',
+        monthAmountText: '未登录'
+      });
+      return;
+    }
+    this.setData({ loading: true });
+    try {
+      const r = await api.get<PerfResp>('/reports/me/performance');
+      this.setData({
+        todayAmount: r.todayAmount,
+        todayCommission: r.todayCommission,
+        monthAmount: r.monthAmount,
+        todayAmountText: yuanToReadable(r.todayAmount),
+        todayCommissionText: yuanToReadable(r.todayCommission),
+        monthAmountText: yuanToReadable(r.monthAmount)
+      });
+    } finally {
+      this.setData({ loading: false });
+    }
   },
   speakAll() {
     const { todayAmountText, todayCommissionText, monthAmountText } = this.data;

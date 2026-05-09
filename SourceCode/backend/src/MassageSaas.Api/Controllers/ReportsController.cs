@@ -10,14 +10,20 @@ namespace MassageSaas.Api.Controllers;
 
 [ApiController]
 [Route("api/reports")]
-[Authorize(Policy = "ShopStaff")]
+[Authorize]
 public class ReportsController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
+    private readonly ITenantContext _tenantContext;
 
-    public ReportsController(ApplicationDbContext db) => _db = db;
+    public ReportsController(ApplicationDbContext db, ITenantContext tenantContext)
+    {
+        _db = db;
+        _tenantContext = tenantContext;
+    }
 
     [HttpGet("daily")]
+    [Authorize(Policy = "ShopStaff")]
     public async Task<ActionResult<DailyReportDto>> Daily(
         [FromQuery] long storeId,
         [FromQuery] DateTime? date = null,
@@ -57,6 +63,7 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet("technician-performance")]
+    [Authorize(Policy = "ShopStaff")]
     public async Task<ActionResult<IReadOnlyList<TechnicianPerformanceDto>>> TechnicianPerformance(
         [FromQuery] long storeId,
         [FromQuery] DateTime from,
@@ -84,5 +91,39 @@ public class ReportsController : ControllerBase
             .ToListAsync(ct);
 
         return Ok(data);
+    }
+
+    /// <summary>
+    /// 当前登录技师查看自己的业绩。给小程序"我的业绩"页用。
+    /// </summary>
+    [HttpGet("me/performance")]
+    public async Task<ActionResult<MyPerformanceDto>> MyPerformance(CancellationToken ct)
+    {
+        if (_tenantContext.UserId is not long uid)
+            return Unauthorized();
+
+        var now = DateTime.UtcNow;
+        var todayStart = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc);
+        var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var baseQ = _db.OrderItems.AsNoTracking()
+            .Where(oi => oi.TechnicianId == uid
+                         && oi.Order.Status == OrderStatus.Completed
+                         && oi.Order.CompletedAt != null);
+
+        var todayQ = baseQ.Where(oi => oi.Order.CompletedAt >= todayStart);
+        var monthQ = baseQ.Where(oi => oi.Order.CompletedAt >= monthStart);
+
+        var todayAmount = await todayQ.SumAsync(x => (decimal?)x.ItemTotal, ct) ?? 0m;
+        var todayCommission = await todayQ.SumAsync(x => (decimal?)x.CommissionAmount, ct) ?? 0m;
+        var todayRoundCount = await todayQ.SumAsync(x => (int?)x.Quantity, ct) ?? 0;
+        var monthAmount = await monthQ.SumAsync(x => (decimal?)x.ItemTotal, ct) ?? 0m;
+        var monthCommission = await monthQ.SumAsync(x => (decimal?)x.CommissionAmount, ct) ?? 0m;
+        var monthRoundCount = await monthQ.SumAsync(x => (int?)x.Quantity, ct) ?? 0;
+
+        return Ok(new MyPerformanceDto(
+            todayAmount, todayCommission,
+            monthAmount, monthCommission,
+            todayRoundCount, monthRoundCount));
     }
 }

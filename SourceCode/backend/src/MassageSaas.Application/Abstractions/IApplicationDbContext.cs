@@ -18,6 +18,9 @@ public interface IApplicationDbContext
     DbSet<TechnicianQueue> TechnicianQueues { get; }
     DbSet<CommissionRule> CommissionRules { get; }
     DbSet<MemberRechargeRecord> MemberRechargeRecords { get; }
+    DbSet<Appointment> Appointments { get; }
+    DbSet<Room> Rooms { get; }
+    DbSet<DayClose> DayCloses { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

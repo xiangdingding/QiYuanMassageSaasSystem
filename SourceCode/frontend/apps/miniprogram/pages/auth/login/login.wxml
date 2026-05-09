@@ -1,0 +1,55 @@
+<view class="container" role="main">
+  <view class="a11y-section">
+    <text class="a11y-label">登录账号</text>
+    <text class="a11y-value">技师 / 收银员请输入工号或用户名</text>
+  </view>
+
+  <view class="a11y-section">
+    <text class="a11y-label" id="lbl-username">用户名</text>
+    <input
+      class="a11y-input"
+      aria-labelledby="lbl-username"
+      aria-label="请输入用户名"
+      placeholder="用户名 / 工号"
+      placeholder-class="a11y-placeholder"
+      value="{{username}}"
+      bindinput="onUsernameInput" />
+  </view>
+
+  <view class="a11y-section">
+    <text class="a11y-label" id="lbl-password">密码</text>
+    <input
+      class="a11y-input"
+      aria-labelledby="lbl-password"
+      aria-label="请输入密码"
+      password
+      placeholder="密码"
+      placeholder-class="a11y-placeholder"
+      value="{{password}}"
+      bindinput="onPasswordInput" />
+  </view>
+
+  <view class="a11y-section">
+    <text class="a11y-label" id="lbl-tenant">店面代号（可选）</text>
+    <input
+      class="a11y-input"
+      aria-labelledby="lbl-tenant"
+      placeholder="若你被告知店面代号请填写"
+      placeholder-class="a11y-placeholder"
+      value="{{tenantCode}}"
+      bindinput="onTenantInput" />
+  </view>
+
+  <button
+    class="a11y-btn"
+    aria-label="提交登录"
+    loading="{{loading}}"
+    disabled="{{loading}}"
+    bindtap="submit">
+    登录
+  </button>
+
+  <view class="a11y-section" aria-live="polite" wx:if="{{error}}">
+    <text class="a11y-error">{{error}}</text>
+  </view>
+</view>

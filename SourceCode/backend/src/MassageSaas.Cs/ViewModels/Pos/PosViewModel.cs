@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using MassageSaas.Cs.Services;
 using MassageSaas.Shared.Members;
 using MassageSaas.Shared.Orders;
+using MassageSaas.Shared.Rooms;
 using MassageSaas.Shared.Services;
 using MassageSaas.Shared.Staff;
 
@@ -30,6 +31,9 @@ public partial class PosViewModel : ObservableObject
 
     [ObservableProperty]
     private ObservableCollection<StaffDto> technicians = new();
+
+    [ObservableProperty]
+    private ObservableCollection<RoomDto> rooms = new();
 
     [ObservableProperty]
     private ObservableCollection<CartItemViewModel> cart = new();
@@ -90,8 +94,13 @@ public partial class PosViewModel : ObservableObject
             IsBusy = true;
             Services = new ObservableCollection<ServiceItemDto>(await _api.GetServicesAsync(false));
             ApplyFilter();
-            var techs = await _api.GetStaffAsync(role: "Technician", pageSize: 200);
+            var techs = await _api.GetStaffAsync(role: "Technician", pageSize: 200, storeId: _context.ActiveStoreId);
             Technicians = new ObservableCollection<StaffDto>(techs.Items);
+            if (_context.ActiveStoreId is long sid)
+            {
+                try { Rooms = new ObservableCollection<RoomDto>(await _api.GetRoomsAsync(sid)); }
+                catch { /* 房间领域 P2 后端可能尚未迁移 */ }
+            }
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
         finally { IsBusy = false; }
@@ -211,7 +220,8 @@ public partial class PosViewModel : ObservableObject
                 Items: Cart.Select(c => new OrderItemInputDto(
                     ServiceId: c.ServiceId,
                     TechnicianId: c.Technician!.Id,
-                    Quantity: c.Quantity)).ToList(),
+                    Quantity: c.Quantity,
+                    RoomId: c.Room?.Id)).ToList(),
                 Remark: null));
 
             var checkedOut = await _api.CheckoutAsync(created.Id, new CheckoutRequest(

@@ -1,0 +1,59 @@
+<view class="container" role="main">
+  <view class="a11y-section" aria-live="polite">
+    <text class="a11y-label">门店</text>
+    <text class="a11y-value">{{storeName || '请选择门店'}}</text>
+  </view>
+
+  <view class="a11y-section">
+    <text class="a11y-label" id="lbl-name">姓名</text>
+    <input class="a11y-input" aria-labelledby="lbl-name" placeholder="您的姓名"
+           value="{{form.customerName}}" bindinput="onName" />
+  </view>
+
+  <view class="a11y-section">
+    <text class="a11y-label" id="lbl-phone">手机号</text>
+    <input class="a11y-input" type="number" maxlength="11" aria-labelledby="lbl-phone"
+           placeholder="11 位手机号"
+           value="{{form.customerPhone}}" bindinput="onPhone" />
+  </view>
+
+  <view class="a11y-section">
+    <text class="a11y-label" id="lbl-date">到店日期</text>
+    <picker mode="date" value="{{form.date}}" bindchange="onDate"
+            aria-labelledby="lbl-date">
+      <view class="a11y-input">{{form.date || '点击选择日期'}}</view>
+    </picker>
+  </view>
+
+  <view class="a11y-section">
+    <text class="a11y-label" id="lbl-time">到店时间</text>
+    <picker mode="time" value="{{form.time}}" bindchange="onTime"
+            aria-labelledby="lbl-time">
+      <view class="a11y-input">{{form.time || '点击选择时间'}}</view>
+    </picker>
+  </view>
+
+  <view class="a11y-section">
+    <text class="a11y-label" id="lbl-party">人数</text>
+    <picker mode="selector" range="{{partyOptions}}" value="{{partyIndex}}"
+            bindchange="onParty" aria-labelledby="lbl-party">
+      <view class="a11y-input">{{partyOptions[partyIndex]}}</view>
+    </picker>
+  </view>
+
+  <view class="a11y-section">
+    <text class="a11y-label" id="lbl-remark">备注</text>
+    <input class="a11y-input" aria-labelledby="lbl-remark"
+           placeholder="可填指定技师 / 偏好（可选）"
+           value="{{form.remark}}" bindinput="onRemark" />
+  </view>
+
+  <button class="a11y-btn" aria-label="提交预约" loading="{{loading}}"
+          disabled="{{loading}}" bindtap="submit">
+    提交预约
+  </button>
+
+  <view class="a11y-section" wx:if="{{error}}" aria-live="assertive">
+    <text class="a11y-error">{{error}}</text>
+  </view>
+</view>

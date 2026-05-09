@@ -92,6 +92,27 @@ public class OrdersController : ControllerBase
         var store = await _db.Stores.FirstOrDefaultAsync(s => s.Id == req.StoreId && s.IsActive, ct);
         if (store is null) return BadRequest(new { code = "StoreNotFound", message = "门店不存在或已停用" });
 
+        // 房间校验：必须属于该门店、启用、且未被进行中订单占用
+        var roomIds = req.Items.Where(i => i.RoomId.HasValue).Select(i => i.RoomId!.Value).Distinct().ToList();
+        Dictionary<long, Room> rooms = new();
+        if (roomIds.Count > 0)
+        {
+            var rs = await _db.Rooms.AsNoTracking()
+                .Where(r => roomIds.Contains(r.Id) && r.StoreId == req.StoreId && r.IsActive)
+                .ToListAsync(ct);
+            if (rs.Count != roomIds.Count)
+                return BadRequest(new { code = "RoomInvalid", message = "存在不属于该门店或已停用的房间" });
+            rooms = rs.ToDictionary(r => r.Id);
+
+            var occupiedNow = await _db.OrderItems.AsNoTracking()
+                .Where(oi => oi.RoomId != null && roomIds.Contains(oi.RoomId.Value)
+                             && (oi.Order.Status == OrderStatus.Pending || oi.Order.Status == OrderStatus.InProgress))
+                .Select(oi => oi.RoomId!.Value)
+                .ToListAsync(ct);
+            if (occupiedNow.Count > 0)
+                return Conflict(new { code = "RoomOccupied", message = "选中的房间正被其他订单占用" });
+        }
+
         Member? member = null;
         if (req.MemberId.HasValue)
         {
@@ -120,6 +141,8 @@ public class OrdersController : ControllerBase
             var lineTotal = Math.Round(unit * qty, 2);
             total += lineTotal;
 
+            Room? room = null;
+            if (input.RoomId.HasValue) rooms.TryGetValue(input.RoomId.Value, out room);
             order.Items.Add(new OrderItem
             {
                 ServiceId = svc.Id,
@@ -130,7 +153,8 @@ public class OrdersController : ControllerBase
                 Quantity = qty,
                 ItemTotal = lineTotal,
                 CommissionAmount = 0m,
-                RoomNo = input.RoomNo
+                RoomId = room?.Id,
+                RoomNoSnapshot = room?.RoomNo
             });
         }
         order.Total = total;
@@ -156,6 +180,8 @@ public class OrdersController : ControllerBase
             .Include(o => o.Member)
             .FirstOrDefaultAsync(o => o.Id == id, ct);
         if (order is null) return NotFound();
+        if (await IsDayClosedAsync(order.StoreId, DateTime.UtcNow, ct))
+            return Conflict(new { code = "DayClosed", message = "今日已日结，不能再结账" });
         if (order.Status == OrderStatus.Completed)
             return Conflict(new { code = "AlreadyCompleted", message = "订单已结账" });
         if (order.Status == OrderStatus.Cancelled || order.Status == OrderStatus.Refunded)
@@ -245,6 +271,8 @@ public class OrdersController : ControllerBase
         if (order is null) return NotFound();
         if (order.Status != OrderStatus.Completed)
             return BadRequest(new { code = "NotCompleted", message = "只有已完成的订单可退款" });
+        if (order.CompletedAt.HasValue && await IsDayClosedAsync(order.StoreId, order.CompletedAt.Value, ct))
+            return Conflict(new { code = "DayClosed", message = "结账当日已日结，不能退款" });
 
         if (order.PayMethod == PayMethod.MemberCard && order.Member is not null)
         {
@@ -277,6 +305,53 @@ public class OrdersController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// 转钟：把某个 OrderItem 的技师换成新技师。仅 Pending/InProgress 订单可转。
+    /// </summary>
+    [HttpPatch("{orderId:long}/items/{itemId:long}/transfer")]
+    public async Task<ActionResult<OrderDto>> TransferTechnician(
+        long orderId, long itemId,
+        [FromBody] TransferTechnicianRequest req,
+        CancellationToken ct)
+    {
+        var order = await _db.Orders.Include(o => o.Items)
+            .FirstOrDefaultAsync(o => o.Id == orderId, ct);
+        if (order is null) return NotFound();
+        if (order.Status != OrderStatus.Pending && order.Status != OrderStatus.InProgress)
+            return Conflict(new { code = "InvalidState", message = "仅未结账订单可转钟" });
+
+        var item = order.Items.FirstOrDefault(i => i.Id == itemId);
+        if (item is null) return NotFound(new { code = "ItemNotFound", message = "订单项不存在" });
+        if (item.TechnicianId == req.NewTechnicianId)
+            return BadRequest(new { code = "SameTechnician", message = "新技师与原技师相同" });
+
+        var newTech = await _db.Users.FirstOrDefaultAsync(u =>
+            u.Id == req.NewTechnicianId && u.Role == UserRole.Technician && u.IsActive, ct);
+        if (newTech is null) return BadRequest(new { code = "TechnicianNotFound", message = "新技师不存在或已停用" });
+
+        item.PreviousTechnicianId = item.TechnicianId;
+        item.TechnicianId = req.NewTechnicianId;
+        item.TransferredAt = DateTime.UtcNow;
+        item.TransferReason = req.Reason;
+
+        await _db.SaveChangesAsync(ct);
+        _logger.LogInformation(
+            "Order {OrderId} item {ItemId} transferred from tech {From} to tech {To} (reason: {Reason})",
+            orderId, itemId, item.PreviousTechnicianId, item.TechnicianId, req.Reason);
+
+        var saved = await LoadOrderAsync(orderId, ct);
+        return Ok(ToDto(saved!));
+    }
+
+    /// <summary>
+    /// 判断目标日期是否已经做日结：已结过则不允许新增/修改/退款。
+    /// </summary>
+    private async Task<bool> IsDayClosedAsync(long storeId, DateTime when, CancellationToken ct)
+    {
+        var date = DateOnly.FromDateTime(when);
+        return await _db.DayCloses.AnyAsync(d => d.StoreId == storeId && d.BusinessDate == date, ct);
+    }
+
     private async Task<Order?> LoadOrderAsync(long id, CancellationToken ct) =>
         await _db.Orders.AsNoTracking()
             .Include(o => o.Items).ThenInclude(i => i.Technician)
@@ -297,7 +372,8 @@ public class OrdersController : ControllerBase
             i.Id, i.ServiceId, i.ServiceName, i.TechnicianId,
             i.Technician != null ? (i.Technician.RealName ?? i.Technician.Username) : null,
             i.Quantity, i.DurationMinutes, i.UnitPrice, i.ItemTotal,
-            i.CommissionAmount, i.RoomNo)).ToList());
+            i.CommissionAmount, i.RoomId, i.RoomNoSnapshot,
+            i.PreviousTechnicianId, i.TransferredAt)).ToList());
 
     private static string GenerateOrderNo() =>
         $"O{DateTime.UtcNow:yyyyMMddHHmmss}{Random.Shared.Next(100, 999)}";

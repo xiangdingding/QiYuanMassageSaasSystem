@@ -89,6 +89,21 @@
                   :value="t.id"
                 />
               </el-select>
+              <el-select
+                v-model="it.roomId"
+                placeholder="房间"
+                size="small"
+                style="width: 110px"
+                clearable
+              >
+                <el-option
+                  v-for="r in availableRooms(it.roomId)"
+                  :key="r.id"
+                  :label="r.roomNo + (r.isOccupied ? '（占用中）' : '')"
+                  :value="r.id"
+                  :disabled="r.isOccupied && r.id !== it.roomId"
+                />
+              </el-select>
               <el-input-number v-model="it.quantity" :min="1" :max="20" size="small" controls-position="right" style="width: 90px" />
               <span class="ci-price">¥{{ (it.unitPrice * it.quantity).toFixed(2) }}</span>
             </div>
@@ -166,9 +181,9 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Search, User } from '@element-plus/icons-vue';
-import { membersApi, ordersApi, servicesApi, staffApi } from '@/api/modules';
+import { membersApi, ordersApi, roomsApi, servicesApi, staffApi } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
-import type { Member, Order, ServiceItem, Staff } from '@/api/types';
+import type { Member, Order, Room, ServiceItem, Staff } from '@/api/types';
 import PickTechnicianDialog from '@/views/components/PickTechnicianDialog.vue';
 import CheckoutDialog from '@/views/components/CheckoutDialog.vue';
 
@@ -176,6 +191,7 @@ interface CartItem {
   serviceId: number;
   serviceName: string;
   technicianId: number | null;
+  roomId: number | null;
   unitPrice: number;
   quantity: number;
   durationMinutes: number;
@@ -185,7 +201,16 @@ const appStore = useAppStore();
 
 const services = ref<ServiceItem[]>([]);
 const technicians = ref<Staff[]>([]);
+const rooms = ref<Room[]>([]);
 const serviceFilter = ref('');
+
+function availableRooms(currentRoomId: number | null): Room[] {
+  // 当前 cart 中已选过的房间在其它项目里禁用，自己当前选的留可见
+  const usedElsewhere = new Set(
+    cart.filter((c) => c.roomId !== null && c.roomId !== currentRoomId).map((c) => c.roomId!)
+  );
+  return rooms.value.filter((r) => !usedElsewhere.has(r.id));
+}
 const cart = reactive<CartItem[]>([]);
 const member = ref<Member | null>(null);
 const memberKeyword = ref('');
@@ -227,12 +252,15 @@ function payMethodLabel(m: string) {
 }
 
 async function loadCatalog() {
-  const [s, t] = await Promise.all([
+  const sid = appStore.activeStoreId;
+  const [s, t, r] = await Promise.all([
     servicesApi.list(false),
-    staffApi.list({ role: 'Technician', pageSize: 200 })
+    staffApi.list({ role: 'Technician', pageSize: 200, storeId: sid ?? undefined }),
+    sid ? roomsApi.list(sid).catch((): Room[] => []) : Promise.resolve([] as Room[])
   ]);
   services.value = s;
   technicians.value = t.items;
+  rooms.value = r;
 }
 
 function onPickService(s: ServiceItem) {
@@ -248,6 +276,7 @@ function onTechnicianPicked(payload: { technicianId: number; quantity: number })
     serviceId: s.id,
     serviceName: s.name,
     technicianId: payload.technicianId,
+    roomId: null,
     unitPrice: unit,
     quantity: payload.quantity,
     durationMinutes: s.durationMinutes
@@ -293,7 +322,8 @@ async function doCheckout(payload: { payMethod: string; paidAmount: number | nul
       items: cart.map((c) => ({
         serviceId: c.serviceId,
         technicianId: c.technicianId!,
-        quantity: c.quantity
+        quantity: c.quantity,
+        roomId: c.roomId
       })),
       remark: null
     });

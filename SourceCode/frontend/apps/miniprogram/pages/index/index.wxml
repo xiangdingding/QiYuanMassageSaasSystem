@@ -1,4 +1,4 @@
-<!-- 首页：线性布局、大按钮、aria-label 明确 -->
+<!-- 首页：盲人技师走"我的班次"，普通顾客走"预约到店" -->
 <view class="container" role="main">
   <view class="a11y-section" aria-live="polite">
     <text class="a11y-value">欢迎，{{userName || '访客'}}</text>
@@ -13,14 +13,28 @@
     class="a11y-btn"
     aria-label="跳转到我的班次"
     bindtap="goHome">
-    我的班次
+    我的班次（技师）
   </button>
 
   <button
     class="a11y-btn"
     aria-label="跳转到我的业绩查询"
     bindtap="goPerformance">
-    我的业绩
+    我的业绩（技师）
+  </button>
+
+  <button
+    class="a11y-btn"
+    aria-label="预约到店"
+    bindtap="goBook">
+    预约到店（顾客）
+  </button>
+
+  <button
+    class="a11y-btn"
+    aria-label="查询我的预约"
+    bindtap="goMyAppointments">
+    我的预约（顾客）
   </button>
 
   <button

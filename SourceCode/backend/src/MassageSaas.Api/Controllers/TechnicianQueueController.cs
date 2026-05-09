@@ -117,6 +117,30 @@ public class TechnicianQueueController : ControllerBase
             idleQueue.QueuePosition));
     }
 
+    /// <summary>
+    /// 当前登录技师查看自己的排队/上钟状态。给小程序"我的班次"用。
+    /// </summary>
+    [HttpGet("me")]
+    public async Task<ActionResult<TechnicianQueueItemDto>> Me(CancellationToken ct)
+    {
+        if (_tenantContext.UserId is not long uid)
+            return Unauthorized();
+
+        var row = await _db.TechnicianQueues.AsNoTracking()
+            .Include(q => q.Technician)
+            .Where(q => q.TechnicianId == uid)
+            .Select(q => new TechnicianQueueItemDto(
+                q.Id, q.TechnicianId,
+                q.Technician.RealName ?? q.Technician.Username,
+                q.Technician.EmployeeNo,
+                q.State.ToString(),
+                q.QueuePosition, q.TodayRoundCount,
+                q.EnteredAt, q.LastCalledAt))
+            .FirstOrDefaultAsync(ct);
+
+        return row is null ? NotFound() : Ok(row);
+    }
+
     [HttpPost("reset-day")]
     [Authorize(Policy = "ShopStaff")]
     public async Task<IActionResult> ResetDay([FromQuery] long storeId, CancellationToken ct)

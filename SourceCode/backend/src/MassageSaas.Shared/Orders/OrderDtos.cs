@@ -4,7 +4,7 @@ public record OrderItemInputDto(
     long ServiceId,
     long TechnicianId,
     int Quantity = 1,
-    long? RoomNo = null);
+    long? RoomId = null);
 
 public record CreateOrderRequest(
     long StoreId,
@@ -29,7 +29,12 @@ public record OrderItemDto(
     decimal UnitPrice,
     decimal ItemTotal,
     decimal CommissionAmount,
-    long? RoomNo);
+    long? RoomId,
+    string? RoomNo,
+    long? PreviousTechnicianId,
+    DateTime? TransferredAt);
+
+public record TransferTechnicianRequest(long NewTechnicianId, string? Reason);
 
 public record OrderDto(
     long Id,

@@ -1,0 +1,61 @@
+<UserControl x:Class="MassageSaas.Cs.Views.ReportsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Background="White" CornerRadius="4" Padding="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                <TextBlock DockPanel.Dock="Left" Text="日报与业绩" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <TextBlock Text="日期：" VerticalAlignment="Center" />
+                    <DatePicker SelectedDate="{Binding Date}" Width="140" />
+                    <TextBlock Text="提成区间：" VerticalAlignment="Center" Margin="12,0,0,0" />
+                    <DatePicker SelectedDate="{Binding FromDate}" Width="120" />
+                    <TextBlock Text=" ~ " VerticalAlignment="Center" />
+                    <DatePicker SelectedDate="{Binding ToDate}" Width="120" />
+                    <Button Content="刷新" Padding="12,6" Margin="8,0,0,0" Command="{Binding ReloadCommand}" />
+                </StackPanel>
+            </DockPanel>
+
+            <Border Grid.Row="1" Background="#F8FAFC" CornerRadius="4" Padding="12" Margin="0,0,0,12">
+                <StackPanel DataContext="{Binding Daily}">
+                    <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0,0,0,4">
+                        <Run Text="当日订单：" /><Run Text="{Binding OrderCount}" />
+                        <Run Text="    营业额：¥" /><Run Text="{Binding Revenue, StringFormat='F2'}" />
+                    </TextBlock>
+                    <UniformGrid Columns="5">
+                        <TextBlock><Run Text="现金 ¥" /><Run Text="{Binding CashAmount, StringFormat='F2'}" /></TextBlock>
+                        <TextBlock><Run Text="会员 ¥" /><Run Text="{Binding MemberCardAmount, StringFormat='F2'}" /></TextBlock>
+                        <TextBlock><Run Text="微信 ¥" /><Run Text="{Binding WechatAmount, StringFormat='F2'}" /></TextBlock>
+                        <TextBlock><Run Text="支付宝 ¥" /><Run Text="{Binding AlipayAmount, StringFormat='F2'}" /></TextBlock>
+                        <TextBlock><Run Text="银行卡 ¥" /><Run Text="{Binding BankCardAmount, StringFormat='F2'}" /></TextBlock>
+                    </UniformGrid>
+                    <TextBlock Margin="0,4,0,0">
+                        <Run Text="退款 " /><Run Text="{Binding RefundCount}" />
+                        <Run Text="单 ¥" /><Run Text="{Binding RefundAmount, StringFormat='F2'}" />
+                        <Run Text="    充值 " /><Run Text="{Binding MemberRechargeCount}" />
+                        <Run Text="单 ¥" /><Run Text="{Binding MemberRechargeAmount, StringFormat='F2'}" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <DataGrid Grid.Row="2" ItemsSource="{Binding Performance}" AutoGenerateColumns="False"
+                      CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
+                      HeadersVisibility="Column" AlternatingRowBackground="#FAFAFA">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="工号" Binding="{Binding EmployeeNo}" Width="60" />
+                    <DataGridTextColumn Header="技师" Binding="{Binding TechnicianName}" Width="140" />
+                    <DataGridTextColumn Header="服务次数" Binding="{Binding OrderItemCount}" Width="100" />
+                    <DataGridTextColumn Header="服务金额" Binding="{Binding TotalServiceAmount, StringFormat='¥{0:F2}'}" Width="120" />
+                    <DataGridTextColumn Header="提成" Binding="{Binding TotalCommission, StringFormat='¥{0:F2}'}" Width="120" />
+                    <DataGridTextColumn Header="时长(分钟)" Binding="{Binding TotalDurationMinutes}" Width="100" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+    </Border>
+</UserControl>

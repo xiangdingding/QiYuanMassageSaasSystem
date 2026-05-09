@@ -49,5 +49,15 @@ public class OrderItem : BaseEntity, ITenantScoped
     public int Quantity { get; set; } = 1;
     public decimal ItemTotal { get; set; }
     public decimal CommissionAmount { get; set; }
-    public long? RoomNo { get; set; }
+
+    /// <summary>分配的房间。<see cref="RoomNoSnapshot"/> 是冗余便捷字段。</summary>
+    public long? RoomId { get; set; }
+    public Room? Room { get; set; }
+    /// <summary>下单时房间号文本快照（即使房间改名也保留）。</summary>
+    public string? RoomNoSnapshot { get; set; }
+
+    /// <summary>转钟历史：null 表示从未转过；非空为最后一次原技师 Id。</summary>
+    public long? PreviousTechnicianId { get; set; }
+    public DateTime? TransferredAt { get; set; }
+    public string? TransferReason { get; set; }
 }

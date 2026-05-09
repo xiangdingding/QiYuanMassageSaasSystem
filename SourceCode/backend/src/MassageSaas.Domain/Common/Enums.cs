@@ -72,3 +72,13 @@ public enum SubscriptionSource
     OnlinePayment = 0,
     OfflineManual = 1
 }
+
+public enum AppointmentStatus
+{
+    Pending = 0,
+    Confirmed = 10,
+    Arrived = 20,
+    Completed = 30,
+    Cancelled = 90,
+    NoShow = 91
+}

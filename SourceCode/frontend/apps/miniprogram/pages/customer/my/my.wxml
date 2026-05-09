@@ -1,0 +1,42 @@
+<view class="container" role="main">
+  <view class="a11y-section">
+    <text class="a11y-label" id="lbl-phone">手机号</text>
+    <input class="a11y-input" type="number" maxlength="11"
+           aria-labelledby="lbl-phone"
+           placeholder="输入手机号查询预约"
+           value="{{phone}}" bindinput="onPhone" />
+  </view>
+
+  <button class="a11y-btn" aria-label="查询我的预约" bindtap="query"
+          loading="{{loading}}" disabled="{{loading}}">
+    查询
+  </button>
+
+  <view wx:if="{{empty}}" class="a11y-section" aria-live="polite">
+    <text class="a11y-value">暂无预约</text>
+  </view>
+
+  <view wx:for="{{items}}" wx:key="id" class="a11y-card" role="article">
+    <view class="a11y-section">
+      <text class="a11y-label">门店</text>
+      <text class="a11y-value">{{item.storeName}}</text>
+    </view>
+    <view class="a11y-section">
+      <text class="a11y-label">预约到店</text>
+      <text class="a11y-value">{{item.arriveText}}</text>
+    </view>
+    <view class="a11y-section">
+      <text class="a11y-label">人数</text>
+      <text class="a11y-value">{{item.partySize}} 人</text>
+    </view>
+    <view class="a11y-section">
+      <text class="a11y-label">状态</text>
+      <text class="a11y-value">{{item.statusText}}</text>
+    </view>
+    <button wx:if="{{item.cancellable}}" class="a11y-btn-secondary"
+            aria-label="取消该预约"
+            data-id="{{item.id}}" bindtap="cancel">
+      取消预约
+    </button>
+  </view>
+</view>

@@ -78,7 +78,10 @@ export interface OrderItem {
   unitPrice: number;
   itemTotal: number;
   commissionAmount: number;
-  roomNo?: number | null;
+  roomId?: number | null;
+  roomNo?: string | null;
+  previousTechnicianId?: number | null;
+  transferredAt?: string | null;
 }
 
 export interface Order {
@@ -117,7 +120,7 @@ export interface OrderListItem {
 export interface CreateOrderRequest {
   storeId: number;
   memberId?: number | null;
-  items: { serviceId: number; technicianId: number; quantity?: number; roomNo?: number | null }[];
+  items: { serviceId: number; technicianId: number; quantity?: number; roomId?: number | null }[];
   remark?: string | null;
 }
 
@@ -200,4 +203,76 @@ export interface SubscriptionStatus {
   daysToExpire?: number | null;
   currentPlanId?: number | null;
   currentPlanName?: string | null;
+}
+
+export type AppointmentStatus = 'Pending' | 'Confirmed' | 'Arrived' | 'Completed' | 'Cancelled' | 'NoShow';
+
+export interface Appointment {
+  id: number;
+  storeId: number;
+  storeName: string;
+  serviceId?: number | null;
+  serviceName?: string | null;
+  preferredTechnicianId?: number | null;
+  preferredTechnicianName?: string | null;
+  customerName: string;
+  customerPhone: string;
+  expectedArriveAt: string;
+  partySize: number;
+  status: AppointmentStatus;
+  remark?: string | null;
+  createdAt: string;
+  confirmedAt?: string | null;
+  arrivedAt?: string | null;
+  cancelledAt?: string | null;
+  cancelReason?: string | null;
+}
+
+export interface Room {
+  id: number;
+  storeId: number;
+  roomNo: string;
+  capacity: number;
+  roomType?: string | null;
+  remark?: string | null;
+  isActive: boolean;
+  isOccupied: boolean;
+  occupiedByOrderId?: number | null;
+  occupiedByOrderNo?: string | null;
+}
+
+export interface DayClosePreview {
+  businessDate: string;
+  storeId: number;
+  orderCount: number;
+  revenueTotal: number;
+  expectedCash: number;
+  cashAmount: number;
+  memberCardAmount: number;
+  wechatAmount: number;
+  alipayAmount: number;
+  bankCardAmount: number;
+  rechargeAmount: number;
+  alreadyClosed: boolean;
+}
+
+export interface DayClose {
+  id: number;
+  storeId: number;
+  businessDate: string;
+  orderCount: number;
+  revenueTotal: number;
+  expectedCash: number;
+  actualCash: number;
+  variance: number;
+  cashAmount: number;
+  memberCardAmount: number;
+  wechatAmount: number;
+  alipayAmount: number;
+  bankCardAmount: number;
+  rechargeAmount: number;
+  operatorUserId?: number | null;
+  operatorName?: string | null;
+  remark?: string | null;
+  createdAt: string;
 }

@@ -2,7 +2,10 @@
   "pages": [
     "pages/index/index",
     "pages/tech/home/home",
-    "pages/tech/performance/performance"
+    "pages/tech/performance/performance",
+    "pages/auth/login/login",
+    "pages/customer/book/book",
+    "pages/customer/my/my"
   ],
   "window": {
     "backgroundTextStyle": "light",

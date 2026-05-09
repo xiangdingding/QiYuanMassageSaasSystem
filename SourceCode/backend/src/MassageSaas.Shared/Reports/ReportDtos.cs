@@ -23,3 +23,11 @@ public record TechnicianPerformanceDto(
     decimal TotalServiceAmount,
     decimal TotalCommission,
     int TotalDurationMinutes);
+
+public record MyPerformanceDto(
+    decimal TodayAmount,
+    decimal TodayCommission,
+    decimal MonthAmount,
+    decimal MonthCommission,
+    int TodayRoundCount,
+    int MonthRoundCount);

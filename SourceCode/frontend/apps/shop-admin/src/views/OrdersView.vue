@@ -76,13 +76,30 @@
         <el-divider>项目明细</el-divider>
         <el-table :data="detail.items" size="small">
           <el-table-column prop="serviceName" label="项目" />
-          <el-table-column prop="technicianName" label="技师" width="100" />
+          <el-table-column label="技师" width="120">
+            <template #default="{ row }">
+              <span>{{ row.technicianName }}</span>
+              <el-tag v-if="row.transferredAt" size="small" type="warning" style="margin-left:4px">已转</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="房间" width="80">
+            <template #default="{ row }">{{ row.roomNo ?? '—' }}</template>
+          </el-table-column>
           <el-table-column prop="quantity" label="数量" width="60" />
           <el-table-column label="金额" width="100">
             <template #default="{ row }">¥{{ row.itemTotal.toFixed(2) }}</template>
           </el-table-column>
           <el-table-column label="提成" width="100">
             <template #default="{ row }">¥{{ row.commissionAmount.toFixed(2) }}</template>
+          </el-table-column>
+          <el-table-column
+            v-if="detail.status === 'Pending' || detail.status === 'InProgress'"
+            label="操作"
+            width="100"
+          >
+            <template #default="{ row }">
+              <el-button size="small" @click="openTransfer(row)">转钟</el-button>
+            </template>
           </el-table-column>
         </el-table>
 
@@ -99,6 +116,31 @@
         </div>
       </div>
     </el-drawer>
+
+    <el-dialog v-model="transferOpen" title="转钟（更换技师）" width="420px">
+      <el-form label-width="90px">
+        <el-form-item label="项目">{{ transferTarget?.serviceName }}</el-form-item>
+        <el-form-item label="原技师">{{ transferTarget?.technicianName }}</el-form-item>
+        <el-form-item label="新技师" required>
+          <el-select v-model="transferTo" placeholder="选择新技师" filterable style="width: 100%">
+            <el-option
+              v-for="t in technicians"
+              :key="t.id"
+              :label="`${t.employeeNo ?? '-'} · ${t.realName ?? t.username}`"
+              :value="t.id"
+              :disabled="t.id === transferTarget?.technicianId"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="原因">
+          <el-input v-model="transferReason" maxlength="200" placeholder="如：客人要求换人 / 原技师有事" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="transferOpen = false">取消</el-button>
+        <el-button type="primary" :loading="transferring" @click="doTransfer">确认转钟</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -106,9 +148,9 @@
 import { onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import dayjs from 'dayjs';
-import { ordersApi } from '@/api/modules';
+import { ordersApi, ordersTransferApi, staffApi } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
-import type { Order, OrderListItem } from '@/api/types';
+import type { Order, OrderItem, OrderListItem, Staff } from '@/api/types';
 
 const appStore = useAppStore();
 
@@ -118,6 +160,40 @@ const loading = ref(false);
 const drawerOpen = ref(false);
 const detail = ref<Order | null>(null);
 const dateRange = ref<string[] | null>(null);
+
+const technicians = ref<Staff[]>([]);
+const transferOpen = ref(false);
+const transferTarget = ref<OrderItem | null>(null);
+const transferTo = ref<number | null>(null);
+const transferReason = ref('');
+const transferring = ref(false);
+
+function openTransfer(row: OrderItem) {
+  transferTarget.value = row;
+  transferTo.value = null;
+  transferReason.value = '';
+  transferOpen.value = true;
+}
+
+async function doTransfer() {
+  if (!detail.value || !transferTarget.value || !transferTo.value) {
+    ElMessage.warning('请选择新技师');
+    return;
+  }
+  transferring.value = true;
+  try {
+    detail.value = await ordersTransferApi.transfer(detail.value.id, transferTarget.value.id, {
+      newTechnicianId: transferTo.value,
+      reason: transferReason.value || null
+    });
+    ElMessage.success('转钟成功');
+    transferOpen.value = false;
+  } catch {
+    /* http 已弹错 */
+  } finally {
+    transferring.value = false;
+  }
+}
 
 const query = reactive<{ page: number; pageSize: number; status: string }>({
   page: 1,
@@ -201,7 +277,10 @@ async function onCancel() {
 
 onMounted(async () => {
   await appStore.loadStores();
-  reload();
+  await reload();
+  staffApi.list({ role: 'Technician', pageSize: 200, storeId: appStore.activeStoreId ?? undefined })
+    .then((r) => { technicians.value = r.items; })
+    .catch(() => null);
 });
 </script>
 

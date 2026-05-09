@@ -1,9 +1,13 @@
 import { http } from './http';
 import type {
+  Appointment,
+  AppointmentStatus,
   CheckoutRequest,
   CommissionRule,
   CreateOrderRequest,
   DailyReport,
+  DayClose,
+  DayClosePreview,
   LoginRequest,
   LoginResponse,
   Member,
@@ -11,6 +15,7 @@ import type {
   OrderListItem,
   PagedResult,
   QueueRow,
+  Room,
   ServiceItem,
   Staff,
   Store,
@@ -105,4 +110,38 @@ export const reportsApi = {
 
 export const subscriptionsApi = {
   me: () => http().get<SubscriptionStatus>('/subscriptions/me').then((r) => r.data)
+};
+
+export const appointmentsApi = {
+  list: (params: { storeId?: number; status?: AppointmentStatus; from?: string; to?: string; page?: number; pageSize?: number }) =>
+    http().get<PagedResult<Appointment>>('/appointments', { params }).then((r) => r.data),
+  confirm: (id: number, remark?: string | null) =>
+    http().post<Appointment>(`/appointments/${id}/confirm`, { remark }).then((r) => r.data),
+  arrive: (id: number) => http().post<Appointment>(`/appointments/${id}/arrive`).then((r) => r.data),
+  cancel: (id: number, reason?: string | null) =>
+    http().post<Appointment>(`/appointments/${id}/cancel`, { reason }).then((r) => r.data)
+};
+
+export const roomsApi = {
+  list: (storeId: number, includeInactive = false) =>
+    http().get<Room[]>('/rooms', { params: { storeId, includeInactive } }).then((r) => r.data),
+  create: (body: { storeId: number; roomNo: string; capacity: number; roomType?: string | null; remark?: string | null }) =>
+    http().post<Room>('/rooms', body).then((r) => r.data),
+  update: (id: number, body: { roomNo: string; capacity: number; roomType?: string | null; remark?: string | null; isActive: boolean }) =>
+    http().put<Room>(`/rooms/${id}`, body).then((r) => r.data),
+  remove: (id: number) => http().delete(`/rooms/${id}`)
+};
+
+export const dayClosesApi = {
+  preview: (storeId: number, date?: string) =>
+    http().get<DayClosePreview>('/day-closes/preview', { params: { storeId, date } }).then((r) => r.data),
+  submit: (body: { storeId: number; businessDate: string; actualCash: number; remark?: string | null }) =>
+    http().post<DayClose>('/day-closes', body).then((r) => r.data),
+  history: (storeId: number, from?: string, to?: string) =>
+    http().get<DayClose[]>('/day-closes', { params: { storeId, from, to } }).then((r) => r.data)
+};
+
+export const ordersTransferApi = {
+  transfer: (orderId: number, itemId: number, body: { newTechnicianId: number; reason?: string | null }) =>
+    http().patch<Order>(`/orders/${orderId}/items/${itemId}/transfer`, body).then((r) => r.data)
 };

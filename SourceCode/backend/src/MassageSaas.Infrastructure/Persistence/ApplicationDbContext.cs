@@ -30,6 +30,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<TechnicianQueue> TechnicianQueues => Set<TechnicianQueue>();
     public DbSet<CommissionRule> CommissionRules => Set<CommissionRule>();
     public DbSet<MemberRechargeRecord> MemberRechargeRecords => Set<MemberRechargeRecord>();
+    public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<Room> Rooms => Set<Room>();
+    public DbSet<DayClose> DayCloses => Set<DayClose>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

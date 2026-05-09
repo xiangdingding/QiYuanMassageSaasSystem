@@ -1,0 +1,33 @@
+.a11y-input {
+  display: block;
+  width: 100%;
+  min-height: 88rpx;
+  padding: 16rpx 20rpx;
+  margin-top: 12rpx;
+  border: 2rpx solid #888;
+  border-radius: 8rpx;
+  font-size: 36rpx;
+  background: #fafafa;
+  color: #000;
+}
+
+.a11y-card {
+  margin: 24rpx 0;
+  border: 2rpx solid #ddd;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.a11y-btn-secondary {
+  display: block;
+  width: 100%;
+  min-height: 80rpx;
+  padding: 16rpx 24rpx;
+  margin: 16rpx 0;
+  background: #fff;
+  color: #c00;
+  border: 2rpx solid #c00;
+  border-radius: 12rpx;
+  font-size: 32rpx;
+  text-align: center;
+}

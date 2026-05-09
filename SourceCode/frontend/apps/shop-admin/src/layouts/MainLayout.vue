@@ -70,15 +70,18 @@ import { computed, onMounted, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   Avatar,
+  Calendar,
   CreditCard,
   Goods,
+  House,
   List,
   Money,
   OfficeBuilding,
   Tickets,
   TrendCharts,
   User,
-  UserFilled
+  UserFilled,
+  Wallet
 } from '@element-plus/icons-vue';
 import { canSee, useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
@@ -106,8 +109,8 @@ const ROLE_LABELS: Record<UserRole, string> = {
 const roleLabel = computed(() => (auth.user?.role ? ROLE_LABELS[auth.user.role] : ''));
 
 const ICONS: Record<string, any> = {
-  Avatar, CreditCard, Goods, List, Money, OfficeBuilding,
-  Tickets, TrendCharts, User, UserFilled
+  Avatar, Calendar, CreditCard, Goods, House, List, Money, OfficeBuilding,
+  Tickets, TrendCharts, User, UserFilled, Wallet
 };
 function iconCmp(name: string) {
   return ICONS[name] ?? Tickets;

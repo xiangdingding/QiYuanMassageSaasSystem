@@ -1,0 +1,53 @@
+<Window x:Class="MassageSaas.Cs.Views.ServiceFormWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="服务项目"
+        Height="500" Width="420"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="编码" Margin="0,0,0,4" />
+        <TextBox Grid.Row="1" x:Name="CodeBox" Padding="6" Margin="0,0,0,12" />
+
+        <TextBlock Grid.Row="2" Text="名称" Margin="0,0,0,4" />
+        <TextBox Grid.Row="3" x:Name="NameBox" Padding="6" Margin="0,0,0,12" />
+
+        <TextBlock Grid.Row="4" Text="时长（分钟）" Margin="0,0,0,4" />
+        <TextBox Grid.Row="5" x:Name="DurationBox" Padding="6" Margin="0,0,0,12" Text="60" />
+
+        <TextBlock Grid.Row="6" Text="标准价" Margin="0,0,0,4" />
+        <TextBox Grid.Row="7" x:Name="PriceBox" Padding="6" Margin="0,0,0,12" Text="0" />
+
+        <TextBlock Grid.Row="8" Text="会员价" Margin="0,0,0,4" />
+        <TextBox Grid.Row="9" x:Name="MemberPriceBox" Padding="6" Margin="0,0,0,12" Text="0" />
+
+        <TextBlock Grid.Row="10" Text="描述" Margin="0,0,0,4" />
+        <TextBox Grid.Row="11" x:Name="DescBox" Padding="6" Height="60" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,12" />
+
+        <CheckBox Grid.Row="12" x:Name="ActiveBox" Content="启用" IsChecked="True" />
+
+        <Border Grid.Row="13" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="取消" Padding="16,6" Margin="0,0,8,0" Click="Cancel_Click" />
+                <Button Content="保存" Padding="16,6" Background="#2D6A4F" Foreground="White" BorderThickness="0" Click="Save_Click" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

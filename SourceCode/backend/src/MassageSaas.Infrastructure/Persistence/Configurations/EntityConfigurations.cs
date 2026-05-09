@@ -167,10 +167,52 @@ public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         b.Property(x => x.UnitPrice).HasPrecision(18, 2);
         b.Property(x => x.ItemTotal).HasPrecision(18, 2);
         b.Property(x => x.CommissionAmount).HasPrecision(18, 2);
+        b.Property(x => x.RoomNoSnapshot).HasMaxLength(32);
+        b.Property(x => x.TransferReason).HasMaxLength(200);
         b.HasOne(x => x.Order).WithMany(o => o.Items).HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Service).WithMany().HasForeignKey(x => x.ServiceId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.Technician).WithMany().HasForeignKey(x => x.TechnicianId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Room).WithMany().HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.SetNull);
         b.HasIndex(x => new { x.TenantId, x.TechnicianId, x.CreatedAt });
+        b.HasIndex(x => x.RoomId);
+    }
+}
+
+public class RoomConfiguration : IEntityTypeConfiguration<Room>
+{
+    public void Configure(EntityTypeBuilder<Room> b)
+    {
+        b.ToTable("rooms");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.RoomNo).HasMaxLength(32).IsRequired();
+        b.Property(x => x.RoomType).HasMaxLength(32);
+        b.Property(x => x.Remark).HasMaxLength(500);
+        b.HasOne(x => x.Tenant).WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Cascade);
+        b.HasIndex(x => new { x.TenantId, x.StoreId, x.RoomNo }).IsUnique();
+    }
+}
+
+public class DayCloseConfiguration : IEntityTypeConfiguration<DayClose>
+{
+    public void Configure(EntityTypeBuilder<DayClose> b)
+    {
+        b.ToTable("day_closes");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.ExpectedCash).HasPrecision(18, 2);
+        b.Property(x => x.ActualCash).HasPrecision(18, 2);
+        b.Property(x => x.Variance).HasPrecision(18, 2);
+        b.Property(x => x.RevenueTotal).HasPrecision(18, 2);
+        b.Property(x => x.CashAmount).HasPrecision(18, 2);
+        b.Property(x => x.MemberCardAmount).HasPrecision(18, 2);
+        b.Property(x => x.WechatAmount).HasPrecision(18, 2);
+        b.Property(x => x.AlipayAmount).HasPrecision(18, 2);
+        b.Property(x => x.BankCardAmount).HasPrecision(18, 2);
+        b.Property(x => x.RechargeAmount).HasPrecision(18, 2);
+        b.Property(x => x.Remark).HasMaxLength(500);
+        b.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.OperatorUser).WithMany().HasForeignKey(x => x.OperatorUserId).OnDelete(DeleteBehavior.SetNull);
+        b.HasIndex(x => new { x.StoreId, x.BusinessDate }).IsUnique();
     }
 }
 
@@ -201,6 +243,27 @@ public class MemberRechargeRecordConfiguration : IEntityTypeConfiguration<Member
         b.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.OperatorUser).WithMany().HasForeignKey(x => x.OperatorUserId).OnDelete(DeleteBehavior.SetNull);
         b.HasIndex(x => new { x.TenantId, x.MemberId, x.CreatedAt });
+    }
+}
+
+public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
+{
+    public void Configure(EntityTypeBuilder<Appointment> b)
+    {
+        b.ToTable("appointments");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.CustomerName).HasMaxLength(64).IsRequired();
+        b.Property(x => x.CustomerPhone).HasMaxLength(32).IsRequired();
+        b.Property(x => x.CustomerOpenId).HasMaxLength(64);
+        b.Property(x => x.Remark).HasMaxLength(500);
+        b.Property(x => x.CancelReason).HasMaxLength(200);
+        b.HasOne(x => x.Tenant).WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Service).WithMany().HasForeignKey(x => x.ServiceId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne(x => x.PreferredTechnician).WithMany().HasForeignKey(x => x.PreferredTechnicianId).OnDelete(DeleteBehavior.SetNull);
+        b.HasIndex(x => new { x.TenantId, x.StoreId, x.ExpectedArriveAt });
+        b.HasIndex(x => new { x.TenantId, x.CustomerPhone });
+        b.HasIndex(x => x.CustomerOpenId);
     }
 }
 

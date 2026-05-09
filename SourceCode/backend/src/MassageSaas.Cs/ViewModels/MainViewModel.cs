@@ -91,14 +91,21 @@ public partial class MainViewModel : ObservableObject
         var role = Session.Role;
         bool canPos = role is "ShopOwner" or "StoreManager" or "Cashier";
         bool canLead = role is "ShopOwner" or "StoreManager";
+        bool isOwner = role == "ShopOwner";
 
         if (canPos) items.Add(new NavItem("收银台", "pos", () => _sp.GetRequiredService<PosViewModel>()));
+        if (canPos) items.Add(new NavItem("预约管理", "appointments", () => _sp.GetRequiredService<AppointmentsViewModel>()));
         if (canPos) items.Add(new NavItem("订单流水", "orders", () => _sp.GetRequiredService<OrdersViewModel>()));
+        if (canPos) items.Add(new NavItem("房间管理", "rooms", () => _sp.GetRequiredService<RoomsViewModel>()));
         if (canPos) items.Add(new NavItem("会员管理", "members", () => _sp.GetRequiredService<MembersViewModel>()));
         items.Add(new NavItem("技师排队", "queue", () => _sp.GetRequiredService<QueueViewModel>()));
         if (canPos) items.Add(new NavItem("日报与业绩", "reports", () => _sp.GetRequiredService<ReportsViewModel>()));
+        if (canPos) items.Add(new NavItem("日结/交班", "day-close", () => _sp.GetRequiredService<DayCloseViewModel>()));
         if (canLead) items.Add(new NavItem("服务项目", "services", () => _sp.GetRequiredService<ServicesViewModel>()));
+        if (canLead) items.Add(new NavItem("提成规则", "commissions", () => _sp.GetRequiredService<CommissionsViewModel>()));
         if (canLead) items.Add(new NavItem("员工管理", "staff", () => _sp.GetRequiredService<StaffViewModel>()));
+        if (isOwner) items.Add(new NavItem("门店管理", "stores", () => _sp.GetRequiredService<StoresViewModel>()));
+        if (isOwner) items.Add(new NavItem("订阅状态", "subscription", () => _sp.GetRequiredService<SubscriptionViewModel>()));
 
         NavItems = new ObservableCollection<NavItem>(items);
     }

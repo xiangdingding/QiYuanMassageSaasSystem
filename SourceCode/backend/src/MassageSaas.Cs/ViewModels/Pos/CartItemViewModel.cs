@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using MassageSaas.Shared.Rooms;
 using MassageSaas.Shared.Staff;
 
 namespace MassageSaas.Cs.ViewModels.Pos;
@@ -17,6 +18,9 @@ public partial class CartItemViewModel : ObservableObject
 
     [ObservableProperty]
     private StaffDto? technician;
+
+    [ObservableProperty]
+    private RoomDto? room;
 
     public decimal LineTotal => UnitPrice * Quantity;
 

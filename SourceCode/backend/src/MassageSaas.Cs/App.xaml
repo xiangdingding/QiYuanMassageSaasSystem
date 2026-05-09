@@ -37,6 +37,24 @@
             <DataTemplate DataType="{x:Type vm:StaffViewModel}">
                 <views:StaffView />
             </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:CommissionsViewModel}">
+                <views:CommissionsView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:StoresViewModel}">
+                <views:StoresView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SubscriptionViewModel}">
+                <views:SubscriptionView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:AppointmentsViewModel}">
+                <views:AppointmentsView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:RoomsViewModel}">
+                <views:RoomsView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:DayCloseViewModel}">
+                <views:DayCloseView />
+            </DataTemplate>
 
             <SolidColorBrush x:Key="SidebarBg" Color="#1F2D3D" />
             <SolidColorBrush x:Key="SidebarText" Color="#BFCBD9" />
