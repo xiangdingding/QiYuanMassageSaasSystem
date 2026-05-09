@@ -1,0 +1,36 @@
+/* 盲人无障碍基线：大字号、高对比、纯线性布局 */
+page {
+  font-size: 34rpx;
+  line-height: 1.7;
+  color: #111;
+  background: #fff;
+}
+
+.a11y-btn {
+  display: block;
+  width: 100%;
+  min-height: 96rpx;
+  padding: 20rpx 24rpx;
+  margin: 20rpx 0;
+  background: #1677ff;
+  color: #fff;
+  border-radius: 12rpx;
+  font-size: 36rpx;
+  text-align: center;
+}
+
+.a11y-section {
+  padding: 24rpx;
+  border-bottom: 1rpx solid #eee;
+}
+
+.a11y-label {
+  color: #555;
+  font-size: 30rpx;
+}
+
+.a11y-value {
+  color: #000;
+  font-size: 40rpx;
+  font-weight: 600;
+}

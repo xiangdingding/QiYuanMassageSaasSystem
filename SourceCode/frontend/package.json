@@ -1,0 +1,20 @@
+{
+  "name": "massage-saas-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "盲人按摩门店 SaaS 前端 monorepo：平台端 + 按摩店端 BS + 微信小程序",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:platform": "npm -w platform-admin run dev",
+    "dev:shop": "npm -w shop-admin run dev",
+    "build:platform": "npm -w platform-admin run build",
+    "build:shop": "npm -w shop-admin run build",
+    "build:all": "npm run build:platform && npm run build:shop"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

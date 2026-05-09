@@ -1,0 +1,20 @@
+<view class="container" role="main">
+  <view class="a11y-section" aria-live="polite">
+    <text class="a11y-label">今日业绩</text>
+    <text class="a11y-value">{{todayAmountText}}</text>
+  </view>
+
+  <view class="a11y-section">
+    <text class="a11y-label">今日提成</text>
+    <text class="a11y-value">{{todayCommissionText}}</text>
+  </view>
+
+  <view class="a11y-section">
+    <text class="a11y-label">本月累计</text>
+    <text class="a11y-value">{{monthAmountText}}</text>
+  </view>
+
+  <button class="a11y-btn" aria-label="一键语音播报我的业绩" bindtap="speakAll">
+    语音播报业绩
+  </button>
+</view>

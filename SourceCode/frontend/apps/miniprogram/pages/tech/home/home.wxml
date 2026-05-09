@@ -1,0 +1,20 @@
+<view class="container" role="main">
+  <view class="a11y-section" aria-live="polite">
+    <text class="a11y-label">今日状态</text>
+    <text class="a11y-value">{{stateText}}</text>
+  </view>
+
+  <view class="a11y-section">
+    <text class="a11y-label">今日已上钟</text>
+    <text class="a11y-value">{{todayRounds}} 次</text>
+  </view>
+
+  <view class="a11y-section">
+    <text class="a11y-label">下一个客人房间号</text>
+    <text class="a11y-value">{{nextRoom || '暂无'}}</text>
+  </view>
+
+  <button class="a11y-btn" aria-label="一键语音播报我的班次" bindtap="speakStatus">
+    语音播报
+  </button>
+</view>

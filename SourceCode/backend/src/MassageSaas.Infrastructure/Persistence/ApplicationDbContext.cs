@@ -1,0 +1,110 @@
+using System.Linq.Expressions;
+using System.Reflection;
+using MassageSaas.Application.Abstractions;
+using MassageSaas.Domain.Common;
+using MassageSaas.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace MassageSaas.Infrastructure.Persistence;
+
+public class ApplicationDbContext : DbContext, IApplicationDbContext
+{
+    public ITenantContext TenantContext { get; }
+
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ITenantContext tenantContext)
+        : base(options)
+    {
+        TenantContext = tenantContext;
+    }
+
+    public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<Plan> Plans => Set<Plan>();
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<PaymentOrder> PaymentOrders => Set<PaymentOrder>();
+    public DbSet<Store> Stores => Set<Store>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Member> Members => Set<Member>();
+    public DbSet<ServiceItem> ServiceItems => Set<ServiceItem>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<TechnicianQueue> TechnicianQueues => Set<TechnicianQueue>();
+    public DbSet<CommissionRule> CommissionRules => Set<CommissionRule>();
+    public DbSet<MemberRechargeRecord> MemberRechargeRecords => Set<MemberRechargeRecord>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
+
+        var tenantContextProp = typeof(ApplicationDbContext).GetProperty(nameof(TenantContext))!;
+        var currentTenantIdProp = typeof(ITenantContext).GetProperty(nameof(ITenantContext.TenantId))!;
+        var bypassProp = typeof(ITenantContext).GetProperty(nameof(ITenantContext.IsFilterBypassed))!;
+        var isDeletedProp = typeof(BaseEntity).GetProperty(nameof(BaseEntity.IsDeleted))!;
+        var tenantIdEntityProp = typeof(ITenantScoped).GetProperty(nameof(ITenantScoped.TenantId))!;
+
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            var clr = entityType.ClrType;
+            var parameter = Expression.Parameter(clr, "e");
+
+            var isTenantScoped = typeof(ITenantScoped).IsAssignableFrom(clr);
+            var hasSoftDelete = typeof(BaseEntity).IsAssignableFrom(clr);
+
+            Expression? body = null;
+
+            if (isTenantScoped)
+            {
+                var ctxInstance = Expression.MakeMemberAccess(Expression.Constant(this), tenantContextProp);
+                var currentTid = Expression.MakeMemberAccess(ctxInstance, currentTenantIdProp);
+                var bypass = Expression.MakeMemberAccess(ctxInstance, bypassProp);
+                var entityTid = Expression.Property(parameter, nameof(ITenantScoped.TenantId));
+                var tenantMatch = Expression.Equal(entityTid, currentTid);
+                body = Expression.OrElse(bypass, tenantMatch);
+            }
+
+            if (hasSoftDelete)
+            {
+                var notDeleted = Expression.Equal(
+                    Expression.Property(parameter, nameof(BaseEntity.IsDeleted)),
+                    Expression.Constant(false));
+                body = body is null ? notDeleted : Expression.AndAlso(body, notDeleted);
+            }
+
+            if (body is not null)
+            {
+                var lambda = Expression.Lambda(body, parameter);
+                modelBuilder.Entity(clr).HasQueryFilter(lambda);
+            }
+        }
+
+        base.OnModelCreating(modelBuilder);
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+
+        foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+        {
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    entry.Entity.CreatedAt = now;
+                    entry.Entity.UpdatedAt = now;
+                    break;
+                case EntityState.Modified:
+                    entry.Entity.UpdatedAt = now;
+                    break;
+            }
+        }
+
+        foreach (var entry in ChangeTracker.Entries<ITenantScoped>())
+        {
+            if (entry.State == EntityState.Added && entry.Entity.TenantId == null && TenantContext.TenantId != null)
+            {
+                entry.Entity.TenantId = TenantContext.TenantId;
+            }
+        }
+
+        return base.SaveChangesAsync(cancellationToken);
+    }
+}

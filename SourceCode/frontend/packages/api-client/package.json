@@ -1,0 +1,9 @@
+{
+  "name": "@massage-saas/api-client",
+  "private": true,
+  "version": "0.1.0",
+  "description": "基于 OpenAPI 生成的 TS 客户端（placeholder，P1 阶段由 openapi-typescript / orval 生成）",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}

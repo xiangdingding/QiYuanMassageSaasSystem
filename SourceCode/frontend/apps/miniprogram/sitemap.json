@@ -1,0 +1,7 @@
+{
+  "desc": "盲人按摩 SaaS 小程序 sitemap，用于提升微信搜索覆盖度",
+  "rules": [{
+    "action": "allow",
+    "page": "*"
+  }]
+}

@@ -1,0 +1,65 @@
+<UserControl x:Class="MassageSaas.Cs.Views.QueueView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Background="White" CornerRadius="4" Padding="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                <TextBlock DockPanel.Dock="Left" Text="技师排队看板" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Padding="12,6" Margin="0,0,8,0" Background="#2D6A4F" Foreground="White" BorderThickness="0"
+                            Content="叫号"
+                            Visibility="{Binding CanManage, Converter={StaticResource BoolToVisible}}"
+                            Command="{Binding CallNextCommand}"
+                            AutomationProperties.Name="叫下一个技师" />
+                    <Button Padding="12,6" Margin="0,0,8,0" Content="刷新" Command="{Binding ReloadCommand}" />
+                    <Button Padding="12,6" Content="重置今日"
+                            Visibility="{Binding CanManage, Converter={StaticResource BoolToVisible}}"
+                            Command="{Binding ResetDayCommand}" />
+                </StackPanel>
+            </DockPanel>
+
+            <Border Grid.Row="1" Background="#ECF5FF" CornerRadius="3" Padding="10" Margin="0,0,0,8"
+                    Visibility="{Binding LastCalled, Converter={StaticResource NullToCollapsed}}">
+                <TextBlock Text="{Binding LastCalled}" FontSize="14" Foreground="#1F5599" FontWeight="SemiBold" />
+            </Border>
+
+            <DataGrid Grid.Row="2" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
+                      CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
+                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      AlternatingRowBackground="#FAFAFA">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="工号" Binding="{Binding EmployeeNo}" Width="60" />
+                    <DataGridTextColumn Header="姓名" Binding="{Binding TechnicianName}" Width="120" />
+                    <DataGridTextColumn Header="状态" Binding="{Binding State, Converter={StaticResource EnumLabel}}" Width="80" />
+                    <DataGridTextColumn Header="排队号" Binding="{Binding QueuePosition}" Width="60" />
+                    <DataGridTextColumn Header="今日轮次" Binding="{Binding TodayRoundCount}" Width="80" />
+                    <DataGridTextColumn Header="进入时间" Binding="{Binding EnteredAt, StringFormat='HH:mm'}" Width="80" />
+                    <DataGridTextColumn Header="最近叫号" Binding="{Binding LastCalledAt, StringFormat='HH:mm'}" Width="80" />
+                    <DataGridTemplateColumn Header="操作" Width="320">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Margin="2" Padding="6,2" Content="上钟"
+                                            Click="OnDuty_Click" Tag="{Binding}"
+                                            Visibility="{Binding DataContext.CanManage, RelativeSource={RelativeSource AncestorType=DataGrid}, Converter={StaticResource BoolToVisible}}" />
+                                    <Button Margin="2" Padding="6,2" Content="休息"
+                                            Click="Resting_Click" Tag="{Binding}"
+                                            Visibility="{Binding DataContext.CanManage, RelativeSource={RelativeSource AncestorType=DataGrid}, Converter={StaticResource BoolToVisible}}" />
+                                    <Button Margin="2" Padding="6,2" Content="下班"
+                                            Click="OffDuty_Click" Tag="{Binding}"
+                                            Visibility="{Binding DataContext.CanManage, RelativeSource={RelativeSource AncestorType=DataGrid}, Converter={StaticResource BoolToVisible}}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+    </Border>
+</UserControl>

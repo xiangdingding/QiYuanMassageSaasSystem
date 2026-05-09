@@ -1,0 +1,226 @@
+<UserControl x:Class="MassageSaas.Cs.Views.PosView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="380" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Left: services -->
+        <Border Grid.Column="0" Background="White" CornerRadius="4" Padding="16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <DockPanel Grid.Row="0" LastChildFill="True" Margin="0,0,0,12">
+                    <TextBlock DockPanel.Dock="Left" Text="选择服务项目" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <TextBox Width="220" Height="32" HorizontalAlignment="Right"
+                             Text="{Binding ServiceFilter, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="服务搜索框"
+                             VerticalContentAlignment="Center" Padding="6,0" />
+                </DockPanel>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding FilteredServices}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Width="180" Height="110" Margin="6"
+                                        Background="#F0F4F8"
+                                        BorderBrush="#CBD5E0"
+                                        BorderThickness="1"
+                                        Cursor="Hand"
+                                        AutomationProperties.Name="{Binding Name}"
+                                        AutomationProperties.HelpText="点击加入订单"
+                                        Command="{Binding DataContext.AddServiceCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}">
+                                    <StackPanel Margin="6">
+                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="14" TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,4,0,0" FontSize="12">
+                                            <Run Text="{Binding DurationMinutes, StringFormat='{}{0} 分钟'}" Foreground="#444" />
+                                            <Run Text="  ¥" Foreground="#2D6A4F" />
+                                            <Run Text="{Binding Price, StringFormat='F2'}" Foreground="#2D6A4F" FontWeight="Bold" />
+                                        </TextBlock>
+                                        <TextBlock Margin="0,2,0,0" FontSize="11" Foreground="#888">
+                                            <Run Text="会员价 ¥" />
+                                            <Run Text="{Binding MemberPrice, StringFormat='F2'}" />
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Code}" FontSize="10" Foreground="#999" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- Right: cart + checkout -->
+        <Border Grid.Column="1" Background="White" CornerRadius="4" Margin="12,0,0,0" Padding="16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                    <TextBlock DockPanel.Dock="Left" Text="当前订单" FontSize="16" FontWeight="SemiBold" />
+                    <Button DockPanel.Dock="Right" Content="清空" Background="Transparent" BorderThickness="0"
+                            Foreground="#D9534F" Cursor="Hand" Command="{Binding ClearCommand}"
+                            HorizontalAlignment="Right" />
+                </DockPanel>
+
+                <Grid Grid.Row="1" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Height="30" Padding="6,0" VerticalContentAlignment="Center"
+                             Text="{Binding MemberKeyword, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="会员卡号或手机号" />
+                    <Button Grid.Column="1" Margin="6,0,0,0" Padding="10,0" Content="查询会员"
+                            Command="{Binding LookupMemberCommand}" />
+                    <Button Grid.Column="2" Margin="6,0,0,0" Padding="6,0" Content="X"
+                            Visibility="{Binding ActiveMember, Converter={StaticResource NullToCollapsed}}"
+                            Command="{Binding ClearMemberCommand}" />
+                </Grid>
+
+                <Border Grid.Row="2" Background="#F5F7FA" CornerRadius="3" Padding="8" Margin="0,0,0,8"
+                        Visibility="{Binding ActiveMember, Converter={StaticResource NullToCollapsed}}">
+                    <StackPanel>
+                        <TextBlock>
+                            <Run Text="{Binding ActiveMember.Name, FallbackValue=''}" FontWeight="Bold" />
+                            <Run Text="  余额 ¥" Foreground="#2D6A4F" />
+                            <Run Text="{Binding ActiveMember.Balance, StringFormat='F2'}" Foreground="#2D6A4F" FontWeight="Bold" />
+                        </TextBlock>
+                        <TextBlock FontSize="11" Foreground="#666">
+                            <Run Text="{Binding ActiveMember.CardNo}" />
+                            <Run Text="  " />
+                            <Run Text="{Binding ActiveMember.Phone}" />
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <ListBox Grid.Row="3" ItemsSource="{Binding Cart}" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Padding="6" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Left" Text="{Binding ServiceName}" FontWeight="SemiBold" />
+                                        <Button DockPanel.Dock="Right" Content="移除" Background="Transparent" BorderThickness="0"
+                                                Foreground="#D9534F" Cursor="Hand"
+                                                Command="{Binding DataContext.RemoveCartItemCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                CommandParameter="{Binding}" />
+                                    </DockPanel>
+                                    <Grid Margin="0,6,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0"
+                                                  ItemsSource="{Binding DataContext.Technicians, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                  SelectedItem="{Binding Technician, Mode=TwoWay}"
+                                                  AutomationProperties.Name="选择技师">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock>
+                                                        <Run Text="{Binding EmployeeNo, FallbackValue='-'}" />
+                                                        <Run Text=" · " />
+                                                        <Run Text="{Binding RealName, TargetNullValue=''}" />
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <TextBox Grid.Column="1" Width="50" Margin="6,0" Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"
+                                                 AutomationProperties.Name="数量" />
+                                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontWeight="Bold" Foreground="#D9534F">
+                                            <Run Text="¥" />
+                                            <Run Text="{Binding LineTotal, StringFormat='F2'}" />
+                                        </TextBlock>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <Border Grid.Row="4" Padding="0,8,0,8" BorderBrush="#E5E7EB" BorderThickness="0,1,0,1">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Left" Text="合计" FontSize="13" />
+                            <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right">
+                                <Run Text="¥" />
+                                <Run Text="{Binding Total, StringFormat='F2'}" FontWeight="Bold" />
+                            </TextBlock>
+                        </DockPanel>
+                        <DockPanel Margin="0,4,0,0"
+                                   Visibility="{Binding MemberDiscount, Converter={StaticResource DecimalToVisible}}">
+                            <TextBlock DockPanel.Dock="Left" Text="会员折扣" FontSize="12" Foreground="#888" />
+                            <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" Foreground="#888">
+                                <Run Text="-¥" />
+                                <Run Text="{Binding MemberDiscount, StringFormat='F2'}" />
+                            </TextBlock>
+                        </DockPanel>
+                        <DockPanel Margin="0,4,0,0">
+                            <TextBlock DockPanel.Dock="Left" Text="应收" FontSize="14" FontWeight="SemiBold" />
+                            <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" Foreground="#D9534F" FontSize="20" FontWeight="Bold">
+                                <Run Text="¥" />
+                                <Run Text="{Binding Payable, StringFormat='F2'}" />
+                            </TextBlock>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Grid.Row="5" Margin="0,8,0,0">
+                    <TextBlock Text="支付方式" FontSize="12" Foreground="#666" Margin="0,0,0,4" />
+                    <UniformGrid Columns="5" Rows="1">
+                        <RadioButton x:Name="RbCash" Content="现金" GroupName="Pay" IsChecked="True" Click="Pay_Cash_Click" Margin="0,0,4,0" />
+                        <RadioButton x:Name="RbMember" Content="会员卡" GroupName="Pay" Click="Pay_Member_Click" Margin="0,0,4,0"
+                                     IsEnabled="{Binding ActiveMember, Converter={StaticResource NotNullToBool}}" />
+                        <RadioButton Content="微信" GroupName="Pay" Click="Pay_Wechat_Click" Margin="0,0,4,0" />
+                        <RadioButton Content="支付宝" GroupName="Pay" Click="Pay_Alipay_Click" Margin="0,0,4,0" />
+                        <RadioButton Content="银行卡" GroupName="Pay" Click="Pay_Bank_Click" />
+                    </UniformGrid>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="80" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="实收金额" VerticalAlignment="Center" Foreground="#666" />
+                        <TextBox Grid.Column="1" Text="{Binding CashReceived, StringFormat='F2', UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding PayMethod, Converter={StaticResource StringEquals}, ConverterParameter=Cash}"
+                                 VerticalContentAlignment="Center" Padding="6,0" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#888"
+                                   Visibility="{Binding Change, Converter={StaticResource DecimalToVisible}}">
+                            <Run Text="找零 ¥" />
+                            <Run Text="{Binding Change, StringFormat='F2'}" />
+                        </TextBlock>
+                    </Grid>
+
+                    <Button Margin="0,12,0,0" Height="48" Background="#2D6A4F" Foreground="White"
+                            BorderThickness="0" FontSize="16" FontWeight="Bold" Cursor="Hand"
+                            Content="下单并结账"
+                            Command="{Binding CheckoutCommand}"
+                            AutomationProperties.Name="下单并结账" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
