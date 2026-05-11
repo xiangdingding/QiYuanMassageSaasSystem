@@ -1,0 +1,19 @@
+<view class="page">
+  <view class="header" role="heading" aria-level="1">我的评价</view>
+  <view wx:if="{{avgText}}" class="summary" aria-label="{{avgText}}">{{avgText}}</view>
+
+  <view wx:if="{{loading}}" class="hint" aria-label="加载中">加载中…</view>
+  <view wx:elif="{{empty}}" class="hint" aria-label="暂无评价">暂无评价</view>
+
+  <view class="list" role="list">
+    <view wx:for="{{items}}" wx:key="id" class="card" role="listitem" aria-label="{{item.ariaLabel}}">
+      <view class="row1">
+        <text class="customer">{{item.memberLabel}}</text>
+        <text class="stars" aria-hidden="true">{{item.stars}}</text>
+      </view>
+      <view wx:if="{{item.tags}}" class="tags">{{item.tags}}</view>
+      <view wx:if="{{item.comment}}" class="comment">{{item.comment}}</view>
+      <view class="time">{{item.timeText}}</view>
+    </view>
+  </view>
+</view>

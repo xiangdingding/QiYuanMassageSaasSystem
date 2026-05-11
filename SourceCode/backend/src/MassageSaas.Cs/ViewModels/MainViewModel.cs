@@ -12,16 +12,19 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly IServiceProvider _sp;
     private readonly IApiClient _api;
+    private readonly ISpeechAnnouncer _speech;
 
     public MainViewModel(
         IServiceProvider sp,
         IApiClient api,
         SessionService session,
         AppContextService context,
-        NavigationService navigation)
+        NavigationService navigation,
+        ISpeechAnnouncer speech)
     {
         _sp = sp;
         _api = api;
+        _speech = speech;
         Session = session;
         Context = context;
         Navigation = navigation;
@@ -37,6 +40,16 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private NavItem? selectedNavItem;
+
+    public string WindowTitle =>
+        SelectedNavItem is null ? "按摩店收银系统"
+            : $"按摩店收银系统 - {SelectedNavItem.Title}";
+
+    partial void OnSelectedNavItemChanged(NavItem? value)
+    {
+        OnPropertyChanged(nameof(WindowTitle));
+        if (value is not null) _speech.SayAsync($"已切换到 {value.Title}");
+    }
 
     public string CurrentUserDisplay
     {
@@ -134,6 +147,56 @@ public partial class MainViewModel : ObservableObject
         Session.SignOut();
         App.ShowLogin();
         App.Current.Windows.OfType<MainWindow>().FirstOrDefault()?.Close();
+    }
+
+    [RelayCommand]
+    private void NavByIndex(string? indexStr)
+    {
+        if (!int.TryParse(indexStr, out var i) || i < 0 || i >= NavItems.Count) return;
+        Select(NavItems[i]);
+    }
+
+    [RelayCommand]
+    private void FocusMembers()
+    {
+        var item = NavItems.FirstOrDefault(n => n.Key == "members");
+        if (item is not null) { Select(item); _speech.SayAsync("会员管理"); }
+    }
+
+    [RelayCommand]
+    private void NewSale()
+    {
+        var item = NavItems.FirstOrDefault(n => n.Key == "pos");
+        if (item is null) return;
+        Select(item);
+        _speech.SayAsync("新订单");
+    }
+
+    [RelayCommand]
+    private void RefreshCurrent()
+    {
+        // 当前 ViewModel 如有 RelayCommand 名为 ReloadCommand，则执行
+        var current = Navigation.CurrentViewModel;
+        if (current is null) return;
+        var prop = current.GetType().GetProperty("ReloadCommand");
+        if (prop?.GetValue(current) is System.Windows.Input.ICommand cmd && cmd.CanExecute(null))
+        {
+            cmd.Execute(null);
+            _speech.SayAsync("已刷新");
+        }
+    }
+
+    [RelayCommand]
+    private void QuickCheckout()
+    {
+        if (Navigation.CurrentViewModel is Pos.PosViewModel pos)
+        {
+            if (pos.CheckoutCommand.CanExecute(null)) pos.CheckoutCommand.Execute(null);
+        }
+        else
+        {
+            _speech.SayAsync("当前不在收银台");
+        }
     }
 
     private static string RoleLabel(string role) => role switch

@@ -3,6 +3,7 @@
     "pages/index/index",
     "pages/tech/home/home",
     "pages/tech/performance/performance",
+    "pages/tech/reviews/reviews",
     "pages/auth/login/login",
     "pages/customer/book/book",
     "pages/customer/my/my"

@@ -1,6 +1,7 @@
 <template>
   <el-container class="layout">
-    <el-aside width="220px" class="aside">
+    <a href="#main-content" class="skip-link" aria-label="跳到主要内容">跳到主要内容</a>
+    <el-aside width="220px" class="aside" role="navigation" aria-label="主导航">
       <div class="brand">{{ activeStoreName || '按摩店' }}</div>
       <el-menu
         :default-active="route.path"
@@ -11,7 +12,7 @@
         active-text-color="#ffd04b"
       >
         <template v-for="item in visibleMenu" :key="item.path">
-          <el-menu-item :index="item.path">
+          <el-menu-item :index="item.path" :aria-label="item.title">
             <el-icon v-if="item.icon"><component :is="iconCmp(item.icon)" /></el-icon>
             <span>{{ item.title }}</span>
           </el-menu-item>
@@ -19,9 +20,9 @@
       </el-menu>
     </el-aside>
     <el-container>
-      <el-header class="header">
+      <el-header class="header" role="banner">
         <div class="header-left">
-          <span class="page-title">{{ pageTitle }}</span>
+          <h1 class="page-title" aria-live="polite">{{ pageTitle }}</h1>
           <el-tag v-if="expireWarn" type="warning" size="small">
             订阅 {{ subStore.daysToExpire }} 天后到期
           </el-tag>
@@ -35,6 +36,7 @@
             :model-value="appStore.activeStoreId"
             size="small"
             style="width: 160px; margin-right: 12px"
+            aria-label="切换门店"
             @change="(v: number) => appStore.setActiveStore(v)"
           >
             <el-option
@@ -58,7 +60,7 @@
           </el-dropdown>
         </div>
       </el-header>
-      <el-main class="main">
+      <el-main class="main" role="main" id="main-content" tabindex="-1">
         <router-view />
       </el-main>
     </el-container>
@@ -69,14 +71,18 @@
 import { computed, onMounted, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
+  AlarmClock,
   Avatar,
+  Box,
   Calendar,
   CreditCard,
+  Discount,
   Goods,
   House,
   List,
   Money,
   OfficeBuilding,
+  StarFilled,
   Tickets,
   TrendCharts,
   User,
@@ -109,8 +115,9 @@ const ROLE_LABELS: Record<UserRole, string> = {
 const roleLabel = computed(() => (auth.user?.role ? ROLE_LABELS[auth.user.role] : ''));
 
 const ICONS: Record<string, any> = {
-  Avatar, Calendar, CreditCard, Goods, House, List, Money, OfficeBuilding,
-  Tickets, TrendCharts, User, UserFilled, Wallet
+  AlarmClock, Avatar, Box, Calendar, CreditCard, Discount, Goods, House,
+  List, Money, OfficeBuilding, StarFilled, Tickets, TrendCharts, User,
+  UserFilled, Wallet
 };
 function iconCmp(name: string) {
   return ICONS[name] ?? Tickets;
@@ -164,6 +171,24 @@ onMounted(async () => {
 
 <style scoped>
 .layout { min-height: 100vh; }
+
+/* 跳转链接：默认隐藏，键盘聚焦时显示，方便读屏与键盘用户跳过侧边栏 */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 8px 16px;
+  background: #2D6A4F;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+}
+.skip-link:focus {
+  left: 0;
+  outline: 2px solid #ffd04b;
+}
+
 .aside { background: #1f2d3d; color: #bfcbd9; }
 .brand {
   height: 60px;

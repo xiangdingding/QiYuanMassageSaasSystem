@@ -11,7 +11,11 @@ public record StaffDto(
     bool IsBlind,
     bool IsActive,
     DateTime? LastLoginAt,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string TechnicianLevel,
+    string? BlindCertNo,
+    int MaxRoundsPerDay,
+    string? Specialties);
 
 public record CreateStaffRequest(
     long StoreId,
@@ -21,7 +25,11 @@ public record CreateStaffRequest(
     string? RealName,
     string? Phone,
     int? EmployeeNo,
-    bool IsBlind = false);
+    bool IsBlind = false,
+    string? TechnicianLevel = null,
+    string? BlindCertNo = null,
+    int MaxRoundsPerDay = 0,
+    string? Specialties = null);
 
 public record UpdateStaffRequest(
     long StoreId,
@@ -30,6 +38,10 @@ public record UpdateStaffRequest(
     string? Phone,
     int? EmployeeNo,
     bool IsBlind,
-    bool IsActive);
+    bool IsActive,
+    string? TechnicianLevel = null,
+    string? BlindCertNo = null,
+    int MaxRoundsPerDay = 0,
+    string? Specialties = null);
 
 public record ResetPasswordRequest(string NewPassword);

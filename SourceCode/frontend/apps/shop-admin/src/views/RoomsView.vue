@@ -28,8 +28,10 @@
         <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
         <el-table-column v-if="canManage" label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="openEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" :disabled="row.isOccupied" @click="remove(row)">删除</el-button>
+            <el-button size="small" :aria-label="`编辑 ${row.roomNo} 号房`" @click="openEdit(row)">编辑</el-button>
+            <el-button size="small" type="danger" :disabled="row.isOccupied"
+                       :aria-label="`删除 ${row.roomNo} 号房${row.isOccupied ? '（占用中无法删除）' : ''}`"
+                       @click="remove(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

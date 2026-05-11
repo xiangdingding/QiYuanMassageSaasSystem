@@ -7,6 +7,8 @@ public record ServiceItemDto(
     int DurationMinutes,
     decimal Price,
     decimal MemberPrice,
+    decimal? PriceJunior,
+    decimal? PriceMaster,
     string? Description,
     bool IsActive);
 
@@ -17,7 +19,9 @@ public record CreateServiceItemRequest(
     decimal Price,
     decimal MemberPrice,
     string? Description,
-    bool IsActive = true);
+    bool IsActive = true,
+    decimal? PriceJunior = null,
+    decimal? PriceMaster = null);
 
 public record UpdateServiceItemRequest(
     string Name,
@@ -25,4 +29,6 @@ public record UpdateServiceItemRequest(
     decimal Price,
     decimal MemberPrice,
     string? Description,
-    bool IsActive);
+    bool IsActive,
+    decimal? PriceJunior = null,
+    decimal? PriceMaster = null);

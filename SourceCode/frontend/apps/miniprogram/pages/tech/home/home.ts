@@ -1,10 +1,16 @@
 import { api } from '../../../utils/api';
 
-interface QueueRow {
+interface MyQueueDto {
+  id: number | null;
   technicianId: number;
   state: string;
-  todayRoundCount: number;
   queuePosition: number;
+  todayRoundCount: number;
+  enteredAt: string | null;
+  lastCalledAt: string | null;
+  currentRoomNo: string | null;
+  currentOrderId: number | null;
+  currentServiceName: string | null;
 }
 
 const STATE_TEXT: Record<string, string> = {
@@ -16,10 +22,13 @@ const STATE_TEXT: Record<string, string> = {
 
 Page({
   data: {
+    state: 'OffDuty',
     stateText: '未登录',
     todayRounds: 0,
-    nextRoom: '',
-    loading: false
+    currentRoomNo: '',
+    currentServiceName: '',
+    stateLoaded: false,
+    changing: false
   },
   onShow() {
     this.refresh();
@@ -27,28 +36,52 @@ Page({
   async refresh() {
     const user = wx.getStorageSync('user');
     if (!user) {
-      this.setData({ stateText: '未登录', todayRounds: 0, nextRoom: '' });
+      this.setData({
+        state: 'OffDuty', stateText: '未登录', todayRounds: 0,
+        currentRoomNo: '', currentServiceName: '', stateLoaded: false
+      });
       return;
     }
-    this.setData({ loading: true });
     try {
-      const queue = await api.get<QueueRow>('/queue/me').catch((): QueueRow | null => null);
+      const r = await api.get<MyQueueDto>('/queue/me');
       this.setData({
-        stateText: queue ? (STATE_TEXT[queue.state] ?? queue.state) : '未排班',
-        todayRounds: queue?.todayRoundCount ?? 0,
-        // 下一个房间号当前由收银前端推送给技师，小程序仅展示语音播报状态
-        nextRoom: ''
+        state: r.state,
+        stateText: STATE_TEXT[r.state] ?? r.state,
+        todayRounds: r.todayRoundCount,
+        currentRoomNo: r.currentRoomNo ?? '',
+        currentServiceName: r.currentServiceName ?? '',
+        stateLoaded: true
       });
-    } finally {
-      this.setData({ loading: false });
+    } catch {
+      this.setData({ stateLoaded: true });
     }
   },
   speakStatus() {
-    const { stateText, todayRounds, nextRoom } = this.data;
+    const { stateText, todayRounds, currentRoomNo, currentServiceName } = this.data;
+    const room = currentRoomNo ? `，当前在${currentRoomNo}号房做${currentServiceName || '服务'}` : '，目前没有在服务的客人';
     wx.showToast({
-      title: `当前${stateText}，今日已上钟${todayRounds}次${nextRoom ? `，下一间${nextRoom}` : ''}`,
+      title: `当前${stateText}，今日已上钟${todayRounds}次${room}`,
       icon: 'none',
-      duration: 3000
+      duration: 4000
     });
+  },
+  goOnDuty()  { this.changeState('OnDuty', '已开始上钟，进入排队'); },
+  goRest()    { this.changeState('Resting', '已切换到休息'); },
+  goOff()     { this.changeState('OffDuty', '已下班'); },
+  goReviews() {
+    wx.navigateTo({ url: '/pages/tech/reviews/reviews' });
+  },
+  async changeState(state: string, ok: string) {
+    if (this.data.changing) return;
+    this.setData({ changing: true });
+    try {
+      await api.post('/queue/me/state', { state });
+      wx.showToast({ title: ok, icon: 'none', duration: 2500 });
+      await this.refresh();
+    } catch {
+      /* api 已 toast */
+    } finally {
+      this.setData({ changing: false });
+    }
   }
 });

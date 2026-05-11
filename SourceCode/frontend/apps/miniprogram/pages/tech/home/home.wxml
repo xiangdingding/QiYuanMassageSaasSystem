@@ -9,12 +9,52 @@
     <text class="a11y-value">{{todayRounds}} 次</text>
   </view>
 
-  <view class="a11y-section">
-    <text class="a11y-label">下一个客人房间号</text>
-    <text class="a11y-value">{{nextRoom || '暂无'}}</text>
+  <view class="a11y-section" aria-live="assertive" wx:if="{{currentRoomNo}}">
+    <text class="a11y-label">当前服务房间</text>
+    <text class="a11y-value a11y-emph">{{currentRoomNo}} 号房</text>
+    <text class="a11y-label" wx:if="{{currentServiceName}}">项目：{{currentServiceName}}</text>
   </view>
 
-  <button class="a11y-btn" aria-label="一键语音播报我的班次" bindtap="speakStatus">
+  <view class="a11y-section" aria-live="polite" wx:elif="{{stateLoaded}}">
+    <text class="a11y-value">暂无在服务的客人</text>
+  </view>
+
+  <button class="a11y-btn" aria-label="一键语音播报我的班次和当前房间" bindtap="speakStatus">
     语音播报
+  </button>
+
+  <view class="a11y-divider" role="separator"></view>
+
+  <button
+    class="a11y-btn a11y-btn-primary"
+    aria-label="开始上钟，进入接客排队"
+    disabled="{{state === 'OnDuty' || changing}}"
+    bindtap="goOnDuty">
+    开始上钟（{{state === 'OnDuty' ? '当前已上钟' : '可上钟'}}）
+  </button>
+
+  <button
+    class="a11y-btn a11y-btn-warn"
+    aria-label="切换到休息状态，暂停被叫号"
+    disabled="{{state === 'Resting' || state === 'OffDuty' || changing}}"
+    bindtap="goRest">
+    休息
+  </button>
+
+  <button
+    class="a11y-btn a11y-btn-danger"
+    aria-label="下班，离开排队队列"
+    disabled="{{state === 'OffDuty' || changing}}"
+    bindtap="goOff">
+    下班
+  </button>
+
+  <view class="a11y-divider" role="separator"></view>
+
+  <button
+    class="a11y-btn"
+    aria-label="查看顾客对我的评价"
+    bindtap="goReviews">
+    我的评价
   </button>
 </view>

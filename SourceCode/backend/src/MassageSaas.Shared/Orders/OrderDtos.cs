@@ -32,9 +32,18 @@ public record OrderItemDto(
     long? RoomId,
     string? RoomNo,
     long? PreviousTechnicianId,
-    DateTime? TransferredAt);
+    DateTime? TransferredAt,
+    decimal TipAmount,
+    long? MemberPackageId,
+    bool IsAddOn);
 
 public record TransferTechnicianRequest(long NewTechnicianId, string? Reason);
+
+public record AddOrderItemsRequest(IReadOnlyList<OrderItemInputDto> Items);
+
+public record SetTipRequest(decimal TipAmount);
+
+public record ReopenOrderRequest(string? Reason);
 
 public record OrderDto(
     long Id,
@@ -45,6 +54,7 @@ public record OrderDto(
     decimal Total,
     decimal DiscountAmount,
     decimal PaidAmount,
+    decimal TipAmount,
     string PayMethod,
     string Status,
     DateTime CreatedAt,
@@ -53,6 +63,9 @@ public record OrderDto(
     long? CashierUserId,
     string? CashierName,
     string? Remark,
+    long? VoucherId,
+    DateTime? ReopenedAt,
+    string? ReopenReason,
     IReadOnlyList<OrderItemDto> Items);
 
 public record OrderListItemDto(

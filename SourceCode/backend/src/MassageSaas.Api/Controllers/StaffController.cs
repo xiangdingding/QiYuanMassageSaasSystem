@@ -54,7 +54,8 @@ public class StaffController : ControllerBase
             .Select(u => new StaffDto(
                 u.Id, u.StoreId, u.Username, u.RealName, u.Phone,
                 u.Role.ToString(), u.EmployeeNo, u.IsBlind, u.IsActive,
-                u.LastLoginAt, u.CreatedAt))
+                u.LastLoginAt, u.CreatedAt,
+                u.TechnicianLevel.ToString(), u.BlindCertNo, u.MaxRoundsPerDay, u.Specialties))
             .ToListAsync(ct);
 
         return Ok(new PagedResult<StaffDto>(items, total, pq.SafePage, pq.SafePageSize));
@@ -93,16 +94,26 @@ public class StaffController : ControllerBase
             Role = role,
             EmployeeNo = req.EmployeeNo,
             IsBlind = req.IsBlind,
-            IsActive = true
+            IsActive = true,
+            TechnicianLevel = ParseTechLevel(req.TechnicianLevel),
+            BlindCertNo = req.BlindCertNo,
+            MaxRoundsPerDay = req.MaxRoundsPerDay,
+            Specialties = req.Specialties
         };
         _db.Users.Add(user);
         await _db.SaveChangesAsync(ct);
 
-        return Ok(new StaffDto(
-            user.Id, user.StoreId, user.Username, user.RealName, user.Phone,
-            user.Role.ToString(), user.EmployeeNo, user.IsBlind, user.IsActive,
-            user.LastLoginAt, user.CreatedAt));
+        return Ok(MapDto(user));
     }
+
+    private static TechnicianLevel ParseTechLevel(string? s) =>
+        Enum.TryParse<TechnicianLevel>(s, true, out var v) ? v : TechnicianLevel.Senior;
+
+    private static StaffDto MapDto(User u) => new(
+        u.Id, u.StoreId, u.Username, u.RealName, u.Phone,
+        u.Role.ToString(), u.EmployeeNo, u.IsBlind, u.IsActive,
+        u.LastLoginAt, u.CreatedAt,
+        u.TechnicianLevel.ToString(), u.BlindCertNo, u.MaxRoundsPerDay, u.Specialties);
 
     [HttpPut("{id:long}")]
     public async Task<ActionResult<StaffDto>> Update(long id, [FromBody] UpdateStaffRequest req, CancellationToken ct)
@@ -119,12 +130,13 @@ public class StaffController : ControllerBase
         user.EmployeeNo = req.EmployeeNo;
         user.IsBlind = req.IsBlind;
         user.IsActive = req.IsActive;
+        if (req.TechnicianLevel is { } lvl) user.TechnicianLevel = ParseTechLevel(lvl);
+        user.BlindCertNo = req.BlindCertNo;
+        user.MaxRoundsPerDay = req.MaxRoundsPerDay;
+        user.Specialties = req.Specialties;
         await _db.SaveChangesAsync(ct);
 
-        return Ok(new StaffDto(
-            user.Id, user.StoreId, user.Username, user.RealName, user.Phone,
-            user.Role.ToString(), user.EmployeeNo, user.IsBlind, user.IsActive,
-            user.LastLoginAt, user.CreatedAt));
+        return Ok(MapDto(user));
     }
 
     [HttpPost("{id:long}/reset-password")]

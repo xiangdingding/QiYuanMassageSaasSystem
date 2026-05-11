@@ -15,5 +15,10 @@ public class ServiceItem : BaseEntity, ITenantScoped
     public string? Description { get; set; }
     public bool IsActive { get; set; } = true;
 
+    /// <summary>初级技师做该服务的价格；null 表示一价通吃（取 Price）。</summary>
+    public decimal? PriceJunior { get; set; }
+    /// <summary>高级（老师傅）做该服务的价格；null 表示一价通吃。</summary>
+    public decimal? PriceMaster { get; set; }
+
     public ICollection<CommissionRule> CommissionRules { get; set; } = new List<CommissionRule>();
 }

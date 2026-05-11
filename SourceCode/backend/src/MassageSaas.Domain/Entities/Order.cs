@@ -28,6 +28,17 @@ public class Order : BaseEntity, ITenantScoped
     public string? Remark { get; set; }
     public string? OfflineCacheKey { get; set; }
 
+    /// <summary>小费：客人额外给技师的钱，不计入营业额，结账时按 OrderItem 拆分到对应技师。</summary>
+    public decimal TipAmount { get; set; }
+    /// <summary>反结账记录：误结账后撤销，订单回到 InProgress。</summary>
+    public DateTime? ReopenedAt { get; set; }
+    public string? ReopenReason { get; set; }
+    public long? ReopenedByUserId { get; set; }
+
+    /// <summary>核销的优惠券/团购券（一单最多一张，简化）。</summary>
+    public long? VoucherId { get; set; }
+    public Voucher? Voucher { get; set; }
+
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
 }
 
@@ -60,4 +71,14 @@ public class OrderItem : BaseEntity, ITenantScoped
     public long? PreviousTechnicianId { get; set; }
     public DateTime? TransferredAt { get; set; }
     public string? TransferReason { get; set; }
+
+    /// <summary>分给该技师的小费（同一单可有多个 item，小费按 item 平摊或单独指定）。</summary>
+    public decimal TipAmount { get; set; }
+
+    /// <summary>核销了哪张计次卡/期限卡（不为 null 则该 item 走卡内次数，UnitPrice/ItemTotal=0）。</summary>
+    public long? MemberPackageId { get; set; }
+    public MemberPackage? MemberPackage { get; set; }
+
+    /// <summary>是否为加钟（同一 OrderId 续做）。第一项 false，后续追加项 true。</summary>
+    public bool IsAddOn { get; set; }
 }

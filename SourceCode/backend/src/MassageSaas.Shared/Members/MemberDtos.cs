@@ -13,6 +13,9 @@ public record MemberDto(
     decimal TotalConsumed,
     decimal Discount,
     string? Remark,
+    string Level,
+    string? PreferenceNotes,
+    string? HealthNotes,
     DateTime CreatedAt);
 
 public record CreateMemberRequest(
@@ -32,7 +35,10 @@ public record UpdateMemberRequest(
     string? Gender,
     DateTime? Birthday,
     decimal Discount,
-    string? Remark);
+    string? Remark,
+    string? Level = null,
+    string? PreferenceNotes = null,
+    string? HealthNotes = null);
 
 public record RechargeRequest(
     long MemberId,

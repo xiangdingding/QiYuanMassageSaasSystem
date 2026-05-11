@@ -30,7 +30,22 @@
             <DataGrid Grid.Row="1" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
                       CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
                       HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                      AlternatingRowBackground="#FAFAFA">
+                      AlternatingRowBackground="#FAFAFA"
+                      AutomationProperties.Name="员工列表">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="AutomationProperties.Name">
+                            <Setter.Value>
+                                <MultiBinding StringFormat="工号 {0}，{1}，{2}，{3}">
+                                    <Binding Path="EmployeeNo" FallbackValue="无" />
+                                    <Binding Path="RealName" FallbackValue="" />
+                                    <Binding Path="Role" />
+                                    <Binding Path="IsActive" />
+                                </MultiBinding>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="工号" Binding="{Binding EmployeeNo}" Width="60" />
                     <DataGridTextColumn Header="用户名" Binding="{Binding Username}" Width="140" />

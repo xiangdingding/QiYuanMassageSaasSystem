@@ -13,13 +13,15 @@ public partial class QueueViewModel : ObservableObject, IDisposable
     private readonly IApiClient _api;
     private readonly AppContextService _context;
     private readonly SessionService _session;
+    private readonly ISpeechAnnouncer _speech;
     private readonly DispatcherTimer _timer;
 
-    public QueueViewModel(IApiClient api, AppContextService context, SessionService session)
+    public QueueViewModel(IApiClient api, AppContextService context, SessionService session, ISpeechAnnouncer speech)
     {
         _api = api;
         _context = context;
         _session = session;
+        _speech = speech;
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
         _timer.Tick += async (_, _) => await ReloadAsync();
         _timer.Start();
@@ -74,10 +76,12 @@ public partial class QueueViewModel : ObservableObject, IDisposable
             if (r.TechnicianId is null)
             {
                 LastCalled = "目前无在岗技师";
+                _speech.SayAsync("目前无在岗技师");
             }
             else
             {
                 LastCalled = $"刚叫到：{r.EmployeeNo} 号 · {r.TechnicianName}";
+                _speech.Say($"叫 {r.EmployeeNo} 号，{r.TechnicianName}");
                 await ReloadAsync();
             }
         }

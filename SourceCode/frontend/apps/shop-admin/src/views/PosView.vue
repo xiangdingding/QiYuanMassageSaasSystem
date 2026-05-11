@@ -1,27 +1,35 @@
 <template>
-  <div class="pos">
+  <div class="pos" role="region" aria-label="收银台">
     <div class="left">
       <el-card shadow="never">
         <template #header>
           <div class="header-row">
-            <span>选择服务项目</span>
+            <h2 class="card-title">选择服务项目</h2>
             <el-input
+              ref="serviceFilterInput"
               v-model="serviceFilter"
-              placeholder="按编码或名称过滤"
+              placeholder="按编码或名称过滤，回车快速加入第一项"
               size="default"
               clearable
-              style="width: 220px"
+              style="width: 280px"
               :prefix-icon="Search"
+              aria-label="搜索服务项目，按回车快速添加第一项"
+              @keyup.enter="quickAddFirst"
             />
           </div>
         </template>
-        <div class="services-grid">
+        <div class="services-grid" role="list" aria-label="服务项目列表">
           <el-card
             v-for="s in filteredServices"
             :key="s.id"
             class="service-card"
             shadow="hover"
+            tabindex="0"
+            role="button"
+            :aria-label="`服务 ${s.name}，时长 ${s.durationMinutes} 分钟，标准价 ${s.price.toFixed(2)} 元${member ? '，会员价 ' + s.memberPrice.toFixed(2) + ' 元' : ''}，按回车添加`"
             @click="onPickService(s)"
+            @keyup.enter="onPickService(s)"
+            @keyup.space.prevent="onPickService(s)"
           >
             <div class="svc-name">{{ s.name }}</div>
             <div class="svc-meta">
@@ -39,21 +47,23 @@
       <el-card shadow="never" class="cart">
         <template #header>
           <div class="header-row">
-            <span>当前订单</span>
-            <el-button v-if="cart.length > 0 || member" link type="danger" @click="resetAll">清空</el-button>
+            <h2 class="card-title">当前订单</h2>
+            <el-button v-if="cart.length > 0 || member" link type="danger" aria-label="清空当前订单" @click="resetAll">清空</el-button>
           </div>
         </template>
 
         <div class="member-row">
           <el-input
+            ref="memberInput"
             v-model="memberKeyword"
             placeholder="会员卡号 / 手机号"
             clearable
             :prefix-icon="User"
             style="flex: 1"
+            aria-label="会员卡号或手机号，按 F2 快速聚焦"
             @keyup.enter="lookupMember"
           />
-          <el-button :icon="Search" @click="lookupMember">查询</el-button>
+          <el-button :icon="Search" aria-label="查询会员" @click="lookupMember">查询</el-button>
         </div>
         <div v-if="member" class="member-info">
           <div class="m-line">
@@ -131,10 +141,14 @@
           :disabled="!canCheckout"
           :loading="checkingOut"
           style="width: 100%; margin-top: 12px"
+          :aria-label="`下单并结账，应收 ${payable.toFixed(2)} 元`"
           @click="openCheckout"
         >
-          下单并结账
+          下单并结账（应收 ¥{{ payable.toFixed(2) }}）
         </el-button>
+        <div class="hint" aria-live="polite">
+          <span v-if="cart.length > 0 && !canCheckout">提示：请为每个项目都指派技师后才能结账</span>
+        </div>
       </el-card>
     </div>
 
@@ -183,6 +197,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { Search, User } from '@element-plus/icons-vue';
 import { membersApi, ordersApi, roomsApi, servicesApi, staffApi } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
+import { useShortcuts } from '@/composables/useShortcuts';
 import type { Member, Order, Room, ServiceItem, Staff } from '@/api/types';
 import PickTechnicianDialog from '@/views/components/PickTechnicianDialog.vue';
 import CheckoutDialog from '@/views/components/CheckoutDialog.vue';
@@ -203,6 +218,13 @@ const services = ref<ServiceItem[]>([]);
 const technicians = ref<Staff[]>([]);
 const rooms = ref<Room[]>([]);
 const serviceFilter = ref('');
+const serviceFilterInput = ref<{ focus: () => void } | null>(null);
+const memberInput = ref<{ focus: () => void } | null>(null);
+
+function quickAddFirst() {
+  const first = filteredServices.value[0];
+  if (first) onPickService(first);
+}
 
 function availableRooms(currentRoomId: number | null): Room[] {
   // 当前 cart 中已选过的房间在其它项目里禁用，自己当前选的留可见
@@ -357,6 +379,12 @@ async function resetAll() {
 onMounted(async () => {
   await appStore.loadStores();
   await loadCatalog();
+});
+
+useShortcuts({
+  onMemberSearch: () => memberInput.value?.focus(),
+  onRefresh: () => loadCatalog(),
+  onPrimary: () => { if (canCheckout.value) openCheckout(); }
 });
 </script>
 

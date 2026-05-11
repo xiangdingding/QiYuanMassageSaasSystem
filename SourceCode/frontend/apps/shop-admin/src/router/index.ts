@@ -46,6 +46,16 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '日结/交班', icon: 'Wallet', menu: true, roles: POS } },
       { path: 'services', component: () => import('@/views/ServicesView.vue'),
         meta: { title: '服务项目', icon: 'Goods', menu: true, roles: LEAD } },
+      { path: 'member-packages', component: () => import('@/views/MemberPackagesView.vue'),
+        meta: { title: '会员套餐', icon: 'CreditCard', menu: true, roles: POS } },
+      { path: 'vouchers', component: () => import('@/views/VouchersView.vue'),
+        meta: { title: '优惠券', icon: 'Discount', menu: true, roles: POS } },
+      { path: 'inventory', component: () => import('@/views/InventoryView.vue'),
+        meta: { title: '物耗库存', icon: 'Box', menu: true, roles: POS } },
+      { path: 'reviews', component: () => import('@/views/ReviewsView.vue'),
+        meta: { title: '服务评价', icon: 'StarFilled', menu: true, roles: POS } },
+      { path: 'schedules', component: () => import('@/views/SchedulesView.vue'),
+        meta: { title: '排班与请假', icon: 'AlarmClock', menu: true, roles: LEAD } },
       { path: 'commissions', component: () => import('@/views/CommissionsView.vue'),
         meta: { title: '提成规则', icon: 'Money', menu: true, roles: LEAD } },
       { path: 'staff', component: () => import('@/views/StaffView.vue'),
@@ -74,4 +84,15 @@ router.beforeEach((to) => {
     return { path: '/' };
   }
   return true;
+});
+
+// 路由切换后：更新文档标题（屏幕阅读器会朗读），把焦点放回 #main-content
+router.afterEach((to) => {
+  const title = (to.meta.title as string | undefined) ?? '';
+  document.title = title ? `${title} - 按摩店管理` : '按摩店管理';
+  // 等 router-view 渲染完
+  setTimeout(() => {
+    const main = document.getElementById('main-content');
+    if (main) main.focus();
+  }, 50);
 });

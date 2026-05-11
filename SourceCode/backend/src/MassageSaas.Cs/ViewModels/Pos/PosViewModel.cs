@@ -15,11 +15,13 @@ public partial class PosViewModel : ObservableObject
 {
     private readonly IApiClient _api;
     private readonly AppContextService _context;
+    private readonly ISpeechAnnouncer _speech;
 
-    public PosViewModel(IApiClient api, AppContextService context)
+    public PosViewModel(IApiClient api, AppContextService context, ISpeechAnnouncer speech)
     {
         _api = api;
         _context = context;
+        _speech = speech;
         _ = LoadAsync();
     }
 
@@ -107,6 +109,24 @@ public partial class PosViewModel : ObservableObject
     }
 
     partial void OnServiceFilterChanged(string value) => ApplyFilter();
+
+    /// <summary>
+    /// 快速开单：按搜索框里的字符匹配第一个服务并加入。给纯小键盘流程用：
+    /// 输入服务编码 + Enter → 立刻添加；CartItem 默认指派第一个在岗技师（如有）。
+    /// </summary>
+    [RelayCommand]
+    private void QuickAddFirst()
+    {
+        var first = FilteredServices.FirstOrDefault();
+        if (first is null)
+        {
+            _speech.SayAsync("没有匹配的服务");
+            return;
+        }
+        AddService(first);
+        ServiceFilter = string.Empty;
+        _speech.SayAsync($"已加入 {first.Name}");
+    }
 
     private void ApplyFilter()
     {
@@ -242,13 +262,21 @@ public partial class PosViewModel : ObservableObject
         finally { IsBusy = false; }
     }
 
-    private static void ShowReceipt(OrderDto o)
+    private void ShowReceipt(OrderDto o)
     {
+        var change = PayMethod == "Cash" && CashReceived > o.PaidAmount ? CashReceived - o.PaidAmount : 0m;
+
+        // 语音播报：盲人收银员/店长依赖此朗读关键金额
+        var spoken = $"结账成功，应收 {YuanToReadable(o.PaidAmount)}";
+        if (change > 0) spoken += $"，找零 {YuanToReadable(change)}";
+        _speech.SayAsync(spoken);
+
         var lines = new List<string>
         {
             $"订单：{o.OrderNo}",
             $"合计：¥{o.Total:F2}    实收：¥{o.PaidAmount:F2}（{o.PayMethod}）"
         };
+        if (change > 0) lines.Add($"找零：¥{change:F2}");
         if (o.DiscountAmount > 0) lines.Add($"优惠：¥{o.DiscountAmount:F2}");
         lines.Add(string.Empty);
         foreach (var i in o.Items)
@@ -257,6 +285,14 @@ public partial class PosViewModel : ObservableObject
         }
         MessageBox.Show(string.Join(Environment.NewLine, lines), "结账成功",
             MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    /// <summary>朗读金额："328 元 5 角"，避免读屏读"328.50"成"三百二十八点五零"。</summary>
+    private static string YuanToReadable(decimal amount)
+    {
+        var yuan = (long)Math.Floor(amount);
+        var jiao = (int)Math.Round((amount - yuan) * 10m);
+        return jiao == 0 ? $"{yuan} 元" : $"{yuan} 元 {jiao} 角";
     }
 
     private void Recompute()

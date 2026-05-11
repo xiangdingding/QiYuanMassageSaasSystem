@@ -48,7 +48,8 @@ public class MembersController : ControllerBase
             .Take(pq.SafePageSize)
             .Select(m => new MemberDto(
                 m.Id, m.StoreId, m.CardNo, m.Phone, m.Name, m.Gender, m.Birthday,
-                m.Balance, m.TotalRecharge, m.TotalConsumed, m.Discount, m.Remark, m.CreatedAt))
+                m.Balance, m.TotalRecharge, m.TotalConsumed, m.Discount, m.Remark,
+                m.Level.ToString(), m.PreferenceNotes, m.HealthNotes, m.CreatedAt))
             .ToListAsync(ct);
 
         return Ok(new PagedResult<MemberDto>(items, total, pq.SafePage, pq.SafePageSize));
@@ -59,9 +60,20 @@ public class MembersController : ControllerBase
     {
         var m = await _db.Members.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (m is null) return NotFound();
-        return Ok(new MemberDto(m.Id, m.StoreId, m.CardNo, m.Phone, m.Name, m.Gender, m.Birthday,
-            m.Balance, m.TotalRecharge, m.TotalConsumed, m.Discount, m.Remark, m.CreatedAt));
+        return Ok(MapDto(m));
     }
+
+    /// <summary>按累计充值（开卡 + 后续充值）粗分等级。后期可按租户配置。</summary>
+    internal static MemberLevel ComputeLevel(decimal totalRecharge) =>
+        totalRecharge >= 10000m ? MemberLevel.Diamond :
+        totalRecharge >= 5000m ? MemberLevel.Gold :
+        totalRecharge >= 1000m ? MemberLevel.Silver :
+        MemberLevel.Regular;
+
+    private static MemberDto MapDto(Member m) => new(
+        m.Id, m.StoreId, m.CardNo, m.Phone, m.Name, m.Gender, m.Birthday,
+        m.Balance, m.TotalRecharge, m.TotalConsumed, m.Discount, m.Remark,
+        m.Level.ToString(), m.PreferenceNotes, m.HealthNotes, m.CreatedAt);
 
     [HttpPost]
     public async Task<ActionResult<MemberDto>> Create([FromBody] CreateMemberRequest req, CancellationToken ct)
@@ -89,7 +101,8 @@ public class MembersController : ControllerBase
             Remark = req.Remark,
             Balance = req.InitialBalance,
             TotalRecharge = req.InitialBalance,
-            TotalConsumed = 0
+            TotalConsumed = 0,
+            Level = ComputeLevel(req.InitialBalance)
         };
         _db.Members.Add(m);
 
@@ -110,9 +123,7 @@ public class MembersController : ControllerBase
         }
         await _db.SaveChangesAsync(ct);
 
-        return CreatedAtAction(nameof(Get), new { id = m.Id },
-            new MemberDto(m.Id, m.StoreId, m.CardNo, m.Phone, m.Name, m.Gender, m.Birthday,
-                m.Balance, m.TotalRecharge, m.TotalConsumed, m.Discount, m.Remark, m.CreatedAt));
+        return CreatedAtAction(nameof(Get), new { id = m.Id }, MapDto(m));
     }
 
     [HttpPut("{id:long}")]
@@ -129,10 +140,13 @@ public class MembersController : ControllerBase
         m.Birthday = req.Birthday;
         m.Discount = req.Discount;
         m.Remark = req.Remark;
+        if (req.Level is { } lvl && Enum.TryParse<MemberLevel>(lvl, true, out var ml))
+            m.Level = ml;
+        m.PreferenceNotes = req.PreferenceNotes;
+        m.HealthNotes = req.HealthNotes;
         await _db.SaveChangesAsync(ct);
 
-        return Ok(new MemberDto(m.Id, m.StoreId, m.CardNo, m.Phone, m.Name, m.Gender, m.Birthday,
-            m.Balance, m.TotalRecharge, m.TotalConsumed, m.Discount, m.Remark, m.CreatedAt));
+        return Ok(MapDto(m));
     }
 
     [HttpPost("recharge")]
@@ -152,6 +166,7 @@ public class MembersController : ControllerBase
 
         m.Balance += req.Amount + req.BonusAmount;
         m.TotalRecharge += req.Amount;
+        m.Level = ComputeLevel(m.TotalRecharge);
 
         var record = new MemberRechargeRecord
         {

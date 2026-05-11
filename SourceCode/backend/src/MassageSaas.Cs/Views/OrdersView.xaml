@@ -32,7 +32,22 @@
                 <DataGrid Grid.Column="0" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
                           CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
                           HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                          AlternatingRowBackground="#FAFAFA">
+                          AlternatingRowBackground="#FAFAFA"
+                          AutomationProperties.Name="订单流水列表，回车键查看详情">
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="AutomationProperties.Name">
+                                <Setter.Value>
+                                    <MultiBinding StringFormat="订单 {0}，{1}，金额 {2:F2} 元，{3}">
+                                        <Binding Path="OrderNo" />
+                                        <Binding Path="Status" />
+                                        <Binding Path="PaidAmount" />
+                                        <Binding Path="PayMethod" />
+                                    </MultiBinding>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </DataGrid.RowStyle>
                     <DataGrid.InputBindings>
                         <MouseBinding Gesture="LeftDoubleClick"
                                       Command="{Binding ShowDetailCommand}"

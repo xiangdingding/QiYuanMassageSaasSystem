@@ -4,7 +4,11 @@
     @update:model-value="(v: boolean) => emit('update:modelValue', v)"
     title="结账"
     width="460px"
+    aria-label="结账对话框，按 Esc 关闭，Ctrl+回车确认"
+    :close-on-press-escape="true"
+    :close-on-click-modal="false"
     @open="onOpen"
+    @keydown.ctrl.enter.stop="onCtrlEnter"
   >
     <el-form :model="form" label-width="90px">
       <el-form-item label="应收">
@@ -100,6 +104,12 @@ function onOpen() {
   form.payMethod = 'Cash';
   form.paidAmount = props.payable;
   form.remark = '';
+  // 弹窗打开后把焦点放到第一个 RadioButton（el-dialog 自带焦点陷阱，Tab 不会跑出去）
+  // Element Plus 已自动 focus 到 dialog 内首个可聚焦元素，不再额外处理
+}
+
+function onCtrlEnter() {
+  if (canSubmit.value) submit();
 }
 
 function submit() {

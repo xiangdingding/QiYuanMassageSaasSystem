@@ -118,27 +118,100 @@ public class TechnicianQueueController : ControllerBase
     }
 
     /// <summary>
-    /// 当前登录技师查看自己的排队/上钟状态。给小程序"我的班次"用。
+    /// 当前登录技师查看自己的排队/上钟状态 + 正在服务的房间号。
+    /// 给小程序"我的班次"用。
     /// </summary>
     [HttpGet("me")]
-    public async Task<ActionResult<TechnicianQueueItemDto>> Me(CancellationToken ct)
+    public async Task<ActionResult<MyQueueDto>> Me(CancellationToken ct)
     {
         if (_tenantContext.UserId is not long uid)
             return Unauthorized();
 
-        var row = await _db.TechnicianQueues.AsNoTracking()
-            .Include(q => q.Technician)
-            .Where(q => q.TechnicianId == uid)
-            .Select(q => new TechnicianQueueItemDto(
-                q.Id, q.TechnicianId,
-                q.Technician.RealName ?? q.Technician.Username,
-                q.Technician.EmployeeNo,
-                q.State.ToString(),
-                q.QueuePosition, q.TodayRoundCount,
-                q.EnteredAt, q.LastCalledAt))
+        var q = await _db.TechnicianQueues.AsNoTracking()
+            .Where(x => x.TechnicianId == uid)
+            .Select(x => new
+            {
+                x.Id, x.TechnicianId, x.State,
+                x.QueuePosition, x.TodayRoundCount,
+                x.EnteredAt, x.LastCalledAt
+            })
             .FirstOrDefaultAsync(ct);
 
-        return row is null ? NotFound() : Ok(row);
+        // 当前在服务的项（最近一条 InProgress 订单的本技师项），房间号取自 RoomNoSnapshot
+        var nowUtc = DateTime.UtcNow;
+        var currentItem = await _db.OrderItems.AsNoTracking()
+            .Where(oi => oi.TechnicianId == uid
+                         && (oi.Order.Status == OrderStatus.Pending || oi.Order.Status == OrderStatus.InProgress))
+            .OrderByDescending(oi => oi.Order.CreatedAt)
+            .Select(oi => new
+            {
+                oi.OrderId, oi.RoomNoSnapshot, oi.ServiceName
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (q is null)
+        {
+            // 即使没有排队记录，也告诉技师"未排班"，便于小程序显示
+            return Ok(new MyQueueDto(null, uid, QueueState.OffDuty.ToString(), 0, 0, null, null,
+                currentItem?.RoomNoSnapshot, currentItem?.OrderId, currentItem?.ServiceName));
+        }
+
+        return Ok(new MyQueueDto(
+            q.Id, q.TechnicianId, q.State.ToString(),
+            q.QueuePosition, q.TodayRoundCount,
+            q.EnteredAt, q.LastCalledAt,
+            currentItem?.RoomNoSnapshot, currentItem?.OrderId, currentItem?.ServiceName));
+    }
+
+    /// <summary>
+    /// 技师自助上钟/休息/下班。给小程序"我的班次"上的快捷按钮用，
+    /// 与店员策略 [Authorize(Policy="ShopStaff")] 的 SetState 区分。
+    /// </summary>
+    [HttpPost("me/state")]
+    public async Task<IActionResult> SetMyState([FromBody] SetQueueStateRequest req, CancellationToken ct)
+    {
+        if (_tenantContext.UserId is not long uid) return Unauthorized();
+        if (!Enum.TryParse<QueueState>(req.State, true, out var state))
+            return BadRequest(new { code = "InvalidState", message = "状态值不合法" });
+
+        var tech = await _db.Users.FirstOrDefaultAsync(u =>
+            u.Id == uid && u.Role == UserRole.Technician && u.IsActive, ct);
+        if (tech is null) return Forbid();
+        if (tech.StoreId is null) return BadRequest(new { code = "NoStore", message = "未绑定门店，请联系店长" });
+
+        var queue = await _db.TechnicianQueues.FirstOrDefaultAsync(x =>
+            x.TenantId == _tenantContext.TenantId && x.TechnicianId == uid, ct);
+        if (queue is null)
+        {
+            queue = new TechnicianQueue
+            {
+                TechnicianId = uid,
+                StoreId = tech.StoreId.Value,
+                State = QueueState.OffDuty
+            };
+            _db.TechnicianQueues.Add(queue);
+        }
+
+        queue.State = state;
+        if (state == QueueState.OnDuty)
+        {
+            queue.EnteredAt ??= DateTime.UtcNow;
+            if (queue.QueuePosition == 0)
+            {
+                var max = await _db.TechnicianQueues
+                    .Where(x => x.StoreId == queue.StoreId)
+                    .MaxAsync(x => (int?)x.QueuePosition, ct) ?? 0;
+                queue.QueuePosition = max + 1;
+            }
+        }
+        else if (state == QueueState.OffDuty)
+        {
+            queue.EnteredAt = null;
+            queue.QueuePosition = 0;
+        }
+
+        await _db.SaveChangesAsync(ct);
+        return NoContent();
     }
 
     [HttpPost("reset-day")]

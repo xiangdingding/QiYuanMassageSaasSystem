@@ -21,7 +21,22 @@
             <DataGrid Grid.Row="1" ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected, Mode=TwoWay}"
                       AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
                       HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                      AlternatingRowBackground="#FAFAFA">
+                      AlternatingRowBackground="#FAFAFA"
+                      AutomationProperties.Name="会员列表">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="AutomationProperties.Name">
+                            <Setter.Value>
+                                <MultiBinding StringFormat="会员 {0}，卡号 {1}，余额 {2:F2} 元，累计消费 {3:F2} 元">
+                                    <Binding Path="Name" FallbackValue="未填姓名" />
+                                    <Binding Path="CardNo" />
+                                    <Binding Path="Balance" />
+                                    <Binding Path="TotalConsumed" />
+                                </MultiBinding>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="卡号" Binding="{Binding CardNo}" Width="120" />
                     <DataGridTextColumn Header="姓名" Binding="{Binding Name}" Width="100" />

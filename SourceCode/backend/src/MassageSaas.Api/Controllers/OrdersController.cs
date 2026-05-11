@@ -132,13 +132,19 @@ public class OrdersController : ControllerBase
             Remark = req.Remark
         };
 
+        var packages = await LoadActivePackagesAsync(member?.Id, ct);
         decimal total = 0m;
         foreach (var input in req.Items)
         {
             var svc = services[input.ServiceId];
             var qty = input.Quantity < 1 ? 1 : input.Quantity;
-            var unit = member is not null ? svc.MemberPrice : svc.Price;
-            var lineTotal = Math.Round(unit * qty, 2);
+
+            var techLevel = await ResolveTechLevelAsync(input.TechnicianId, ct);
+            var unit = ResolvePrice(svc, member, techLevel);
+            decimal lineTotal = Math.Round(unit * qty, 2);
+
+            var pkg = TryConsumePackage(packages, svc.Id, qty);
+            if (pkg is not null) { unit = 0m; lineTotal = 0m; }
             total += lineTotal;
 
             Room? room = null;
@@ -154,7 +160,9 @@ public class OrdersController : ControllerBase
                 ItemTotal = lineTotal,
                 CommissionAmount = 0m,
                 RoomId = room?.Id,
-                RoomNoSnapshot = room?.RoomNo
+                RoomNoSnapshot = room?.RoomNo,
+                MemberPackageId = pkg?.Id,
+                IsAddOn = false
             });
         }
         order.Total = total;
@@ -165,6 +173,176 @@ public class OrdersController : ControllerBase
 
         var saved = await LoadOrderAsync(order.Id, ct);
         return CreatedAtAction(nameof(Get), new { id = order.Id }, ToDto(saved!));
+    }
+
+    /// <summary>
+    /// 加钟：在未结账订单上追加 OrderItem（与转钟不同，不替换技师，而是同一单多做一段）。
+    /// </summary>
+    [HttpPost("{id:long}/items")]
+    public async Task<ActionResult<OrderDto>> AddItems(long id, [FromBody] AddOrderItemsRequest req, CancellationToken ct)
+    {
+        if (req.Items is null || req.Items.Count == 0)
+            return BadRequest(new { code = "InvalidInput", message = "加钟需提供至少一个服务项" });
+
+        var order = await _db.Orders.Include(o => o.Items).Include(o => o.Member)
+            .FirstOrDefaultAsync(o => o.Id == id, ct);
+        if (order is null) return NotFound();
+        if (order.Status != OrderStatus.Pending && order.Status != OrderStatus.InProgress)
+            return Conflict(new { code = "InvalidState", message = "已结账或已取消订单不可加钟" });
+
+        var svcIds = req.Items.Select(i => i.ServiceId).Distinct().ToList();
+        var services = await _db.ServiceItems.AsNoTracking()
+            .Where(s => svcIds.Contains(s.Id) && s.IsActive)
+            .ToDictionaryAsync(s => s.Id, ct);
+        if (services.Count != svcIds.Count)
+            return BadRequest(new { code = "ServiceNotFound", message = "存在不存在或停用的服务" });
+
+        var packages = await LoadActivePackagesAsync(order.MemberId, ct);
+        foreach (var input in req.Items)
+        {
+            var svc = services[input.ServiceId];
+            var qty = input.Quantity < 1 ? 1 : input.Quantity;
+            var techLevel = await ResolveTechLevelAsync(input.TechnicianId, ct);
+            var unit = ResolvePrice(svc, order.Member, techLevel);
+            decimal lineTotal = Math.Round(unit * qty, 2);
+            var pkg = TryConsumePackage(packages, svc.Id, qty);
+            if (pkg is not null) { unit = 0m; lineTotal = 0m; }
+
+            order.Items.Add(new OrderItem
+            {
+                ServiceId = svc.Id,
+                ServiceName = svc.Name,
+                TechnicianId = input.TechnicianId,
+                DurationMinutes = svc.DurationMinutes,
+                UnitPrice = unit,
+                Quantity = qty,
+                ItemTotal = lineTotal,
+                RoomId = input.RoomId,
+                MemberPackageId = pkg?.Id,
+                IsAddOn = true
+            });
+            order.Total += lineTotal;
+        }
+        if (order.Status == OrderStatus.Pending) order.Status = OrderStatus.InProgress;
+        await _db.SaveChangesAsync(ct);
+
+        var saved = await LoadOrderAsync(order.Id, ct);
+        return Ok(ToDto(saved!));
+    }
+
+    /// <summary>
+    /// 反结账：撤销已完成订单的结账状态，回到 InProgress，本次冲销结账影响。
+    /// </summary>
+    [HttpPost("{id:long}/reopen")]
+    public async Task<ActionResult<OrderDto>> Reopen(long id, [FromBody] ReopenOrderRequest req, CancellationToken ct)
+    {
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        var order = await _db.Orders.Include(o => o.Items).Include(o => o.Member)
+            .FirstOrDefaultAsync(o => o.Id == id, ct);
+        if (order is null) return NotFound();
+        if (order.Status != OrderStatus.Completed)
+            return Conflict(new { code = "InvalidState", message = "仅已结账订单可反结账" });
+        if (order.CompletedAt.HasValue && await IsDayClosedAsync(order.StoreId, order.CompletedAt.Value, ct))
+            return Conflict(new { code = "DayClosed", message = "结账当日已日结，不能反结账" });
+
+        if (order.PayMethod == PayMethod.MemberCard && order.Member is not null)
+        {
+            order.Member.Balance += order.PaidAmount;
+            order.Member.TotalConsumed -= order.PaidAmount;
+            if (order.Member.TotalConsumed < 0) order.Member.TotalConsumed = 0;
+        }
+        foreach (var it in order.Items) it.CommissionAmount = 0m;
+        order.PaidAmount = 0m;
+        order.DiscountAmount = 0m;
+        order.PayMethod = PayMethod.Unpaid;
+        order.Status = OrderStatus.InProgress;
+        order.CompletedAt = null;
+        order.ReopenedAt = DateTime.UtcNow;
+        order.ReopenedByUserId = _tenantContext.UserId;
+        order.ReopenReason = req.Reason;
+
+        await _db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+
+        _logger.LogWarning("Order {OrderId} REOPENED by {UserId} reason={Reason}", id, _tenantContext.UserId, req.Reason);
+        var saved = await LoadOrderAsync(id, ct);
+        return Ok(ToDto(saved!));
+    }
+
+    /// <summary>
+    /// 设置/调整订单小费（不计入营业额）。允许整单总额 + 按 item 平摊；
+    /// 也允许结账后追加（小费不影响日结现金核对，只用于技师结算）。
+    /// </summary>
+    [HttpPost("{id:long}/tip")]
+    public async Task<ActionResult<OrderDto>> SetTip(long id, [FromBody] SetTipRequest req, CancellationToken ct)
+    {
+        if (req.TipAmount < 0) return BadRequest(new { code = "InvalidTip", message = "小费不能为负" });
+        var order = await _db.Orders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == id, ct);
+        if (order is null) return NotFound();
+        if (order.Status == OrderStatus.Cancelled || order.Status == OrderStatus.Refunded)
+            return Conflict(new { code = "InvalidState", message = "已取消/退款订单不可设小费" });
+
+        order.TipAmount = req.TipAmount;
+        var n = order.Items.Count;
+        if (n > 0)
+        {
+            var share = Math.Round(req.TipAmount / n, 2);
+            decimal allocated = 0m;
+            for (var i = 0; i < n; i++)
+            {
+                var item = order.Items.ElementAt(i);
+                item.TipAmount = (i == n - 1) ? Math.Round(req.TipAmount - allocated, 2) : share;
+                allocated += item.TipAmount;
+            }
+        }
+        await _db.SaveChangesAsync(ct);
+        var saved = await LoadOrderAsync(id, ct);
+        return Ok(ToDto(saved!));
+    }
+
+    private async Task<List<MemberPackage>> LoadActivePackagesAsync(long? memberId, CancellationToken ct)
+    {
+        if (!memberId.HasValue) return new();
+        var now = DateTime.UtcNow;
+        return await _db.MemberPackages
+            .Where(p => p.MemberId == memberId.Value
+                        && p.Status == MemberPackageStatus.Active
+                        && (p.ExpiresAt == null || p.ExpiresAt > now)
+                        && p.RemainCount > 0)
+            .OrderBy(p => p.ExpiresAt ?? DateTime.MaxValue)
+            .ToListAsync(ct);
+    }
+
+    /// <summary>尝试从可用套餐中消费 N 次；成功返回套餐并扣减次数，失败返回 null。</summary>
+    private static MemberPackage? TryConsumePackage(List<MemberPackage> packages, long serviceId, int qty)
+    {
+        var hit = packages.FirstOrDefault(p =>
+            (p.Kind == MemberPackageKind.Counter && p.ServiceId == serviceId && p.RemainCount >= qty)
+            || (p.Kind == MemberPackageKind.Period && (p.ServiceId == null || p.ServiceId == serviceId) && p.RemainCount >= qty));
+        if (hit is null) return null;
+        hit.RemainCount -= qty;
+        if (hit.RemainCount == 0) hit.Status = MemberPackageStatus.Used;
+        return hit;
+    }
+
+    private async Task<TechnicianLevel> ResolveTechLevelAsync(long technicianId, CancellationToken ct) =>
+        await _db.Users.AsNoTracking()
+            .Where(u => u.Id == technicianId)
+            .Select(u => (TechnicianLevel?)u.TechnicianLevel)
+            .FirstOrDefaultAsync(ct) ?? TechnicianLevel.Senior;
+
+    private static decimal ResolvePrice(ServiceItem svc, Member? member, TechnicianLevel level)
+    {
+        decimal basePrice = level switch
+        {
+            TechnicianLevel.Junior => svc.PriceJunior ?? svc.Price,
+            TechnicianLevel.Master => svc.PriceMaster ?? svc.Price,
+            _ => svc.Price
+        };
+        if (member is null) return basePrice;
+        // 会员场景：取会员价（若有）与级别价中的低者
+        var memberBase = svc.MemberPrice > 0m ? svc.MemberPrice : basePrice;
+        return Math.Min(memberBase, basePrice);
     }
 
     [HttpPost("{id:long}/checkout")]
@@ -190,6 +368,18 @@ public class OrdersController : ControllerBase
         var discount = req.DiscountAmount < 0 ? 0 : req.DiscountAmount;
         if (order.Member is not null)
             discount = Math.Max(discount, Math.Round(order.Total * (1 - order.Member.Discount), 2));
+        // 券折扣：取面值 or 折扣百分比中的有效值
+        if (order.VoucherId.HasValue)
+        {
+            var v = await _db.Vouchers.AsNoTracking().FirstOrDefaultAsync(x => x.Id == order.VoucherId.Value, ct);
+            if (v is not null)
+            {
+                var voucherDiscount = v.DiscountPercent.HasValue
+                    ? Math.Round(order.Total * (1m - v.DiscountPercent.Value), 2)
+                    : v.FaceValue;
+                discount = Math.Max(discount, voucherDiscount);
+            }
+        }
         if (discount > order.Total)
             return BadRequest(new { code = "InvalidDiscount", message = "优惠不能超过订单总额" });
 
@@ -204,6 +394,10 @@ public class OrdersController : ControllerBase
             if (order.Member.Balance < paid)
                 return BadRequest(new { code = "InsufficientBalance", message = "会员余额不足" });
             order.Member.Balance -= paid;
+            order.Member.TotalConsumed += paid;
+        }
+        else if (order.Member is not null)
+        {
             order.Member.TotalConsumed += paid;
         }
 
@@ -362,18 +556,19 @@ public class OrdersController : ControllerBase
     private static OrderDto ToDto(Order o) => new(
         o.Id, o.OrderNo, o.StoreId, o.MemberId,
         o.Member?.CardNo,
-        o.Total, o.DiscountAmount, o.PaidAmount,
+        o.Total, o.DiscountAmount, o.PaidAmount, o.TipAmount,
         o.PayMethod.ToString(), o.Status.ToString(),
         o.CreatedAt, o.StartedAt, o.CompletedAt,
         o.CashierUserId,
         o.CashierUser != null ? (o.CashierUser.RealName ?? o.CashierUser.Username) : null,
-        o.Remark,
+        o.Remark, o.VoucherId, o.ReopenedAt, o.ReopenReason,
         o.Items.Select(i => new OrderItemDto(
             i.Id, i.ServiceId, i.ServiceName, i.TechnicianId,
             i.Technician != null ? (i.Technician.RealName ?? i.Technician.Username) : null,
             i.Quantity, i.DurationMinutes, i.UnitPrice, i.ItemTotal,
             i.CommissionAmount, i.RoomId, i.RoomNoSnapshot,
-            i.PreviousTechnicianId, i.TransferredAt)).ToList());
+            i.PreviousTechnicianId, i.TransferredAt,
+            i.TipAmount, i.MemberPackageId, i.IsAddOn)).ToList());
 
     private static string GenerateOrderNo() =>
         $"O{DateTime.UtcNow:yyyyMMddHHmmss}{Random.Shared.Next(100, 999)}";

@@ -40,16 +40,19 @@
         <el-table-column label="备注" min-width="160" prop="remark" show-overflow-tooltip />
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button v-if="row.status === 'Pending'" size="small" type="primary" @click="confirm(row)">
+            <el-button v-if="row.status === 'Pending'" size="small" type="primary"
+                       :aria-label="`确认 ${row.customerName} 的预约`" @click="confirm(row)">
               确认
             </el-button>
-            <el-button v-if="row.status === 'Pending' || row.status === 'Confirmed'" size="small" type="success" @click="arrive(row)">
+            <el-button v-if="row.status === 'Pending' || row.status === 'Confirmed'" size="small" type="success"
+                       :aria-label="`标记 ${row.customerName} 已到店`" @click="arrive(row)">
               到店
             </el-button>
             <el-button
               v-if="row.status === 'Pending' || row.status === 'Confirmed'"
               size="small"
               type="danger"
+              :aria-label="`取消 ${row.customerName} 的预约`"
               @click="cancel(row)"
             >
               取消

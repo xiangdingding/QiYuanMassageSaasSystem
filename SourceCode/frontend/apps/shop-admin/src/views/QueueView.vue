@@ -7,8 +7,8 @@
         <el-tag size="large" type="warning">休息 {{ counts.Resting }}</el-tag>
         <el-tag size="large" type="info">下班 {{ counts.OffDuty }}</el-tag>
         <div class="spacer" />
-        <el-button v-if="canManage" type="primary" :icon="Bell" @click="callNext">叫号</el-button>
-        <el-button v-if="canManage" :icon="Refresh" @click="resetDay">重置今日轮次</el-button>
+        <el-button v-if="canManage" type="primary" :icon="Bell" aria-label="叫下一个排队技师" @click="callNext">叫号</el-button>
+        <el-button v-if="canManage" :icon="Refresh" aria-label="重置今日轮次计数" @click="resetDay">重置今日轮次</el-button>
       </div>
 
       <div v-if="lastCalled" class="called">
@@ -37,18 +37,21 @@
               size="small"
               :type="row.state === 'OnDuty' ? '' : 'primary'"
               :disabled="row.state === 'OnDuty'"
+              :aria-label="`将技师 ${row.technicianName} 设为上钟`"
               @click="setState(row.technicianId, 'OnDuty')"
             >上钟</el-button>
             <el-button
               size="small"
               :type="row.state === 'Resting' ? '' : 'warning'"
               :disabled="row.state === 'Resting' || row.state === 'OffDuty'"
+              :aria-label="`将技师 ${row.technicianName} 设为休息`"
               @click="setState(row.technicianId, 'Resting')"
             >休息</el-button>
             <el-button
               size="small"
               :type="row.state === 'OffDuty' ? '' : 'info'"
               :disabled="row.state === 'OffDuty'"
+              :aria-label="`将技师 ${row.technicianName} 设为下班`"
               @click="setState(row.technicianId, 'OffDuty')"
             >下班</el-button>
           </template>

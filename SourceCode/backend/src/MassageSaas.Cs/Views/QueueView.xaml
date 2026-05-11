@@ -32,7 +32,23 @@
             <DataGrid Grid.Row="2" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
                       CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
                       HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                      AlternatingRowBackground="#FAFAFA">
+                      AlternatingRowBackground="#FAFAFA"
+                      AutomationProperties.Name="技师排队列表">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="AutomationProperties.Name">
+                            <Setter.Value>
+                                <MultiBinding StringFormat="工号 {0}，{1}，{2}，今日 {3} 钟，排队号 {4}">
+                                    <Binding Path="EmployeeNo" FallbackValue="无" />
+                                    <Binding Path="TechnicianName" />
+                                    <Binding Path="State" Converter="{StaticResource EnumLabel}" />
+                                    <Binding Path="TodayRoundCount" />
+                                    <Binding Path="QueuePosition" />
+                                </MultiBinding>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="工号" Binding="{Binding EmployeeNo}" Width="60" />
                     <DataGridTextColumn Header="姓名" Binding="{Binding TechnicianName}" Width="120" />

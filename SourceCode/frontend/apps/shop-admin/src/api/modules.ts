@@ -143,5 +143,118 @@ export const dayClosesApi = {
 
 export const ordersTransferApi = {
   transfer: (orderId: number, itemId: number, body: { newTechnicianId: number; reason?: string | null }) =>
-    http().patch<Order>(`/orders/${orderId}/items/${itemId}/transfer`, body).then((r) => r.data)
+    http().patch<Order>(`/orders/${orderId}/items/${itemId}/transfer`, body).then((r) => r.data),
+  addItems: (orderId: number, items: any[]) =>
+    http().post<Order>(`/orders/${orderId}/items`, { items }).then((r) => r.data),
+  reopen: (orderId: number, reason?: string | null) =>
+    http().post<Order>(`/orders/${orderId}/reopen`, { reason }).then((r) => r.data),
+  setTip: (orderId: number, tipAmount: number) =>
+    http().post<Order>(`/orders/${orderId}/tip`, { tipAmount }).then((r) => r.data)
+};
+
+export interface VoucherDto {
+  id: number; kind: string; code: string; title: string;
+  faceValue: number; minOrderAmount: number; discountPercent: number | null;
+  validFrom: string | null; expiresAt: string | null; status: string;
+  platform: string | null; remark: string | null;
+  redeemedAt: string | null; redeemedOrderId: number | null; createdAt: string;
+}
+
+export const vouchersApi = {
+  list: (params?: { status?: string; keyword?: string }) =>
+    http().get<VoucherDto[]>('/vouchers', { params }).then((r) => r.data),
+  create: (body: Partial<VoucherDto>) => http().post<VoucherDto>('/vouchers', body).then((r) => r.data),
+  redeem: (body: { code: string; orderId: number }) =>
+    http().post<VoucherDto>('/vouchers/redeem', body).then((r) => r.data),
+  cancel: (id: number) => http().post(`/vouchers/${id}/cancel`)
+};
+
+export interface InventoryItemDto {
+  id: number; storeId: number; code: string; name: string; unit: string | null;
+  quantity: number; minQuantity: number; unitCost: number | null;
+  remark: string | null; isActive: boolean; lowStock: boolean;
+}
+export interface InventoryMovementDto {
+  id: number; itemId: number; itemName: string; kind: string;
+  delta: number; quantityAfter: number;
+  operatorUserId: number | null; operatorName: string | null;
+  remark: string | null; createdAt: string;
+}
+
+export const inventoryApi = {
+  items: (storeId: number, onlyLowStock = false) =>
+    http().get<InventoryItemDto[]>('/inventory/items', { params: { storeId, onlyLowStock } }).then((r) => r.data),
+  createItem: (body: any) => http().post<InventoryItemDto>('/inventory/items', body).then((r) => r.data),
+  updateItem: (id: number, body: any) => http().put<InventoryItemDto>(`/inventory/items/${id}`, body).then((r) => r.data),
+  movements: (itemId: number, take = 50) =>
+    http().get<InventoryMovementDto[]>('/inventory/movements', { params: { itemId, take } }).then((r) => r.data),
+  move: (body: { itemId: number; kind: string; delta: number; remark?: string | null }) =>
+    http().post<InventoryMovementDto>('/inventory/movements', body).then((r) => r.data)
+};
+
+export interface MemberPackageDto {
+  id: number; memberId: number; memberName: string; storeId: number;
+  kind: string; serviceId: number | null; serviceName: string | null;
+  title: string; paidAmount: number; totalCount: number; remainCount: number;
+  validFrom: string | null; expiresAt: string | null;
+  status: string; remark: string | null; createdAt: string;
+}
+
+export const memberPackagesApi = {
+  list: (params?: { memberId?: number; storeId?: number; status?: string }) =>
+    http().get<MemberPackageDto[]>('/member-packages', { params }).then((r) => r.data),
+  create: (body: any) => http().post<MemberPackageDto>('/member-packages', body).then((r) => r.data),
+  cancel: (id: number) => http().post(`/member-packages/${id}/cancel`)
+};
+
+export interface ServicePackageDto {
+  id: number; code: string; name: string; price: number; memberPrice: number | null;
+  description: string | null; isActive: boolean;
+  items: { serviceId: number; serviceName: string; quantity: number }[];
+}
+
+export const servicePackagesApi = {
+  list: (includeInactive = false) =>
+    http().get<ServicePackageDto[]>('/service-packages', { params: { includeInactive } }).then((r) => r.data),
+  create: (body: any) => http().post<ServicePackageDto>('/service-packages', body).then((r) => r.data),
+  update: (id: number, body: any) => http().put<ServicePackageDto>(`/service-packages/${id}`, body).then((r) => r.data),
+  remove: (id: number) => http().delete(`/service-packages/${id}`)
+};
+
+export interface ServiceReviewDto {
+  id: number; orderId: number; orderItemId: number;
+  technicianId: number; technicianName: string;
+  memberId: number | null; memberName: string | null;
+  rating: number; tags: string | null; comment: string | null; createdAt: string;
+}
+
+export const reviewsApi = {
+  list: (params?: { technicianId?: number; rating?: number; from?: string; to?: string }) =>
+    http().get<ServiceReviewDto[]>('/reviews', { params }).then((r) => r.data),
+  technicianSummary: (params?: { from?: string; to?: string }) =>
+    http().get('/reviews/technician-summary', { params }).then((r) => r.data),
+  me: () => http().get<ServiceReviewDto[]>('/reviews/me').then((r) => r.data)
+};
+
+export interface StaffScheduleDto {
+  id: number; storeId: number; userId: number; userName: string;
+  workDate: string; startTime: string; endTime: string; remark: string | null;
+}
+export interface LeaveRequestDto {
+  id: number; userId: number; userName: string; type: string;
+  fromDate: string; toDate: string; reason: string | null; status: string;
+  approverUserId: number | null; approverName: string | null;
+  approvedAt: string | null; createdAt: string;
+}
+
+export const schedulesApi = {
+  list: (storeId: number, from?: string, to?: string) =>
+    http().get<StaffScheduleDto[]>('/schedules', { params: { storeId, from, to } }).then((r) => r.data),
+  create: (body: any) => http().post<StaffScheduleDto>('/schedules', body).then((r) => r.data),
+  remove: (id: number) => http().delete(`/schedules/${id}`),
+  leaves: (params?: { userId?: number; status?: string }) =>
+    http().get<LeaveRequestDto[]>('/schedules/leaves', { params }).then((r) => r.data),
+  submitLeave: (body: any) => http().post<LeaveRequestDto>('/schedules/leaves', body).then((r) => r.data),
+  approveLeave: (id: number, approve: boolean, reason?: string | null) =>
+    http().post<LeaveRequestDto>(`/schedules/leaves/${id}/approve`, { approve, reason }).then((r) => r.data)
 };

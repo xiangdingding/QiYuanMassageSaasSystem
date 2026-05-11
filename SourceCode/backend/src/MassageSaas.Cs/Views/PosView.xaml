@@ -17,10 +17,16 @@
 
                 <DockPanel Grid.Row="0" LastChildFill="True" Margin="0,0,0,12">
                     <TextBlock DockPanel.Dock="Left" Text="选择服务项目" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
-                    <TextBox Width="220" Height="32" HorizontalAlignment="Right"
+                    <TextBox x:Name="ServiceFilterBox"
+                             Width="240" Height="32" HorizontalAlignment="Right"
                              Text="{Binding ServiceFilter, UpdateSourceTrigger=PropertyChanged}"
                              AutomationProperties.Name="服务搜索框"
-                             VerticalContentAlignment="Center" Padding="6,0" />
+                             AutomationProperties.HelpText="输入编码或名称，按回车快速加入第一项"
+                             VerticalContentAlignment="Center" Padding="6,0">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding QuickAddFirstCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
                 </DockPanel>
 
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">

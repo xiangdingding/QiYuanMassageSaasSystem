@@ -33,6 +33,15 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<DayClose> DayCloses => Set<DayClose>();
+    public DbSet<MemberPackage> MemberPackages => Set<MemberPackage>();
+    public DbSet<ServicePackage> ServicePackages => Set<ServicePackage>();
+    public DbSet<ServicePackageItem> ServicePackageItems => Set<ServicePackageItem>();
+    public DbSet<Voucher> Vouchers => Set<Voucher>();
+    public DbSet<ServiceReview> ServiceReviews => Set<ServiceReview>();
+    public DbSet<StaffSchedule> StaffSchedules => Set<StaffSchedule>();
+    public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
+    public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
+    public DbSet<InventoryMovement> InventoryMovements => Set<InventoryMovement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

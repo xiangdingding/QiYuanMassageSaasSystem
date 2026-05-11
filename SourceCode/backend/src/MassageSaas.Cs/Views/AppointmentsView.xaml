@@ -30,7 +30,23 @@
 
             <DataGrid Grid.Row="1" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
                       CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
-                      HeadersVisibility="Column" AlternatingRowBackground="#FAFAFA">
+                      HeadersVisibility="Column" AlternatingRowBackground="#FAFAFA"
+                      AutomationProperties.Name="预约列表">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="AutomationProperties.Name">
+                            <Setter.Value>
+                                <MultiBinding StringFormat="{}{0:yyyy-MM-dd HH:mm} 到店，{1}，{2}，{3} 人，{4}">
+                                    <Binding Path="ExpectedArriveAt" />
+                                    <Binding Path="CustomerName" />
+                                    <Binding Path="CustomerPhone" />
+                                    <Binding Path="PartySize" />
+                                    <Binding Path="Status" />
+                                </MultiBinding>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="到店时间" Binding="{Binding ExpectedArriveAt, StringFormat='yyyy-MM-dd HH:mm'}" Width="160" />
                     <DataGridTextColumn Header="姓名" Binding="{Binding CustomerName}" Width="120" />

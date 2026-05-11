@@ -31,3 +31,37 @@ public record MyPerformanceDto(
     decimal MonthCommission,
     int TodayRoundCount,
     int MonthRoundCount);
+
+public record MonthlyReportPointDto(
+    DateTime Day,
+    int OrderCount,
+    decimal Revenue,
+    int Rounds);
+
+public record MonthlyReportDto(
+    int Year,
+    int Month,
+    long StoreId,
+    int OrderCount,
+    decimal Revenue,
+    decimal RechargeAmount,
+    int RoundsCount,
+    decimal AverageOrder,
+    IReadOnlyList<MonthlyReportPointDto> Daily);
+
+public record YearlyReportDto(
+    int Year,
+    long StoreId,
+    int OrderCount,
+    decimal Revenue,
+    int RoundsCount,
+    IReadOnlyList<MonthlyReportPointDto> Monthly);
+
+public record ServicePopularityDto(
+    long ServiceId,
+    string ServiceName,
+    int OrderItemCount,
+    int RoundsCount,
+    decimal Revenue);
+
+public record CustomerFlowPointDto(DateTime Date, int OrderCount, int UniqueMembers);

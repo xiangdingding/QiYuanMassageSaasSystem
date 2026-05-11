@@ -36,6 +36,7 @@ public partial class App : Application
                 services.AddSingleton<SessionService>();
                 services.AddSingleton<NavigationService>();
                 services.AddSingleton<AppContextService>();
+                services.AddSingleton<ISpeechAnnouncer, SpeechAnnouncer>();
                 services.AddTransient<AuthMessageHandler>();
 
                 services.AddRefitClient<IApiClient>(refitSettings)

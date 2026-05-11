@@ -3,15 +3,21 @@ using MassageSaas.Shared.Auth;
 using MassageSaas.Shared.Commissions;
 using MassageSaas.Shared.Common;
 using MassageSaas.Shared.DayCloses;
+using MassageSaas.Shared.Inventory;
+using MassageSaas.Shared.MemberPackages;
 using MassageSaas.Shared.Members;
 using MassageSaas.Shared.Orders;
 using MassageSaas.Shared.Queue;
 using MassageSaas.Shared.Reports;
+using MassageSaas.Shared.Reviews;
 using MassageSaas.Shared.Rooms;
+using MassageSaas.Shared.Schedules;
+using MassageSaas.Shared.ServicePackages;
 using MassageSaas.Shared.Services;
 using MassageSaas.Shared.Staff;
 using MassageSaas.Shared.Stores;
 using MassageSaas.Shared.Subscriptions;
+using MassageSaas.Shared.Vouchers;
 using Refit;
 
 namespace MassageSaas.Cs.Services;
@@ -111,6 +117,12 @@ public interface IApiClient
     [Post("/queue/{technicianId}/state")]
     Task SetQueueStateAsync(long technicianId, [Body] SetQueueStateRequest req);
 
+    [Get("/queue/me")]
+    Task<MyQueueDto> GetMyQueueAsync();
+
+    [Post("/queue/me/state")]
+    Task SetMyQueueStateAsync([Body] SetQueueStateRequest req);
+
     [Post("/queue/call-next")]
     Task<CallNextResultDto> CallNextAsync([Body] CallNextRequest req);
 
@@ -187,4 +199,105 @@ public interface IApiClient
         [Query] long storeId,
         [Query] DateTime? from = null,
         [Query] DateTime? to = null);
+
+    [Post("/orders/{id}/items")]
+    Task<OrderDto> AddOrderItemsAsync(long id, [Body] AddOrderItemsRequest req);
+
+    [Post("/orders/{id}/reopen")]
+    Task<OrderDto> ReopenOrderAsync(long id, [Body] ReopenOrderRequest req);
+
+    [Post("/orders/{id}/tip")]
+    Task<OrderDto> SetOrderTipAsync(long id, [Body] SetTipRequest req);
+
+    [Get("/vouchers")]
+    Task<List<VoucherDto>> GetVouchersAsync(
+        [Query] string? status = null,
+        [Query] string? keyword = null);
+
+    [Post("/vouchers")]
+    Task<VoucherDto> CreateVoucherAsync([Body] CreateVoucherRequest req);
+
+    [Post("/vouchers/redeem")]
+    Task<VoucherDto> RedeemVoucherAsync([Body] VoucherRedeemRequest req);
+
+    [Post("/vouchers/{id}/cancel")]
+    Task CancelVoucherAsync(long id);
+
+    [Get("/member-packages")]
+    Task<List<MemberPackageDto>> GetMemberPackagesAsync(
+        [Query] long? memberId = null,
+        [Query] long? storeId = null,
+        [Query] string? status = null);
+
+    [Post("/member-packages")]
+    Task<MemberPackageDto> CreateMemberPackageAsync([Body] CreateMemberPackageRequest req);
+
+    [Post("/member-packages/{id}/cancel")]
+    Task CancelMemberPackageAsync(long id);
+
+    [Get("/service-packages")]
+    Task<List<ServicePackageDto>> GetServicePackagesAsync([Query] bool includeInactive = false);
+
+    [Post("/service-packages")]
+    Task<ServicePackageDto> CreateServicePackageAsync([Body] CreateServicePackageRequest req);
+
+    [Put("/service-packages/{id}")]
+    Task<ServicePackageDto> UpdateServicePackageAsync(long id, [Body] UpdateServicePackageRequest req);
+
+    [Delete("/service-packages/{id}")]
+    Task DeleteServicePackageAsync(long id);
+
+    [Get("/inventory/items")]
+    Task<List<InventoryItemDto>> GetInventoryAsync(
+        [Query] long storeId,
+        [Query] bool onlyLowStock = false);
+
+    [Post("/inventory/items")]
+    Task<InventoryItemDto> CreateInventoryItemAsync([Body] CreateInventoryItemRequest req);
+
+    [Put("/inventory/items/{id}")]
+    Task<InventoryItemDto> UpdateInventoryItemAsync(long id, [Body] UpdateInventoryItemRequest req);
+
+    [Get("/inventory/movements")]
+    Task<List<InventoryMovementDto>> GetInventoryMovementsAsync(
+        [Query] long itemId,
+        [Query] int take = 50);
+
+    [Post("/inventory/movements")]
+    Task<InventoryMovementDto> CreateInventoryMovementAsync([Body] CreateMovementRequest req);
+
+    [Get("/reviews")]
+    Task<List<ServiceReviewDto>> GetReviewsAsync(
+        [Query] long? technicianId = null,
+        [Query] int? rating = null,
+        [Query] DateTime? from = null,
+        [Query] DateTime? to = null);
+
+    [Get("/reviews/technician-summary")]
+    Task<List<TechnicianReviewSummaryDto>> GetReviewSummaryAsync(
+        [Query] DateTime? from = null,
+        [Query] DateTime? to = null);
+
+    [Get("/schedules")]
+    Task<List<StaffScheduleDto>> GetSchedulesAsync(
+        [Query] long storeId,
+        [Query] DateTime? from = null,
+        [Query] DateTime? to = null);
+
+    [Post("/schedules")]
+    Task<StaffScheduleDto> CreateScheduleAsync([Body] CreateStaffScheduleRequest req);
+
+    [Delete("/schedules/{id}")]
+    Task DeleteScheduleAsync(long id);
+
+    [Get("/schedules/leaves")]
+    Task<List<LeaveRequestDto>> GetLeavesAsync(
+        [Query] long? userId = null,
+        [Query] string? status = null);
+
+    [Post("/schedules/leaves")]
+    Task<LeaveRequestDto> SubmitLeaveAsync([Body] CreateLeaveRequest req);
+
+    [Post("/schedules/leaves/{id}/approve")]
+    Task<LeaveRequestDto> ApproveLeaveAsync(long id, [Body] ApproveLeaveRequest req);
 }

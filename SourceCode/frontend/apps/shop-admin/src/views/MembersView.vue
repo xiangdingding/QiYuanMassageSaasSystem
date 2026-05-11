@@ -1,17 +1,18 @@
 <template>
   <div class="page">
     <el-card shadow="never">
-      <div class="toolbar">
+      <div class="toolbar" role="search">
         <el-input
           v-model="query.keyword"
           placeholder="卡号 / 手机号 / 姓名"
           clearable
           style="width: 240px"
+          aria-label="搜索会员，输入卡号、手机号或姓名后回车"
           @keyup.enter="reload"
         />
-        <el-button type="primary" @click="reload">查询</el-button>
-        <el-button @click="resetQuery">重置</el-button>
-        <el-button type="success" @click="openCreate">开卡</el-button>
+        <el-button type="primary" aria-label="执行会员搜索" @click="reload">查询</el-button>
+        <el-button aria-label="重置搜索条件" @click="resetQuery">重置</el-button>
+        <el-button type="success" aria-label="开新会员卡" @click="openCreate">开卡</el-button>
       </div>
 
       <el-table :data="rows" v-loading="loading" stripe style="margin-top: 12px">
@@ -37,9 +38,9 @@
         </el-table-column>
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openRecharge(row)">充值</el-button>
-            <el-button link type="primary" @click="openHistory(row)">流水</el-button>
-            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-button link type="primary" :aria-label="`给 ${row.name || row.cardNo} 充值`" @click="openRecharge(row)">充值</el-button>
+            <el-button link type="primary" :aria-label="`查看 ${row.name || row.cardNo} 的流水`" @click="openHistory(row)">流水</el-button>
+            <el-button link type="primary" :aria-label="`编辑 ${row.name || row.cardNo}`" @click="openEdit(row)">编辑</el-button>
           </template>
         </el-table-column>
       </el-table>
