@@ -101,11 +101,34 @@ export const commissionsApi = {
   remove: (id: number) => http().delete(`/commission-rules/${id}`)
 };
 
+export interface MonthlyReportPoint { day: string; orderCount: number; revenue: number; rounds: number; }
+export interface MonthlyReport {
+  year: number; month: number; storeId: number;
+  orderCount: number; revenue: number; rechargeAmount: number;
+  roundsCount: number; averageOrder: number;
+  daily: MonthlyReportPoint[];
+}
+export interface YearlyReport {
+  year: number; storeId: number;
+  orderCount: number; revenue: number; roundsCount: number;
+  monthly: MonthlyReportPoint[];
+}
+export interface ServicePopularity { serviceId: number; serviceName: string; orderItemCount: number; roundsCount: number; revenue: number; }
+export interface CustomerFlowPoint { date: string; orderCount: number; uniqueMembers: number; }
+
 export const reportsApi = {
   daily: (storeId: number, date?: string) =>
     http().get<DailyReport>('/reports/daily', { params: { storeId, date } }).then((r) => r.data),
   technicianPerformance: (storeId: number, from: string, to: string) =>
-    http().get<TechnicianPerformance[]>('/reports/technician-performance', { params: { storeId, from, to } }).then((r) => r.data)
+    http().get<TechnicianPerformance[]>('/reports/technician-performance', { params: { storeId, from, to } }).then((r) => r.data),
+  monthly: (storeId: number, year?: number, month?: number) =>
+    http().get<MonthlyReport>('/reports/monthly', { params: { storeId, year, month } }).then((r) => r.data),
+  yearly: (storeId: number, year?: number) =>
+    http().get<YearlyReport>('/reports/yearly', { params: { storeId, year } }).then((r) => r.data),
+  servicePopularity: (storeId: number, from: string, to: string) =>
+    http().get<ServicePopularity[]>('/reports/service-popularity', { params: { storeId, from, to } }).then((r) => r.data),
+  customerFlow: (storeId: number, from: string, to: string) =>
+    http().get<CustomerFlowPoint[]>('/reports/customer-flow', { params: { storeId, from, to } }).then((r) => r.data)
 };
 
 export const subscriptionsApi = {

@@ -92,6 +92,161 @@
           </el-table>
         </el-card>
       </el-tab-pane>
+
+      <el-tab-pane label="月报" name="monthly">
+        <el-card shadow="never">
+          <div class="toolbar">
+            <el-date-picker
+              v-model="monthlyMonth"
+              type="month"
+              placeholder="选择月份"
+              format="YYYY-MM"
+              value-format="YYYY-MM"
+              :clearable="false"
+            />
+            <el-button type="primary" @click="loadMonthly">查询</el-button>
+          </div>
+          <div v-if="monthly" style="margin-top: 16px">
+            <el-row :gutter="16">
+              <el-col :span="6">
+                <el-card class="metric" shadow="hover">
+                  <div class="m-label">本月营业额</div>
+                  <div class="m-value">¥{{ monthly.revenue.toFixed(2) }}</div>
+                  <div class="m-sub">订单 {{ monthly.orderCount }} 单</div>
+                </el-card>
+              </el-col>
+              <el-col :span="6">
+                <el-card class="metric" shadow="hover">
+                  <div class="m-label">钟数合计</div>
+                  <div class="m-value">{{ monthly.roundsCount }}</div>
+                </el-card>
+              </el-col>
+              <el-col :span="6">
+                <el-card class="metric" shadow="hover">
+                  <div class="m-label">充值入账</div>
+                  <div class="m-value">¥{{ monthly.rechargeAmount.toFixed(2) }}</div>
+                </el-card>
+              </el-col>
+              <el-col :span="6">
+                <el-card class="metric" shadow="hover">
+                  <div class="m-label">客单价</div>
+                  <div class="m-value">¥{{ monthly.averageOrder.toFixed(2) }}</div>
+                </el-card>
+              </el-col>
+            </el-row>
+            <el-card style="margin-top: 16px" shadow="never">
+              <template #header><span>每日明细</span></template>
+              <el-table :data="monthly.daily" size="small">
+                <el-table-column label="日期">
+                  <template #default="{ row }">{{ formatDate(row.day) }}</template>
+                </el-table-column>
+                <el-table-column prop="orderCount" label="订单" width="100" />
+                <el-table-column label="营业额">
+                  <template #default="{ row }">¥{{ row.revenue.toFixed(2) }}</template>
+                </el-table-column>
+                <el-table-column prop="rounds" label="钟数" width="100" />
+              </el-table>
+            </el-card>
+          </div>
+        </el-card>
+      </el-tab-pane>
+
+      <el-tab-pane label="年报" name="yearly">
+        <el-card shadow="never">
+          <div class="toolbar">
+            <el-date-picker
+              v-model="yearlyYear"
+              type="year"
+              placeholder="选择年份"
+              format="YYYY"
+              value-format="YYYY"
+              :clearable="false"
+            />
+            <el-button type="primary" @click="loadYearly">查询</el-button>
+          </div>
+          <div v-if="yearly" style="margin-top: 16px">
+            <el-row :gutter="16">
+              <el-col :span="8">
+                <el-card class="metric" shadow="hover">
+                  <div class="m-label">{{ yearly.year }} 年营业额</div>
+                  <div class="m-value">¥{{ yearly.revenue.toFixed(2) }}</div>
+                  <div class="m-sub">订单 {{ yearly.orderCount }} 单</div>
+                </el-card>
+              </el-col>
+              <el-col :span="8">
+                <el-card class="metric" shadow="hover">
+                  <div class="m-label">钟数合计</div>
+                  <div class="m-value">{{ yearly.roundsCount }}</div>
+                </el-card>
+              </el-col>
+              <el-col :span="8">
+                <el-card class="metric" shadow="hover">
+                  <div class="m-label">月均</div>
+                  <div class="m-value">¥{{ (yearly.revenue / Math.max(1, yearly.monthly.length)).toFixed(2) }}</div>
+                </el-card>
+              </el-col>
+            </el-row>
+            <el-card style="margin-top: 16px" shadow="never">
+              <template #header><span>逐月明细</span></template>
+              <el-table :data="yearly.monthly" size="small">
+                <el-table-column label="月份">
+                  <template #default="{ row }">{{ formatMonth(row.day) }}</template>
+                </el-table-column>
+                <el-table-column prop="orderCount" label="订单" width="100" />
+                <el-table-column label="营业额">
+                  <template #default="{ row }">¥{{ row.revenue.toFixed(2) }}</template>
+                </el-table-column>
+                <el-table-column prop="rounds" label="钟数" width="100" />
+              </el-table>
+            </el-card>
+          </div>
+        </el-card>
+      </el-tab-pane>
+
+      <el-tab-pane label="服务热度" name="popularity">
+        <el-card shadow="never">
+          <div class="toolbar">
+            <el-date-picker
+              v-model="popRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始" end-placeholder="结束"
+              format="YYYY-MM-DD" value-format="YYYY-MM-DD"
+            />
+            <el-button type="primary" @click="loadPopularity">查询</el-button>
+          </div>
+          <el-table :data="popularity" v-loading="popLoading" stripe style="margin-top:12px">
+            <el-table-column prop="serviceName" label="服务" min-width="160" />
+            <el-table-column prop="orderItemCount" label="下单次数" width="120" />
+            <el-table-column prop="roundsCount" label="钟数合计" width="120" />
+            <el-table-column label="营业额">
+              <template #default="{ row }">¥{{ row.revenue.toFixed(2) }}</template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-tab-pane>
+
+      <el-tab-pane label="客流" name="flow">
+        <el-card shadow="never">
+          <div class="toolbar">
+            <el-date-picker
+              v-model="flowRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始" end-placeholder="结束"
+              format="YYYY-MM-DD" value-format="YYYY-MM-DD"
+            />
+            <el-button type="primary" @click="loadFlow">查询</el-button>
+          </div>
+          <el-table :data="flow" v-loading="flowLoading" stripe style="margin-top:12px">
+            <el-table-column label="日期">
+              <template #default="{ row }">{{ formatDate(row.date) }}</template>
+            </el-table-column>
+            <el-table-column prop="orderCount" label="订单数" width="120" />
+            <el-table-column prop="uniqueMembers" label="唯一会员" width="120" />
+          </el-table>
+        </el-card>
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -100,12 +255,16 @@
 import { computed, onMounted, ref } from 'vue';
 import dayjs from 'dayjs';
 import { ElMessage } from 'element-plus';
-import { reportsApi } from '@/api/modules';
+import {
+  reportsApi,
+  type MonthlyReport, type YearlyReport,
+  type ServicePopularity, type CustomerFlowPoint
+} from '@/api/modules';
 import { useAppStore } from '@/stores/app';
 import type { DailyReport, TechnicianPerformance } from '@/api/types';
 
 const appStore = useAppStore();
-const tab = ref<'daily' | 'performance'>('daily');
+const tab = ref<'daily' | 'performance' | 'monthly' | 'yearly' | 'popularity' | 'flow'>('daily');
 
 const dailyDate = ref(dayjs().format('YYYY-MM-DD'));
 const daily = ref<DailyReport | null>(null);
@@ -116,6 +275,29 @@ const perfRange = ref<[string, string]>([
 ]);
 const perfRows = ref<TechnicianPerformance[]>([]);
 const perfLoading = ref(false);
+
+const monthlyMonth = ref(dayjs().format('YYYY-MM'));
+const monthly = ref<MonthlyReport | null>(null);
+
+const yearlyYear = ref(dayjs().format('YYYY'));
+const yearly = ref<YearlyReport | null>(null);
+
+const popRange = ref<[string, string]>([
+  dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
+  dayjs().format('YYYY-MM-DD')
+]);
+const popularity = ref<ServicePopularity[]>([]);
+const popLoading = ref(false);
+
+const flowRange = ref<[string, string]>([
+  dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
+  dayjs().format('YYYY-MM-DD')
+]);
+const flow = ref<CustomerFlowPoint[]>([]);
+const flowLoading = ref(false);
+
+function formatDate(s: string) { return dayjs(s).format('YYYY-MM-DD'); }
+function formatMonth(s: string) { return dayjs(s).format('YYYY-MM'); }
 
 const payMethodRows = computed(() => {
   if (!daily.value) return [];
@@ -149,6 +331,47 @@ async function loadPerformance() {
     );
   } finally {
     perfLoading.value = false;
+  }
+}
+
+async function loadMonthly() {
+  if (!appStore.activeStoreId) return;
+  const [y, m] = monthlyMonth.value.split('-').map(Number);
+  monthly.value = await reportsApi.monthly(appStore.activeStoreId, y, m);
+}
+
+async function loadYearly() {
+  if (!appStore.activeStoreId) return;
+  yearly.value = await reportsApi.yearly(appStore.activeStoreId, Number(yearlyYear.value));
+}
+
+async function loadPopularity() {
+  if (!appStore.activeStoreId) return;
+  const [from, to] = popRange.value;
+  popLoading.value = true;
+  try {
+    popularity.value = await reportsApi.servicePopularity(
+      appStore.activeStoreId,
+      `${from}T00:00:00Z`,
+      `${dayjs(to).add(1, 'day').format('YYYY-MM-DD')}T00:00:00Z`
+    );
+  } finally {
+    popLoading.value = false;
+  }
+}
+
+async function loadFlow() {
+  if (!appStore.activeStoreId) return;
+  const [from, to] = flowRange.value;
+  flowLoading.value = true;
+  try {
+    flow.value = await reportsApi.customerFlow(
+      appStore.activeStoreId,
+      `${from}T00:00:00Z`,
+      `${dayjs(to).add(1, 'day').format('YYYY-MM-DD')}T00:00:00Z`
+    );
+  } finally {
+    flowLoading.value = false;
   }
 }
 

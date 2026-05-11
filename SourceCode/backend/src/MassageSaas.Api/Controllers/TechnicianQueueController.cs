@@ -96,9 +96,12 @@ public class TechnicianQueueController : ControllerBase
     [Authorize(Policy = "ShopStaff")]
     public async Task<ActionResult<CallNextResultDto>> CallNext([FromBody] CallNextRequest req, CancellationToken ct)
     {
+        // 盲人按摩师有钟数过载风险，技师配置了 MaxRoundsPerDay > 0 时跳过已达上限的。
         var idleQueue = await _db.TechnicianQueues
             .Include(q => q.Technician)
-            .Where(q => q.StoreId == req.StoreId && q.State == QueueState.OnDuty)
+            .Where(q => q.StoreId == req.StoreId && q.State == QueueState.OnDuty
+                        && (q.Technician.MaxRoundsPerDay == 0
+                            || q.TodayRoundCount < q.Technician.MaxRoundsPerDay))
             .OrderBy(q => q.TodayRoundCount)
             .ThenBy(q => q.LastCalledAt ?? q.EnteredAt ?? q.CreatedAt)
             .ThenBy(q => q.QueuePosition)
