@@ -538,6 +538,59 @@ public class OrdersController : ControllerBase
     }
 
     /// <summary>
+    /// 并钟：把多个未结账订单项标记为"同一技师同时服务多位客人"。
+    /// 要求 ≥ 2 项、同一技师、订单均未结账。提成不变，仅做分组标记。
+    /// </summary>
+    [HttpPost("items/merge")]
+    public async Task<ActionResult<IReadOnlyList<long>>> MergeItems(
+        [FromBody] MergeOrderItemsRequest req, CancellationToken ct)
+    {
+        var ids = req.OrderItemIds?.Distinct().ToList() ?? new List<long>();
+        if (ids.Count < 2)
+            return BadRequest(new { code = "TooFew", message = "并钟至少需要 2 个订单项" });
+
+        var items = await _db.OrderItems.Include(i => i.Order)
+            .Where(i => ids.Contains(i.Id)).ToListAsync(ct);
+        if (items.Count != ids.Count)
+            return NotFound(new { code = "ItemNotFound", message = "部分订单项不存在" });
+
+        if (items.Select(i => i.TechnicianId).Distinct().Count() != 1)
+            return BadRequest(new { code = "DifferentTechnician", message = "并钟的订单项必须是同一技师" });
+        if (items.Any(i => i.Order.Status != OrderStatus.Pending && i.Order.Status != OrderStatus.InProgress))
+            return Conflict(new { code = "InvalidState", message = "仅未结账订单可并钟" });
+        if (items.Any(i => i.MergedGroupKey != null))
+            return Conflict(new { code = "AlreadyMerged", message = "存在已并钟的订单项，请先取消并钟" });
+
+        var groupKey = Guid.NewGuid().ToString();
+        foreach (var i in items) i.MergedGroupKey = groupKey;
+        await _db.SaveChangesAsync(ct);
+
+        _logger.LogInformation("Order items merged group={Group} items={Items} tech={Tech}",
+            groupKey, string.Join(",", ids), items[0].TechnicianId);
+        return Ok(ids);
+    }
+
+    /// <summary>取消并钟：清除某订单项的并钟标记。若该组只剩 1 项，连带清除以免孤立。</summary>
+    [HttpPost("items/{itemId:long}/unmerge")]
+    public async Task<IActionResult> UnmergeItem(long itemId, CancellationToken ct)
+    {
+        var item = await _db.OrderItems.FirstOrDefaultAsync(i => i.Id == itemId, ct);
+        if (item is null) return NotFound();
+        if (item.MergedGroupKey is null)
+            return BadRequest(new { code = "NotMerged", message = "该订单项未并钟" });
+
+        var groupKey = item.MergedGroupKey;
+        item.MergedGroupKey = null;
+
+        var remaining = await _db.OrderItems
+            .Where(i => i.MergedGroupKey == groupKey && i.Id != itemId).ToListAsync(ct);
+        if (remaining.Count == 1) remaining[0].MergedGroupKey = null;
+
+        await _db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    /// <summary>
     /// 判断目标日期是否已经做日结：已结过则不允许新增/修改/退款。
     /// </summary>
     private async Task<bool> IsDayClosedAsync(long storeId, DateTime when, CancellationToken ct)
@@ -568,7 +621,7 @@ public class OrdersController : ControllerBase
             i.Quantity, i.DurationMinutes, i.UnitPrice, i.ItemTotal,
             i.CommissionAmount, i.RoomId, i.RoomNoSnapshot,
             i.PreviousTechnicianId, i.TransferredAt,
-            i.TipAmount, i.MemberPackageId, i.IsAddOn)).ToList());
+            i.TipAmount, i.MemberPackageId, i.IsAddOn, i.MergedGroupKey)).ToList());
 
     private static string GenerateOrderNo() =>
         $"O{DateTime.UtcNow:yyyyMMddHHmmss}{Random.Shared.Next(100, 999)}";

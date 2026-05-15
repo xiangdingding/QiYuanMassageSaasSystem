@@ -35,6 +35,9 @@ public interface IApplicationDbContext
     DbSet<PayrollItem> PayrollItems { get; }
     DbSet<PayrollAdjustment> PayrollAdjustments { get; }
     DbSet<NotificationOutbox> NotificationOutbox { get; }
+    DbSet<ServiceComplaint> ServiceComplaints { get; }
+    DbSet<StaffTransfer> StaffTransfers { get; }
+    DbSet<TimedRoomSession> TimedRoomSessions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

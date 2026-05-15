@@ -54,6 +54,8 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '物耗库存', icon: 'Box', menu: true, roles: POS } },
       { path: 'reviews', component: () => import('@/views/ReviewsView.vue'),
         meta: { title: '服务评价', icon: 'StarFilled', menu: true, roles: POS } },
+      { path: 'complaints', component: () => import('@/views/ComplaintsView.vue'),
+        meta: { title: '投诉处理', icon: 'WarnTriangleFilled', menu: true, roles: POS } },
       { path: 'schedules', component: () => import('@/views/SchedulesView.vue'),
         meta: { title: '排班与请假', icon: 'AlarmClock', menu: true, roles: LEAD } },
       { path: 'commissions', component: () => import('@/views/CommissionsView.vue'),

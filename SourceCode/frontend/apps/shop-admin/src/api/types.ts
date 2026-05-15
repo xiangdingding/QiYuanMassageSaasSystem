@@ -248,6 +248,8 @@ export interface Room {
   isOccupied: boolean;
   occupiedByOrderId?: number | null;
   occupiedByOrderNo?: string | null;
+  isTimedRoom: boolean;
+  hourlyRate: number;
 }
 
 export interface DayClosePreview {

@@ -45,3 +45,26 @@ public record UpdateStaffRequest(
     string? Specialties = null);
 
 public record ResetPasswordRequest(string NewPassword);
+
+public record StaffTransferDto(
+    long Id,
+    long UserId,
+    string UserName,
+    long FromStoreId,
+    string FromStoreName,
+    long ToStoreId,
+    string ToStoreName,
+    string Kind,
+    string Status,
+    DateTime EffectiveFrom,
+    DateTime? ExpectedReturnAt,
+    DateTime? ReturnedAt,
+    string? Reason,
+    string? OperatorName,
+    DateTime CreatedAt);
+
+public record TransferStaffRequest(
+    long ToStoreId,
+    string Kind,                     // Permanent / Temporary
+    DateTime? ExpectedReturnAt,
+    string? Reason);

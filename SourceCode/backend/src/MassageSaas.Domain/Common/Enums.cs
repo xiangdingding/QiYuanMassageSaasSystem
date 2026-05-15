@@ -183,7 +183,8 @@ public enum NotificationKind
     MemberBirthday = 0,         // 会员生日（每日扫描，今天生日的）
     MemberPackageExpiring = 10, // 期限会员卡 N 日内到期
     AppointmentReminder = 20,   // 预约前 30 分钟提醒
-    RechargeArrived = 30        // 充值到账（Recharge 接口同事务写入）
+    RechargeArrived = 30,       // 充值到账（Recharge 接口同事务写入）
+    ServiceComplaintAlert = 40  // 客户投诉登记，提醒店长
 }
 
 public enum NotificationStatus
@@ -191,5 +192,44 @@ public enum NotificationStatus
     Pending = 0,
     Sent = 10,
     Failed = 20,
+    Cancelled = 90
+}
+
+/// <summary>客户投诉处理状态：登记后挂在 Pending；店长处理后到 Resolved；录错可置 Cancelled。</summary>
+public enum ComplaintStatus
+{
+    Pending = 0,
+    Resolved = 10,
+    Cancelled = 90
+}
+
+/// <summary>投诉解决方式：改派/退款/口头道歉/不予处理。配合 ServiceComplaint.Resolution 字段。</summary>
+public enum ComplaintResolution
+{
+    Reassigned = 0,    // 改派给新技师（同时调用转钟逻辑）
+    Refunded = 10,     // 退款（实际退款另走 RefundOrder 接口，本字段只做记录）
+    Apologized = 20,   // 口头道歉、赠送礼品/卡内补偿
+    NoAction = 30      // 调查后认定无需处理
+}
+
+/// <summary>跨店调动类型：永久调动 vs 临时借调（借调需归还）。</summary>
+public enum StaffTransferKind
+{
+    Permanent = 0,   // 永久调动
+    Temporary = 10   // 临时借调
+}
+
+public enum StaffTransferStatus
+{
+    InEffect = 0,    // 生效中
+    Returned = 10,   // 借调已归还
+    Cancelled = 90   // 已撤销
+}
+
+/// <summary>计时房使用记录状态：Open 计时中，Settled 已结账，Cancelled 作废。</summary>
+public enum TimedRoomSessionStatus
+{
+    Open = 0,
+    Settled = 10,
     Cancelled = 90
 }

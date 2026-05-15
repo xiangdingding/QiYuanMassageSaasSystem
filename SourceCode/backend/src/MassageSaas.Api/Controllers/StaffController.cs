@@ -151,4 +151,124 @@ public class StaffController : ControllerBase
         await _db.SaveChangesAsync(ct);
         return NoContent();
     }
+
+    // ---- 跨店调动 ----
+
+    [HttpGet("transfers")]
+    public async Task<ActionResult<IReadOnlyList<StaffTransferDto>>> ListTransfers(
+        [FromQuery] long? userId = null,
+        [FromQuery] long? storeId = null,
+        [FromQuery] string? status = null,
+        CancellationToken ct = default)
+    {
+        var q = _db.StaffTransfers.AsNoTracking()
+            .Include(t => t.User).Include(t => t.FromStore)
+            .Include(t => t.ToStore).Include(t => t.OperatorUser)
+            .AsQueryable();
+        if (userId.HasValue) q = q.Where(t => t.UserId == userId.Value);
+        if (storeId.HasValue) q = q.Where(t => t.FromStoreId == storeId.Value || t.ToStoreId == storeId.Value);
+        if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<StaffTransferStatus>(status, true, out var st))
+            q = q.Where(t => t.Status == st);
+
+        var rows = await q.OrderByDescending(t => t.CreatedAt).Take(200).ToListAsync(ct);
+        return Ok(rows.Select(MapTransfer).ToList());
+    }
+
+    [HttpPost("{id:long}/transfer")]
+    public async Task<ActionResult<StaffTransferDto>> Transfer(
+        long id, [FromBody] TransferStaffRequest req, CancellationToken ct)
+    {
+        if (!Enum.TryParse<StaffTransferKind>(req.Kind, true, out var kind))
+            return BadRequest(new { code = "InvalidKind", message = "调动类型不合法" });
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id && u.Role != UserRole.PlatformAdmin, ct);
+        if (user is null) return NotFound();
+        if (user.StoreId is not long fromStoreId)
+            return BadRequest(new { code = "NoCurrentStore", message = "员工未绑定门店，无法调动" });
+        if (fromStoreId == req.ToStoreId)
+            return BadRequest(new { code = "SameStore", message = "目标门店与当前门店相同" });
+
+        var toStore = await _db.Stores.FirstOrDefaultAsync(s => s.Id == req.ToStoreId, ct);
+        if (toStore is null) return BadRequest(new { code = "StoreNotFound", message = "目标门店不存在" });
+        if (kind == StaffTransferKind.Temporary && req.ExpectedReturnAt is null)
+            return BadRequest(new { code = "MissingReturnDate", message = "临时借调需填预计归还时间" });
+
+        var pendingNo = user.EmployeeNo.HasValue && await _db.Users.AnyAsync(u =>
+            u.StoreId == req.ToStoreId && u.EmployeeNo == user.EmployeeNo && u.Id != user.Id, ct);
+        if (pendingNo)
+            return Conflict(new { code = "DuplicateEmployeeNo", message = "目标门店已有相同工号，请先调整工号" });
+
+        var transfer = new StaffTransfer
+        {
+            UserId = user.Id,
+            FromStoreId = fromStoreId,
+            ToStoreId = req.ToStoreId,
+            Kind = kind,
+            Status = StaffTransferStatus.InEffect,
+            EffectiveFrom = DateTime.UtcNow,
+            ExpectedReturnAt = req.ExpectedReturnAt,
+            Reason = req.Reason,
+            OperatorUserId = _tenantContext.UserId
+        };
+        _db.StaffTransfers.Add(transfer);
+
+        user.StoreId = req.ToStoreId;
+        await ResetQueueForStoreChangeAsync(user.Id, req.ToStoreId, ct);
+
+        await _db.SaveChangesAsync(ct);
+        return Ok(await LoadTransferAsync(transfer.Id, ct));
+    }
+
+    [HttpPost("transfers/{transferId:long}/return")]
+    public async Task<ActionResult<StaffTransferDto>> ReturnTransfer(long transferId, CancellationToken ct)
+    {
+        var transfer = await _db.StaffTransfers.FirstOrDefaultAsync(t => t.Id == transferId, ct);
+        if (transfer is null) return NotFound();
+        if (transfer.Kind != StaffTransferKind.Temporary)
+            return Conflict(new { code = "NotTemporary", message = "仅临时借调可归还，永久调动不可逆" });
+        if (transfer.Status != StaffTransferStatus.InEffect)
+            return Conflict(new { code = "InvalidState", message = "该调动不在生效中" });
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == transfer.UserId, ct);
+        if (user is null) return NotFound(new { code = "UserNotFound", message = "员工不存在" });
+
+        transfer.Status = StaffTransferStatus.Returned;
+        transfer.ReturnedAt = DateTime.UtcNow;
+        user.StoreId = transfer.FromStoreId;
+        await ResetQueueForStoreChangeAsync(user.Id, transfer.FromStoreId, ct);
+
+        await _db.SaveChangesAsync(ct);
+        return Ok(await LoadTransferAsync(transfer.Id, ct));
+    }
+
+    /// <summary>员工换店后，把其叫号队列迁到新店并置为下班（需在新店重新上钟）。</summary>
+    private async Task ResetQueueForStoreChangeAsync(long userId, long newStoreId, CancellationToken ct)
+    {
+        var queue = await _db.TechnicianQueues.FirstOrDefaultAsync(q => q.TechnicianId == userId, ct);
+        if (queue is null) return;
+        queue.StoreId = newStoreId;
+        queue.State = QueueState.OffDuty;
+        queue.QueuePosition = 0;
+        queue.EnteredAt = null;
+        queue.TodayRoundCount = 0;
+        queue.LastCalledAt = null;
+    }
+
+    private async Task<StaffTransferDto> LoadTransferAsync(long id, CancellationToken ct)
+    {
+        var t = await _db.StaffTransfers.AsNoTracking()
+            .Include(x => x.User).Include(x => x.FromStore)
+            .Include(x => x.ToStore).Include(x => x.OperatorUser)
+            .FirstAsync(x => x.Id == id, ct);
+        return MapTransfer(t);
+    }
+
+    private static StaffTransferDto MapTransfer(StaffTransfer t) => new(
+        t.Id, t.UserId, t.User?.RealName ?? t.User?.Username ?? string.Empty,
+        t.FromStoreId, t.FromStore?.Name ?? string.Empty,
+        t.ToStoreId, t.ToStore?.Name ?? string.Empty,
+        t.Kind.ToString(), t.Status.ToString(),
+        t.EffectiveFrom, t.ExpectedReturnAt, t.ReturnedAt,
+        t.Reason, t.OperatorUser?.RealName ?? t.OperatorUser?.Username,
+        t.CreatedAt);
 }

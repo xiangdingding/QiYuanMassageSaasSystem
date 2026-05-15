@@ -81,4 +81,11 @@ public class OrderItem : BaseEntity, ITenantScoped
 
     /// <summary>是否为加钟（同一 OrderId 续做）。第一项 false，后续追加项 true。</summary>
     public bool IsAddOn { get; set; }
+
+    /// <summary>转钟是否由投诉触发：用于按"投诉率"做技师质量报表。</summary>
+    public bool ComplaintTransferred { get; set; }
+
+    /// <summary>并钟分组键：同一技师同时服务多位客人时，相关 OrderItem 共享一个 Guid。
+    /// null = 未并钟。提成仍按各 item 各自计算，此字段仅做标记与展示。</summary>
+    public string? MergedGroupKey { get; set; }
 }

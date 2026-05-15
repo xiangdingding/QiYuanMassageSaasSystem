@@ -184,6 +184,7 @@ public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         b.Property(x => x.TipAmount).HasPrecision(18, 2);
         b.Property(x => x.RoomNoSnapshot).HasMaxLength(32);
         b.Property(x => x.TransferReason).HasMaxLength(200);
+        b.Property(x => x.MergedGroupKey).HasMaxLength(36);
         b.HasOne(x => x.Order).WithMany(o => o.Items).HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Service).WithMany().HasForeignKey(x => x.ServiceId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.Technician).WithMany().HasForeignKey(x => x.TechnicianId).OnDelete(DeleteBehavior.Restrict);
@@ -379,6 +380,44 @@ public class PayrollItemConfiguration : IEntityTypeConfiguration<PayrollItem>
     }
 }
 
+public class StaffTransferConfiguration : IEntityTypeConfiguration<StaffTransfer>
+{
+    public void Configure(EntityTypeBuilder<StaffTransfer> b)
+    {
+        b.ToTable("staff_transfers");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Reason).HasMaxLength(500);
+        b.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.FromStore).WithMany().HasForeignKey(x => x.FromStoreId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.ToStore).WithMany().HasForeignKey(x => x.ToStoreId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.OperatorUser).WithMany().HasForeignKey(x => x.OperatorUserId).OnDelete(DeleteBehavior.SetNull);
+        b.HasIndex(x => new { x.TenantId, x.UserId, x.Status });
+        b.HasIndex(x => new { x.TenantId, x.ToStoreId });
+    }
+}
+
+public class ServiceComplaintConfiguration : IEntityTypeConfiguration<ServiceComplaint>
+{
+    public void Configure(EntityTypeBuilder<ServiceComplaint> b)
+    {
+        b.ToTable("service_complaints");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Tags).HasMaxLength(200);
+        b.Property(x => x.Comment).HasMaxLength(1000);
+        b.Property(x => x.ResolutionNote).HasMaxLength(500);
+        b.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Order).WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.OrderItem).WithMany().HasForeignKey(x => x.OrderItemId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.OriginalTechnician).WithMany().HasForeignKey(x => x.OriginalTechnicianId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Member).WithMany().HasForeignKey(x => x.MemberId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne(x => x.ReassignedToTechnician).WithMany().HasForeignKey(x => x.ReassignedToTechnicianId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne(x => x.RecordedByUser).WithMany().HasForeignKey(x => x.RecordedByUserId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne(x => x.ResolvedByUser).WithMany().HasForeignKey(x => x.ResolvedByUserId).OnDelete(DeleteBehavior.SetNull);
+        b.HasIndex(x => new { x.TenantId, x.StoreId, x.Status });
+        b.HasIndex(x => new { x.TenantId, x.OriginalTechnicianId, x.CreatedAt });
+    }
+}
+
 public class NotificationOutboxConfiguration : IEntityTypeConfiguration<NotificationOutbox>
 {
     public void Configure(EntityTypeBuilder<NotificationOutbox> b)
@@ -421,9 +460,29 @@ public class RoomConfiguration : IEntityTypeConfiguration<Room>
         b.Property(x => x.RoomNo).HasMaxLength(32).IsRequired();
         b.Property(x => x.RoomType).HasMaxLength(32);
         b.Property(x => x.Remark).HasMaxLength(500);
+        b.Property(x => x.HourlyRate).HasPrecision(18, 2);
         b.HasOne(x => x.Tenant).WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Cascade);
         b.HasIndex(x => new { x.TenantId, x.StoreId, x.RoomNo }).IsUnique();
+    }
+}
+
+public class TimedRoomSessionConfiguration : IEntityTypeConfiguration<TimedRoomSession>
+{
+    public void Configure(EntityTypeBuilder<TimedRoomSession> b)
+    {
+        b.ToTable("timed_room_sessions");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.CustomerName).HasMaxLength(64);
+        b.Property(x => x.HourlyRateSnapshot).HasPrecision(18, 2);
+        b.Property(x => x.Amount).HasPrecision(18, 2);
+        b.Property(x => x.Remark).HasMaxLength(500);
+        b.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Room).WithMany().HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Member).WithMany().HasForeignKey(x => x.MemberId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne(x => x.OperatorUser).WithMany().HasForeignKey(x => x.OperatorUserId).OnDelete(DeleteBehavior.SetNull);
+        b.HasIndex(x => new { x.StoreId, x.Status });
+        b.HasIndex(x => new { x.RoomId, x.Status });
     }
 }
 

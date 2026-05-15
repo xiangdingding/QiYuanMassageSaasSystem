@@ -106,13 +106,28 @@ export const queueApi = {
   resetDay: (storeId: number) => http().post('/queue/reset-day', null, { params: { storeId } })
 };
 
+export interface StaffTransferDto {
+  id: number; userId: number; userName: string;
+  fromStoreId: number; fromStoreName: string;
+  toStoreId: number; toStoreName: string;
+  kind: string; status: string;
+  effectiveFrom: string; expectedReturnAt: string | null; returnedAt: string | null;
+  reason: string | null; operatorName: string | null; createdAt: string;
+}
+
 export const staffApi = {
   list: (params: { page?: number; pageSize?: number; role?: string; storeId?: number; keyword?: string }) =>
     http().get<PagedResult<Staff>>('/staff', { params }).then((r) => r.data),
   create: (body: any) => http().post<Staff>('/staff', body).then((r) => r.data),
   update: (id: number, body: any) => http().put<Staff>(`/staff/${id}`, body).then((r) => r.data),
   resetPassword: (id: number, newPassword: string) =>
-    http().post(`/staff/${id}/reset-password`, { newPassword })
+    http().post(`/staff/${id}/reset-password`, { newPassword }),
+  transfers: (params?: { userId?: number; storeId?: number; status?: string }) =>
+    http().get<StaffTransferDto[]>('/staff/transfers', { params }).then((r) => r.data),
+  transfer: (id: number, body: { toStoreId: number; kind: string; expectedReturnAt?: string | null; reason?: string | null }) =>
+    http().post<StaffTransferDto>(`/staff/${id}/transfer`, body).then((r) => r.data),
+  returnTransfer: (transferId: number) =>
+    http().post<StaffTransferDto>(`/staff/transfers/${transferId}/return`).then((r) => r.data)
 };
 
 export const commissionsApi = {
@@ -170,11 +185,31 @@ export const appointmentsApi = {
 export const roomsApi = {
   list: (storeId: number, includeInactive = false) =>
     http().get<Room[]>('/rooms', { params: { storeId, includeInactive } }).then((r) => r.data),
-  create: (body: { storeId: number; roomNo: string; capacity: number; roomType?: string | null; remark?: string | null }) =>
+  create: (body: { storeId: number; roomNo: string; capacity: number; roomType?: string | null; remark?: string | null; isTimedRoom?: boolean; hourlyRate?: number }) =>
     http().post<Room>('/rooms', body).then((r) => r.data),
-  update: (id: number, body: { roomNo: string; capacity: number; roomType?: string | null; remark?: string | null; isActive: boolean }) =>
+  update: (id: number, body: { roomNo: string; capacity: number; roomType?: string | null; remark?: string | null; isActive: boolean; isTimedRoom?: boolean; hourlyRate?: number }) =>
     http().put<Room>(`/rooms/${id}`, body).then((r) => r.data),
   remove: (id: number) => http().delete(`/rooms/${id}`)
+};
+
+export interface TimedRoomSessionDto {
+  id: number; storeId: number; roomId: number; roomNo: string;
+  memberId: number | null; memberName: string | null; customerName: string | null;
+  startedAt: string; endedAt: string | null;
+  hourlyRateSnapshot: number; billedMinutes: number; elapsedMinutes: number;
+  amount: number; payMethod: string; status: string;
+  operatorName: string | null; remark: string | null;
+}
+
+export const timedRoomsApi = {
+  sessions: (storeId: number, params?: { status?: string; from?: string; to?: string }) =>
+    http().get<TimedRoomSessionDto[]>('/timed-rooms/sessions', { params: { storeId, ...params } }).then((r) => r.data),
+  start: (roomId: number, body: { memberId?: number | null; customerName?: string | null; remark?: string | null }) =>
+    http().post<TimedRoomSessionDto>(`/timed-rooms/${roomId}/start`, body).then((r) => r.data),
+  stop: (id: number, payMethod: string) =>
+    http().post<TimedRoomSessionDto>(`/timed-rooms/sessions/${id}/stop`, { payMethod }).then((r) => r.data),
+  cancel: (id: number) =>
+    http().post<TimedRoomSessionDto>(`/timed-rooms/sessions/${id}/cancel`).then((r) => r.data)
 };
 
 export const dayClosesApi = {
@@ -343,6 +378,35 @@ export const payrollApi = {
   removeAdjustment: (itemId: number, adjId: number) =>
     http().delete<PayrollItemDto>(`/payroll/items/${itemId}/adjustments/${adjId}`).then((r) => r.data),
   me: (take = 6) => http().get<PayrollItemDto[]>('/payroll/me', { params: { take } }).then((r) => r.data)
+};
+
+export interface ComplaintDto {
+  id: number; storeId: number;
+  orderId: number; orderNo: string;
+  orderItemId: number; serviceName: string;
+  originalTechnicianId: number; originalTechnicianName: string;
+  memberId: number | null; memberName: string | null;
+  tags: string | null; comment: string | null;
+  status: string;
+  resolution: string | null;
+  reassignedToTechnicianId: number | null;
+  reassignedToTechnicianName: string | null;
+  resolutionNote: string | null;
+  recordedByName: string | null;
+  resolvedByName: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+}
+
+export const complaintsApi = {
+  list: (params: { storeId?: number; technicianId?: number; status?: string; from?: string; to?: string; page?: number; pageSize?: number }) =>
+    http().get<PagedResult<ComplaintDto>>('/complaints', { params }).then((r) => r.data),
+  get: (id: number) => http().get<ComplaintDto>(`/complaints/${id}`).then((r) => r.data),
+  create: (body: { orderItemId: number; tags?: string | null; comment?: string | null }) =>
+    http().post<ComplaintDto>('/complaints', body).then((r) => r.data),
+  resolve: (id: number, body: { resolution: string; reassignedToTechnicianId?: number | null; resolutionNote?: string | null }) =>
+    http().patch<ComplaintDto>(`/complaints/${id}/resolve`, body).then((r) => r.data),
+  cancel: (id: number) => http().post<ComplaintDto>(`/complaints/${id}/cancel`).then((r) => r.data)
 };
 
 export const schedulesApi = {

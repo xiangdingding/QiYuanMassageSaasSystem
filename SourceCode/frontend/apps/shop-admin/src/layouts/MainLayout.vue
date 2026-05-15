@@ -88,7 +88,8 @@ import {
   TrendCharts,
   User,
   UserFilled,
-  Wallet
+  Wallet,
+  WarnTriangleFilled
 } from '@element-plus/icons-vue';
 import { canSee, useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
@@ -118,7 +119,7 @@ const roleLabel = computed(() => (auth.user?.role ? ROLE_LABELS[auth.user.role] 
 const ICONS: Record<string, any> = {
   AlarmClock, Avatar, Box, Calendar, CreditCard, Discount, Goods, House,
   List, Money, OfficeBuilding, StarFilled, TakeawayBox, Tickets, TrendCharts,
-  User, UserFilled, Wallet
+  User, UserFilled, Wallet, WarnTriangleFilled
 };
 function iconCmp(name: string) {
   return ICONS[name] ?? Tickets;

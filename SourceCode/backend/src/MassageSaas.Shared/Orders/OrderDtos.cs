@@ -35,9 +35,13 @@ public record OrderItemDto(
     DateTime? TransferredAt,
     decimal TipAmount,
     long? MemberPackageId,
-    bool IsAddOn);
+    bool IsAddOn,
+    string? MergedGroupKey);
 
 public record TransferTechnicianRequest(long NewTechnicianId, string? Reason);
+
+/// <summary>并钟：把多个未结账订单项标记为"同一技师同时服务"。需 ≥ 2 项且同技师。</summary>
+public record MergeOrderItemsRequest(IReadOnlyList<long> OrderItemIds);
 
 public record AddOrderItemsRequest(IReadOnlyList<OrderItemInputDto> Items);
 

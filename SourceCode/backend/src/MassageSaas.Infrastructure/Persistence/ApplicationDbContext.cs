@@ -47,6 +47,9 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<PayrollItem> PayrollItems => Set<PayrollItem>();
     public DbSet<PayrollAdjustment> PayrollAdjustments => Set<PayrollAdjustment>();
     public DbSet<NotificationOutbox> NotificationOutbox => Set<NotificationOutbox>();
+    public DbSet<ServiceComplaint> ServiceComplaints => Set<ServiceComplaint>();
+    public DbSet<StaffTransfer> StaffTransfers => Set<StaffTransfer>();
+    public DbSet<TimedRoomSession> TimedRoomSessions => Set<TimedRoomSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

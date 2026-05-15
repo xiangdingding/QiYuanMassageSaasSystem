@@ -45,10 +45,11 @@
             <el-tag :type="row.isActive ? 'success' : 'info'">{{ row.isActive ? '在职' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="300" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="warning" @click="openResetPwd(row)">重置密码</el-button>
+            <el-button link type="primary" @click="openTransfer(row)">跨店调动</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -119,13 +120,81 @@
         <el-button type="primary" :loading="saving" @click="doResetPwd">确认</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="transferOpen" :title="`跨店调动：${transferTarget?.realName || transferTarget?.username}`" width="520px">
+      <el-form :model="tfForm" label-width="110px">
+        <el-form-item label="当前门店">{{ storeName(transferTarget?.storeId) }}</el-form-item>
+        <el-form-item label="调入门店" required>
+          <el-select v-model="tfForm.toStoreId" style="width: 100%">
+            <el-option
+              v-for="s in appStore.stores"
+              :key="s.id"
+              :label="s.name"
+              :value="s.id"
+              :disabled="s.id === transferTarget?.storeId"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="调动类型" required>
+          <el-radio-group v-model="tfForm.kind">
+            <el-radio value="Permanent">永久调动</el-radio>
+            <el-radio value="Temporary">临时借调</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="tfForm.kind === 'Temporary'" label="预计归还" required>
+          <el-date-picker v-model="tfForm.expectedReturnAt" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" />
+        </el-form-item>
+        <el-form-item label="原因">
+          <el-input v-model="tfForm.reason" type="textarea" :rows="2" maxlength="500" />
+        </el-form-item>
+        <el-alert
+          type="warning"
+          :closable="false"
+          title="调动后该员工的叫号队列会迁到新店并置为下班，需在新店重新上钟。"
+        />
+      </el-form>
+
+      <div v-if="transferHistory.length" class="history">
+        <h4>调动历史</h4>
+        <el-table :data="transferHistory" size="small">
+          <el-table-column label="方向" min-width="160">
+            <template #default="{ row }">{{ row.fromStoreName }} → {{ row.toStoreName }}</template>
+          </el-table-column>
+          <el-table-column label="类型" width="90">
+            <template #default="{ row }">{{ row.kind === 'Permanent' ? '永久' : '临时' }}</template>
+          </el-table-column>
+          <el-table-column label="状态" width="90">
+            <template #default="{ row }">
+              <el-tag size="small" :type="row.status === 'InEffect' ? 'success' : 'info'">
+                {{ transferStatusLabel(row.status) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="90" fixed="right">
+            <template #default="{ row }">
+              <el-button
+                v-if="row.kind === 'Temporary' && row.status === 'InEffect'"
+                link type="primary" size="small"
+                @click="returnTransfer(row)">
+                归还
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <template #footer>
+        <el-button @click="transferOpen = false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="doTransfer">确认调动</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
-import { staffApi } from '@/api/modules';
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
+import { staffApi, type StaffTransferDto } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
 import type { Staff } from '@/api/types';
 
@@ -284,6 +353,64 @@ async function doResetPwd() {
   }
 }
 
+// ---- 跨店调动 ----
+const transferOpen = ref(false);
+const transferTarget = ref<Staff | null>(null);
+const transferHistory = ref<StaffTransferDto[]>([]);
+const tfForm = reactive<{ toStoreId: number | null; kind: string; expectedReturnAt: string | null; reason: string }>(
+  { toStoreId: null, kind: 'Permanent', expectedReturnAt: null, reason: '' }
+);
+
+function transferStatusLabel(s: string) {
+  return ({ InEffect: '生效中', Returned: '已归还', Cancelled: '已撤销' } as Record<string, string>)[s] ?? s;
+}
+
+async function openTransfer(row: Staff) {
+  transferTarget.value = row;
+  tfForm.toStoreId = null;
+  tfForm.kind = 'Permanent';
+  tfForm.expectedReturnAt = null;
+  tfForm.reason = '';
+  transferOpen.value = true;
+  transferHistory.value = await staffApi.transfers({ userId: row.id });
+}
+
+async function doTransfer() {
+  if (!transferTarget.value) return;
+  if (!tfForm.toStoreId) {
+    ElMessage.warning('请选择调入门店');
+    return;
+  }
+  if (tfForm.kind === 'Temporary' && !tfForm.expectedReturnAt) {
+    ElMessage.warning('临时借调需填预计归还日期');
+    return;
+  }
+  saving.value = true;
+  try {
+    await staffApi.transfer(transferTarget.value.id, {
+      toStoreId: tfForm.toStoreId,
+      kind: tfForm.kind,
+      expectedReturnAt: tfForm.kind === 'Temporary' ? tfForm.expectedReturnAt : null,
+      reason: tfForm.reason || null
+    });
+    ElMessage.success('调动完成');
+    transferOpen.value = false;
+    reload();
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function returnTransfer(row: StaffTransferDto) {
+  await ElMessageBox.confirm(
+    `确认归还借调？该员工将调回 ${row.fromStoreName}。`, '提示', { type: 'warning' }
+  ).catch(() => null);
+  await staffApi.returnTransfer(row.id);
+  ElMessage.success('已归还');
+  transferOpen.value = false;
+  reload();
+}
+
 onMounted(async () => {
   await appStore.loadStores();
   reload();
@@ -293,4 +420,6 @@ onMounted(async () => {
 <style scoped>
 .page { padding-bottom: 24px; }
 .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.history { margin-top: 16px; }
+.history h4 { margin: 8px 0; }
 </style>

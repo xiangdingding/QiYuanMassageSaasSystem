@@ -44,7 +44,8 @@ public class RoomsController : ControllerBase
             r.Id, r.StoreId, r.RoomNo, r.Capacity, r.RoomType, r.Remark, r.IsActive,
             occMap.ContainsKey(r.Id),
             occMap.TryGetValue(r.Id, out var occ) ? occ.OrderId : null,
-            occMap.TryGetValue(r.Id, out var occ2) ? occ2.OrderNo : null)).ToList());
+            occMap.TryGetValue(r.Id, out var occ2) ? occ2.OrderNo : null,
+            r.IsTimedRoom, r.HourlyRate)).ToList());
     }
 
     [HttpPost]
@@ -55,18 +56,24 @@ public class RoomsController : ControllerBase
         var dup = await _db.Rooms.AnyAsync(r => r.StoreId == req.StoreId && r.RoomNo == req.RoomNo, ct);
         if (dup) return Conflict(new { code = "Duplicate", message = "该门店已有同号房间" });
 
+        if (req.IsTimedRoom && req.HourlyRate <= 0)
+            return BadRequest(new { code = "InvalidRate", message = "计时房需设置大于 0 的小时单价" });
+
         var room = new Room
         {
             StoreId = req.StoreId,
             RoomNo = req.RoomNo.Trim(),
             Capacity = req.Capacity < 1 ? 1 : req.Capacity,
             RoomType = req.RoomType,
-            Remark = req.Remark
+            Remark = req.Remark,
+            IsTimedRoom = req.IsTimedRoom,
+            HourlyRate = req.IsTimedRoom ? req.HourlyRate : 0m
         };
         _db.Rooms.Add(room);
         await _db.SaveChangesAsync(ct);
         return Ok(new RoomDto(room.Id, room.StoreId, room.RoomNo, room.Capacity,
-            room.RoomType, room.Remark, room.IsActive, false, null, null));
+            room.RoomType, room.Remark, room.IsActive, false, null, null,
+            room.IsTimedRoom, room.HourlyRate));
     }
 
     [HttpPut("{id:long}")]
@@ -83,15 +90,21 @@ public class RoomsController : ControllerBase
             if (dup) return Conflict(new { code = "Duplicate", message = "该门店已有同号房间" });
         }
 
+        if (req.IsTimedRoom && req.HourlyRate <= 0)
+            return BadRequest(new { code = "InvalidRate", message = "计时房需设置大于 0 的小时单价" });
+
         room.RoomNo = req.RoomNo.Trim();
         room.Capacity = req.Capacity < 1 ? 1 : req.Capacity;
         room.RoomType = req.RoomType;
         room.Remark = req.Remark;
         room.IsActive = req.IsActive;
+        room.IsTimedRoom = req.IsTimedRoom;
+        room.HourlyRate = req.IsTimedRoom ? req.HourlyRate : 0m;
         await _db.SaveChangesAsync(ct);
 
         return Ok(new RoomDto(room.Id, room.StoreId, room.RoomNo, room.Capacity,
-            room.RoomType, room.Remark, room.IsActive, false, null, null));
+            room.RoomType, room.Remark, room.IsActive, false, null, null,
+            room.IsTimedRoom, room.HourlyRate));
     }
 
     [HttpDelete("{id:long}")]

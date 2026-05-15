@@ -2,6 +2,7 @@ using MassageSaas.Shared.Appointments;
 using MassageSaas.Shared.Auth;
 using MassageSaas.Shared.Commissions;
 using MassageSaas.Shared.Common;
+using MassageSaas.Shared.Complaints;
 using MassageSaas.Shared.DayCloses;
 using MassageSaas.Shared.Inventory;
 using MassageSaas.Shared.MemberPackages;
@@ -65,6 +66,18 @@ public interface IApiClient
 
     [Post("/staff/{id}/reset-password")]
     Task ResetPasswordAsync(long id, [Body] ResetPasswordRequest req);
+
+    [Get("/staff/transfers")]
+    Task<List<StaffTransferDto>> GetStaffTransfersAsync(
+        [Query] long? userId = null,
+        [Query] long? storeId = null,
+        [Query] string? status = null);
+
+    [Post("/staff/{id}/transfer")]
+    Task<StaffTransferDto> TransferStaffAsync(long id, [Body] TransferStaffRequest req);
+
+    [Post("/staff/transfers/{transferId}/return")]
+    Task<StaffTransferDto> ReturnStaffTransferAsync(long transferId);
 
     [Get("/members")]
     Task<PagedResult<MemberDto>> GetMembersAsync(
@@ -168,6 +181,12 @@ public interface IApiClient
     [Patch("/orders/{orderId}/items/{itemId}/transfer")]
     Task<OrderDto> TransferTechnicianAsync(long orderId, long itemId, [Body] TransferTechnicianRequest req);
 
+    [Post("/orders/items/merge")]
+    Task<List<long>> MergeOrderItemsAsync([Body] MergeOrderItemsRequest req);
+
+    [Post("/orders/items/{itemId}/unmerge")]
+    Task UnmergeOrderItemAsync(long itemId);
+
     [Get("/appointments")]
     Task<PagedResult<AppointmentDto>> GetAppointmentsAsync(
         [Query] long? storeId = null,
@@ -197,6 +216,22 @@ public interface IApiClient
 
     [Delete("/rooms/{id}")]
     Task DeleteRoomAsync(long id);
+
+    [Get("/timed-rooms/sessions")]
+    Task<List<TimedRoomSessionDto>> GetTimedRoomSessionsAsync(
+        [Query] long storeId,
+        [Query] string? status = null,
+        [Query] DateTime? from = null,
+        [Query] DateTime? to = null);
+
+    [Post("/timed-rooms/{roomId}/start")]
+    Task<TimedRoomSessionDto> StartTimedRoomAsync(long roomId, [Body] StartTimedRoomRequest req);
+
+    [Post("/timed-rooms/sessions/{id}/stop")]
+    Task<TimedRoomSessionDto> StopTimedRoomAsync(long id, [Body] StopTimedRoomRequest req);
+
+    [Post("/timed-rooms/sessions/{id}/cancel")]
+    Task<TimedRoomSessionDto> CancelTimedRoomAsync(long id);
 
     [Get("/day-closes/preview")]
     Task<DayClosePreviewDto> GetDayClosePreviewAsync([Query] long storeId, [Query] DateTime? date = null);
@@ -349,4 +384,26 @@ public interface IApiClient
 
     [Get("/payroll/me")]
     Task<List<PayrollItemDto>> GetMyPayrollAsync([Query] int take = 6);
+
+    [Get("/complaints")]
+    Task<PagedResult<ComplaintDto>> GetComplaintsAsync(
+        [Query] long? storeId = null,
+        [Query] long? technicianId = null,
+        [Query] string? status = null,
+        [Query] DateTime? from = null,
+        [Query] DateTime? to = null,
+        [Query] int page = 1,
+        [Query] int pageSize = 20);
+
+    [Get("/complaints/{id}")]
+    Task<ComplaintDto> GetComplaintAsync(long id);
+
+    [Post("/complaints")]
+    Task<ComplaintDto> CreateComplaintAsync([Body] CreateComplaintRequest req);
+
+    [Patch("/complaints/{id}/resolve")]
+    Task<ComplaintDto> ResolveComplaintAsync(long id, [Body] ResolveComplaintRequest req);
+
+    [Post("/complaints/{id}/cancel")]
+    Task<ComplaintDto> CancelComplaintAsync(long id);
 }

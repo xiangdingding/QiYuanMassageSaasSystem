@@ -17,4 +17,9 @@ public class Room : BaseEntity, ITenantScoped
     public string? RoomType { get; set; }
     public string? Remark { get; set; }
     public bool IsActive { get; set; } = true;
+
+    /// <summary>是否计时房：按停留时长计费，而非按服务项目。常见于足浴/休息区。</summary>
+    public bool IsTimedRoom { get; set; }
+    /// <summary>计时房每小时单价；非计时房为 0。</summary>
+    public decimal HourlyRate { get; set; }
 }
