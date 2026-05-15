@@ -140,30 +140,44 @@ public class TechnicianQueueController : ControllerBase
             })
             .FirstOrDefaultAsync(ct);
 
-        // 当前在服务的项（最近一条 InProgress 订单的本技师项），房间号取自 RoomNoSnapshot
-        var nowUtc = DateTime.UtcNow;
+        // 当前在服务的项（最近一条 Pending/InProgress 订单的本技师项），
+        // 房间号取自 RoomNoSnapshot；并联表 Member 拿"上钟前必读"档案。
         var currentItem = await _db.OrderItems.AsNoTracking()
             .Where(oi => oi.TechnicianId == uid
                          && (oi.Order.Status == OrderStatus.Pending || oi.Order.Status == OrderStatus.InProgress))
             .OrderByDescending(oi => oi.Order.CreatedAt)
             .Select(oi => new
             {
-                oi.OrderId, oi.RoomNoSnapshot, oi.ServiceName
+                oi.OrderId,
+                oi.RoomNoSnapshot,
+                oi.ServiceName,
+                MemberId = oi.Order.MemberId,
+                MemberName = oi.Order.Member != null ? oi.Order.Member.Name : null,
+                MemberGender = oi.Order.Member != null ? oi.Order.Member.Gender : null,
+                Preferences = oi.Order.Member != null ? oi.Order.Member.PreferenceNotes : null,
+                Health = oi.Order.Member != null ? oi.Order.Member.HealthNotes : null
             })
             .FirstOrDefaultAsync(ct);
 
+        var hasNotes =
+            !string.IsNullOrWhiteSpace(currentItem?.Preferences)
+            || !string.IsNullOrWhiteSpace(currentItem?.Health);
+
         if (q is null)
         {
-            // 即使没有排队记录，也告诉技师"未排班"，便于小程序显示
             return Ok(new MyQueueDto(null, uid, QueueState.OffDuty.ToString(), 0, 0, null, null,
-                currentItem?.RoomNoSnapshot, currentItem?.OrderId, currentItem?.ServiceName));
+                currentItem?.RoomNoSnapshot, currentItem?.OrderId, currentItem?.ServiceName,
+                currentItem?.MemberName, currentItem?.MemberGender,
+                currentItem?.Preferences, currentItem?.Health, hasNotes));
         }
 
         return Ok(new MyQueueDto(
             q.Id, q.TechnicianId, q.State.ToString(),
             q.QueuePosition, q.TodayRoundCount,
             q.EnteredAt, q.LastCalledAt,
-            currentItem?.RoomNoSnapshot, currentItem?.OrderId, currentItem?.ServiceName));
+            currentItem?.RoomNoSnapshot, currentItem?.OrderId, currentItem?.ServiceName,
+            currentItem?.MemberName, currentItem?.MemberGender,
+            currentItem?.Preferences, currentItem?.Health, hasNotes));
     }
 
     /// <summary>

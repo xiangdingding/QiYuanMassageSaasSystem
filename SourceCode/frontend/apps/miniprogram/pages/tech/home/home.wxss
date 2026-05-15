@@ -17,3 +17,25 @@
 .a11y-btn-warn    { background: #e6a23c; }
 .a11y-btn-danger  { background: #c00; }
 .a11y-btn[disabled] { opacity: 0.5; }
+
+/* 上钟前必读：高对比黄底黑字 + 红色警示边框，盲人技师身边的人也能一眼看到 */
+.briefing {
+  margin: 24rpx 0;
+  padding: 28rpx;
+  background: #fff8c5;
+  border: 6rpx solid #c00;
+  border-radius: 16rpx;
+}
+.briefing-header { display: flex; align-items: center; gap: 16rpx; margin-bottom: 16rpx; }
+.briefing-badge {
+  font-size: 36rpx; font-weight: 700; color: #c00;
+}
+.briefing-customer { font-size: 36rpx; font-weight: 700; color: #1a1a1a; }
+.briefing-row { margin-top: 12rpx; }
+.briefing-row-label {
+  display: inline-block; min-width: 130rpx;
+  font-size: 30rpx; color: #c00; font-weight: 700;
+}
+.briefing-row-text { font-size: 34rpx; color: #1a1a1a; line-height: 1.5; }
+.briefing-actions { display: flex; gap: 16rpx; margin-top: 20rpx; }
+.briefing-btn { flex: 1; }

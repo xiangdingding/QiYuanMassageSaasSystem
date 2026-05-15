@@ -1,0 +1,43 @@
+<view class="page">
+  <view class="header" role="heading" aria-level="1">我的工资</view>
+  <view class="hint" wx:if="{{loading}}" aria-label="加载中">加载中…</view>
+  <view class="hint" wx:elif="{{empty}}" aria-label="还没有已封盘的工资单">还没有已封盘的工资单</view>
+
+  <view class="list" role="list">
+    <view
+      wx:for="{{items}}"
+      wx:key="id"
+      class="card"
+      role="listitem"
+      aria-label="{{item.ariaLabel}}">
+      <view class="row top">
+        <text class="net" aria-hidden="true">到手 {{item.netText}}</text>
+        <text class="net-read" aria-hidden="true">{{item.netReadable}}</text>
+      </view>
+      <view class="row breakdown">
+        <text class="cell">{{item.baseText}}</text>
+        <text class="cell">{{item.commissionText}}</text>
+        <text class="cell" wx:if="{{item.overtimeText}}">{{item.overtimeText}}</text>
+        <text class="cell" wx:if="{{item.attendanceText}}">{{item.attendanceText}}</text>
+        <text class="cell" wx:if="{{item.adjustmentText}}">{{item.adjustmentText}}</text>
+        <text class="cell tip" wx:if="{{item.tipsText}}">{{item.tipsText}}（不入工资）</text>
+      </view>
+      <view class="adj-list" wx:if="{{item.adjustments.length > 0}}">
+        <text wx:for="{{item.adjustments}}" wx:for-item="a" wx:key="id" class="adj-line">· {{a.line}}</text>
+      </view>
+      <view class="row meta">
+        <text>本月 {{item.rounds}} 钟</text>
+        <text>排班 {{item.scheduled}} 天</text>
+        <text wx:if="{{item.leave > 0}}">请假 {{item.leave}} 天</text>
+      </view>
+      <view class="remark" wx:if="{{item.remark}}">备注：{{item.remark}}</view>
+      <button
+        class="a11y-btn small"
+        aria-label="语音朗读这条工资单"
+        data-id="{{item.id}}"
+        bindtap="speak">
+        语音朗读
+      </button>
+    </view>
+  </view>
+</view>

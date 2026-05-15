@@ -19,6 +19,43 @@
     <text class="a11y-value">暂无在服务的客人</text>
   </view>
 
+  <view
+    class="briefing"
+    wx:if="{{hasBriefing}}"
+    role="region"
+    aria-live="assertive"
+    aria-label="{{briefingAria}}">
+    <view class="briefing-header">
+      <text class="briefing-badge">⚠ 上钟前必读</text>
+      <text class="briefing-customer">
+        {{customerName || '本位客人'}}{{customerGender ? '（' + customerGender + '）' : ''}}
+      </text>
+    </view>
+    <view class="briefing-row" wx:if="{{customerHealth}}">
+      <text class="briefing-row-label">健康注意</text>
+      <text class="briefing-row-text">{{customerHealth}}</text>
+    </view>
+    <view class="briefing-row" wx:if="{{customerPreferences}}">
+      <text class="briefing-row-label">偏好</text>
+      <text class="briefing-row-text">{{customerPreferences}}</text>
+    </view>
+    <view class="briefing-actions">
+      <button
+        class="a11y-btn briefing-btn"
+        aria-label="语音朗读上钟前必读全部内容"
+        bindtap="speakBriefing">
+        语音朗读
+      </button>
+      <button
+        class="a11y-btn a11y-btn-primary briefing-btn"
+        aria-label="我已确认上钟前必读事项，可以进房间"
+        disabled="{{acknowledged}}"
+        bindtap="ackBriefing">
+        {{acknowledged ? '已确认' : '我已知晓'}}
+      </button>
+    </view>
+  </view>
+
   <button class="a11y-btn" aria-label="一键语音播报我的班次和当前房间" bindtap="speakStatus">
     语音播报
   </button>
