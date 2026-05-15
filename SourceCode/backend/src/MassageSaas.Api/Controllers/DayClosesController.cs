@@ -54,6 +54,18 @@ public class DayClosesController : ControllerBase
         var alipay = await orders.Where(o => o.PayMethod == PayMethod.Alipay).SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
         var bank = await orders.Where(o => o.PayMethod == PayMethod.BankCard).SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
 
+        // 计时房已结算收入：按结算时间（EndedAt）归当日，并入各支付方式与营业额
+        var timed = _db.TimedRoomSessions.AsNoTracking()
+            .Where(s => s.StoreId == storeId
+                        && s.Status == TimedRoomSessionStatus.Settled
+                        && s.EndedAt != null && s.EndedAt >= start && s.EndedAt < end);
+        revenue += await timed.SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
+        cash += await timed.Where(s => s.PayMethod == PayMethod.Cash).SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
+        card += await timed.Where(s => s.PayMethod == PayMethod.MemberCard).SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
+        wechat += await timed.Where(s => s.PayMethod == PayMethod.Wechat).SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
+        alipay += await timed.Where(s => s.PayMethod == PayMethod.Alipay).SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
+        bank += await timed.Where(s => s.PayMethod == PayMethod.BankCard).SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
+
         var rechargeCash = await _db.MemberRechargeRecords.AsNoTracking()
             .Where(r => r.StoreId == storeId && r.CreatedAt >= start && r.CreatedAt < end
                         && r.PayMethod == PayMethod.Cash)

@@ -47,6 +47,18 @@ public class ReportsController : ControllerBase
         var alipay = await completed.Where(o => o.PayMethod == PayMethod.Alipay).SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
         var bank = await completed.Where(o => o.PayMethod == PayMethod.BankCard).SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
 
+        // 计时房已结算收入并入营业额与各支付方式
+        var timed = _db.TimedRoomSessions.AsNoTracking()
+            .Where(s => s.StoreId == storeId
+                        && s.Status == TimedRoomSessionStatus.Settled
+                        && s.EndedAt != null && s.EndedAt >= start && s.EndedAt < end);
+        revenue += await timed.SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
+        cash += await timed.Where(s => s.PayMethod == PayMethod.Cash).SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
+        card += await timed.Where(s => s.PayMethod == PayMethod.MemberCard).SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
+        wechat += await timed.Where(s => s.PayMethod == PayMethod.Wechat).SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
+        alipay += await timed.Where(s => s.PayMethod == PayMethod.Alipay).SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
+        bank += await timed.Where(s => s.PayMethod == PayMethod.BankCard).SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
+
         var refundCount = await refunded.CountAsync(ct);
         var refundAmount = await refunded.SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
 
@@ -157,6 +169,25 @@ public class ReportsController : ControllerBase
             .OrderBy(p => p.Day)
             .ToListAsync(ct);
 
+        // 计时房已结算收入按结算日并入对应日营业额（保持与日报/日结口径一致）
+        var timedByDay = await _db.TimedRoomSessions.AsNoTracking()
+            .Where(s => s.StoreId == storeId && s.Status == TimedRoomSessionStatus.Settled
+                        && s.EndedAt != null && s.EndedAt >= start && s.EndedAt < end)
+            .GroupBy(s => s.EndedAt!.Value.Date)
+            .Select(g => new { Day = g.Key, Amount = g.Sum(s => s.Amount) })
+            .ToListAsync(ct);
+        if (timedByDay.Count > 0)
+        {
+            var map = daily.ToDictionary(p => p.Day);
+            foreach (var t in timedByDay)
+            {
+                map[t.Day] = map.TryGetValue(t.Day, out var ex)
+                    ? ex with { Revenue = ex.Revenue + t.Amount }
+                    : new MonthlyReportPointDto(t.Day, 0, t.Amount, 0);
+            }
+            daily = map.Values.OrderBy(p => p.Day).ToList();
+        }
+
         var orderCount = daily.Sum(p => p.OrderCount);
         var revenue = daily.Sum(p => p.Revenue);
         var rounds = daily.Sum(p => p.Rounds);
@@ -191,6 +222,26 @@ public class ReportsController : ControllerBase
                 g.SelectMany(o => o.Items).Sum(i => i.Quantity)))
             .OrderBy(p => p.Day)
             .ToListAsync(ct);
+
+        // 计时房已结算收入按结算月并入
+        var timedByMonth = await _db.TimedRoomSessions.AsNoTracking()
+            .Where(s => s.StoreId == storeId && s.Status == TimedRoomSessionStatus.Settled
+                        && s.EndedAt != null && s.EndedAt >= start && s.EndedAt < end)
+            .GroupBy(s => new { s.EndedAt!.Value.Year, s.EndedAt!.Value.Month })
+            .Select(g => new { g.Key.Year, g.Key.Month, Amount = g.Sum(s => s.Amount) })
+            .ToListAsync(ct);
+        if (timedByMonth.Count > 0)
+        {
+            var map = monthly.ToDictionary(p => p.Day);
+            foreach (var t in timedByMonth)
+            {
+                var key = new DateTime(t.Year, t.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                map[key] = map.TryGetValue(key, out var ex)
+                    ? ex with { Revenue = ex.Revenue + t.Amount }
+                    : new MonthlyReportPointDto(key, 0, t.Amount, 0);
+            }
+            monthly = map.Values.OrderBy(p => p.Day).ToList();
+        }
 
         return Ok(new YearlyReportDto(
             y, storeId,
