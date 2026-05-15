@@ -57,4 +57,11 @@
     bindtap="goReviews">
     我的评价
   </button>
+
+  <button
+    class="a11y-btn"
+    aria-label="查看我最近几个月的工资单"
+    bindtap="goPayroll">
+    我的工资
+  </button>
 </view>

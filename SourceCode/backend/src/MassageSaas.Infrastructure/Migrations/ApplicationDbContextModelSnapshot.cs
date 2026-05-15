@@ -435,6 +435,13 @@ namespace MassageSaas.Infrastructure.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("varchar(32)");
 
+                    b.Property<string>("CloseReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -449,6 +456,9 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Property<string>("HealthNotes")
                         .HasMaxLength(1000)
                         .HasColumnType("varchar(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("tinyint(1)");
@@ -468,6 +478,13 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Property<string>("PreferenceNotes")
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
+
+                    b.Property<decimal>("ReferralRewardEarned")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<long?>("ReferredByMemberId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Remark")
                         .HasMaxLength(500)
@@ -491,6 +508,8 @@ namespace MassageSaas.Infrastructure.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ReferredByMemberId");
 
                     b.HasIndex("StoreId");
 
@@ -595,11 +614,17 @@ namespace MassageSaas.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<long?>("CounterpartyMemberId")
+                        .HasColumnType("bigint");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
 
                     b.Property<long>("MemberId")
                         .HasColumnType("bigint");
@@ -624,6 +649,10 @@ namespace MassageSaas.Infrastructure.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CounterpartyMemberId");
+
+                    b.HasIndex("Kind");
 
                     b.HasIndex("MemberId");
 
@@ -898,6 +927,196 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.ToTable("payment_orders", (string)null);
                 });
 
+            modelBuilder.Entity("MassageSaas.Domain.Entities.PayrollAdjustment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<long>("ItemId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("OperatorUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<long?>("TenantId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("OperatorUserId");
+
+                    b.ToTable("payroll_adjustments", (string)null);
+                });
+
+            modelBuilder.Entity("MassageSaas.Domain.Entities.PayrollItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("AdjustmentTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("AttendanceBonus")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BaseSalary")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("CommissionTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("LeaveDays")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("NetTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("OvertimeAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("OvertimeHours")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("decimal(8,2)");
+
+                    b.Property<long>("PeriodId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int>("ScheduledDays")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ServedRoundCount")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("TenantId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("TipsTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("PeriodId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("payroll_items", (string)null);
+                });
+
+            modelBuilder.Entity("MassageSaas.Domain.Entities.PayrollPeriod", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("GeneratedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime?>("LockedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("OperatorUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<long>("StoreId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("TenantId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OperatorUserId");
+
+                    b.HasIndex("StoreId", "Year", "Month")
+                        .IsUnique();
+
+                    b.ToTable("payroll_periods", (string)null);
+                });
+
             modelBuilder.Entity("MassageSaas.Domain.Entities.Plan", b =>
                 {
                     b.Property<long>("Id")
@@ -999,6 +1218,58 @@ namespace MassageSaas.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("rooms", (string)null);
+                });
+
+            modelBuilder.Entity("MassageSaas.Domain.Entities.SalaryProfile", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("AttendanceBonusAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BaseMonthly")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<decimal>("OvertimeHourRate")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int>("RequiredAttendanceDays")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("TenantId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("TenantId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("salary_profiles", (string)null);
                 });
 
             modelBuilder.Entity("MassageSaas.Domain.Entities.ServiceItem", b =>
@@ -1448,6 +1719,10 @@ namespace MassageSaas.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
+                    b.Property<decimal>("ReferralRewardPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -1748,6 +2023,11 @@ namespace MassageSaas.Infrastructure.Migrations
 
             modelBuilder.Entity("MassageSaas.Domain.Entities.Member", b =>
                 {
+                    b.HasOne("MassageSaas.Domain.Entities.Member", "ReferredByMember")
+                        .WithMany()
+                        .HasForeignKey("ReferredByMemberId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("MassageSaas.Domain.Entities.Store", "Store")
                         .WithMany()
                         .HasForeignKey("StoreId")
@@ -1758,6 +2038,8 @@ namespace MassageSaas.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("ReferredByMember");
 
                     b.Navigation("Store");
 
@@ -1792,6 +2074,11 @@ namespace MassageSaas.Infrastructure.Migrations
 
             modelBuilder.Entity("MassageSaas.Domain.Entities.MemberRechargeRecord", b =>
                 {
+                    b.HasOne("MassageSaas.Domain.Entities.Member", "CounterpartyMember")
+                        .WithMany()
+                        .HasForeignKey("CounterpartyMemberId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("MassageSaas.Domain.Entities.Member", "Member")
                         .WithMany()
                         .HasForeignKey("MemberId")
@@ -1808,6 +2095,8 @@ namespace MassageSaas.Infrastructure.Migrations
                         .HasForeignKey("StoreId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("CounterpartyMember");
 
                     b.Navigation("Member");
 
@@ -1914,6 +2203,61 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("MassageSaas.Domain.Entities.PayrollAdjustment", b =>
+                {
+                    b.HasOne("MassageSaas.Domain.Entities.PayrollItem", "Item")
+                        .WithMany("Adjustments")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MassageSaas.Domain.Entities.User", "OperatorUser")
+                        .WithMany()
+                        .HasForeignKey("OperatorUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Item");
+
+                    b.Navigation("OperatorUser");
+                });
+
+            modelBuilder.Entity("MassageSaas.Domain.Entities.PayrollItem", b =>
+                {
+                    b.HasOne("MassageSaas.Domain.Entities.PayrollPeriod", "Period")
+                        .WithMany("Items")
+                        .HasForeignKey("PeriodId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MassageSaas.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Period");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MassageSaas.Domain.Entities.PayrollPeriod", b =>
+                {
+                    b.HasOne("MassageSaas.Domain.Entities.User", "OperatorUser")
+                        .WithMany()
+                        .HasForeignKey("OperatorUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MassageSaas.Domain.Entities.Store", "Store")
+                        .WithMany()
+                        .HasForeignKey("StoreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OperatorUser");
+
+                    b.Navigation("Store");
+                });
+
             modelBuilder.Entity("MassageSaas.Domain.Entities.Room", b =>
                 {
                     b.HasOne("MassageSaas.Domain.Entities.Store", "Store")
@@ -1930,6 +2274,17 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Navigation("Store");
 
                     b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("MassageSaas.Domain.Entities.SalaryProfile", b =>
+                {
+                    b.HasOne("MassageSaas.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MassageSaas.Domain.Entities.ServiceItem", b =>
@@ -2103,6 +2458,16 @@ namespace MassageSaas.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("MassageSaas.Domain.Entities.Order", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("MassageSaas.Domain.Entities.PayrollItem", b =>
+                {
+                    b.Navigation("Adjustments");
+                });
+
+            modelBuilder.Entity("MassageSaas.Domain.Entities.PayrollPeriod", b =>
                 {
                     b.Navigation("Items");
                 });

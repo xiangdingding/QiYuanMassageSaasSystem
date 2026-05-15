@@ -13,6 +13,7 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         b.Property(x => x.Name).HasMaxLength(200).IsRequired();
         b.Property(x => x.ContactPhone).HasMaxLength(32).IsRequired();
         b.Property(x => x.ContactName).HasMaxLength(64);
+        b.Property(x => x.ReferralRewardPercent).HasPrecision(5, 2);
         b.HasIndex(x => x.ContactPhone);
         b.HasIndex(x => x.Status);
         b.HasOne(x => x.CurrentPlan).WithMany().HasForeignKey(x => x.CurrentPlanId).OnDelete(DeleteBehavior.SetNull);
@@ -116,10 +117,14 @@ public class MemberConfiguration : IEntityTypeConfiguration<Member>
         b.Property(x => x.Remark).HasMaxLength(500);
         b.Property(x => x.PreferenceNotes).HasMaxLength(500);
         b.Property(x => x.HealthNotes).HasMaxLength(1000);
+        b.Property(x => x.CloseReason).HasMaxLength(200);
+        b.Property(x => x.ReferralRewardEarned).HasPrecision(18, 2);
         b.HasIndex(x => new { x.TenantId, x.CardNo }).IsUnique();
         b.HasIndex(x => new { x.TenantId, x.Phone });
+        b.HasIndex(x => x.ReferredByMemberId);
         b.HasOne(x => x.Tenant).WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.ReferredByMember).WithMany().HasForeignKey(x => x.ReferredByMemberId).OnDelete(DeleteBehavior.SetNull);
     }
 }
 
@@ -324,6 +329,69 @@ public class InventoryMovementConfiguration : IEntityTypeConfiguration<Inventory
     }
 }
 
+public class SalaryProfileConfiguration : IEntityTypeConfiguration<SalaryProfile>
+{
+    public void Configure(EntityTypeBuilder<SalaryProfile> b)
+    {
+        b.ToTable("salary_profiles");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.BaseMonthly).HasPrecision(18, 2);
+        b.Property(x => x.OvertimeHourRate).HasPrecision(18, 2);
+        b.Property(x => x.AttendanceBonusAmount).HasPrecision(18, 2);
+        b.Property(x => x.Remark).HasMaxLength(500);
+        b.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.HasIndex(x => new { x.TenantId, x.UserId }).IsUnique();
+    }
+}
+
+public class PayrollPeriodConfiguration : IEntityTypeConfiguration<PayrollPeriod>
+{
+    public void Configure(EntityTypeBuilder<PayrollPeriod> b)
+    {
+        b.ToTable("payroll_periods");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.TotalAmount).HasPrecision(18, 2);
+        b.Property(x => x.Remark).HasMaxLength(500);
+        b.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.OperatorUser).WithMany().HasForeignKey(x => x.OperatorUserId).OnDelete(DeleteBehavior.SetNull);
+        b.HasIndex(x => new { x.StoreId, x.Year, x.Month }).IsUnique();
+    }
+}
+
+public class PayrollItemConfiguration : IEntityTypeConfiguration<PayrollItem>
+{
+    public void Configure(EntityTypeBuilder<PayrollItem> b)
+    {
+        b.ToTable("payroll_items");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.BaseSalary).HasPrecision(18, 2);
+        b.Property(x => x.CommissionTotal).HasPrecision(18, 2);
+        b.Property(x => x.TipsTotal).HasPrecision(18, 2);
+        b.Property(x => x.OvertimeHours).HasPrecision(8, 2);
+        b.Property(x => x.OvertimeAmount).HasPrecision(18, 2);
+        b.Property(x => x.AttendanceBonus).HasPrecision(18, 2);
+        b.Property(x => x.AdjustmentTotal).HasPrecision(18, 2);
+        b.Property(x => x.NetTotal).HasPrecision(18, 2);
+        b.Property(x => x.Remark).HasMaxLength(500);
+        b.HasOne(x => x.Period).WithMany(p => p.Items).HasForeignKey(x => x.PeriodId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        b.HasIndex(x => new { x.PeriodId, x.UserId }).IsUnique();
+    }
+}
+
+public class PayrollAdjustmentConfiguration : IEntityTypeConfiguration<PayrollAdjustment>
+{
+    public void Configure(EntityTypeBuilder<PayrollAdjustment> b)
+    {
+        b.ToTable("payroll_adjustments");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Amount).HasPrecision(18, 2);
+        b.Property(x => x.Reason).HasMaxLength(200).IsRequired();
+        b.HasOne(x => x.Item).WithMany(i => i.Adjustments).HasForeignKey(x => x.ItemId).OnDelete(DeleteBehavior.Cascade);
+        b.HasOne(x => x.OperatorUser).WithMany().HasForeignKey(x => x.OperatorUserId).OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
 public class RoomConfiguration : IEntityTypeConfiguration<Room>
 {
     public void Configure(EntityTypeBuilder<Room> b)
@@ -388,7 +456,9 @@ public class MemberRechargeRecordConfiguration : IEntityTypeConfiguration<Member
         b.HasOne(x => x.Member).WithMany().HasForeignKey(x => x.MemberId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.OperatorUser).WithMany().HasForeignKey(x => x.OperatorUserId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne(x => x.CounterpartyMember).WithMany().HasForeignKey(x => x.CounterpartyMemberId).OnDelete(DeleteBehavior.SetNull);
         b.HasIndex(x => new { x.TenantId, x.MemberId, x.CreatedAt });
+        b.HasIndex(x => x.Kind);
     }
 }
 

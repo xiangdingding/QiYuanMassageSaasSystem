@@ -64,6 +64,15 @@ export interface Member {
   totalConsumed: number;
   discount: number;
   remark?: string | null;
+  level?: string | null;
+  preferenceNotes?: string | null;
+  healthNotes?: string | null;
+  isActive: boolean;
+  closedAt?: string | null;
+  closeReason?: string | null;
+  referredByMemberId?: number | null;
+  referredByMemberName?: string | null;
+  referralRewardEarned: number;
   createdAt: string;
 }
 

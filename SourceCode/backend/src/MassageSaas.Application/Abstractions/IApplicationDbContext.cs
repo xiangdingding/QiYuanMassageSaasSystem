@@ -30,6 +30,10 @@ public interface IApplicationDbContext
     DbSet<LeaveRequest> LeaveRequests { get; }
     DbSet<InventoryItem> InventoryItems { get; }
     DbSet<InventoryMovement> InventoryMovements { get; }
+    DbSet<SalaryProfile> SalaryProfiles { get; }
+    DbSet<PayrollPeriod> PayrollPeriods { get; }
+    DbSet<PayrollItem> PayrollItems { get; }
+    DbSet<PayrollAdjustment> PayrollAdjustments { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

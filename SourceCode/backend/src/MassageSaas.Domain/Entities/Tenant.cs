@@ -12,6 +12,9 @@ public class Tenant : BaseEntity
     public long? CurrentPlanId { get; set; }
     public Plan? CurrentPlan { get; set; }
 
+    /// <summary>引荐返佣百分比（0-100）。0 = 关闭返佣。充值时按 Amount × Percent / 100 给引荐人加余额。</summary>
+    public decimal ReferralRewardPercent { get; set; }
+
     public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
     public ICollection<Store> Stores { get; set; } = new List<Store>();
     public ICollection<User> Users { get; set; } = new List<User>();

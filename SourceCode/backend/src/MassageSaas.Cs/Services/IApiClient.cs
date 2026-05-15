@@ -7,6 +7,7 @@ using MassageSaas.Shared.Inventory;
 using MassageSaas.Shared.MemberPackages;
 using MassageSaas.Shared.Members;
 using MassageSaas.Shared.Orders;
+using MassageSaas.Shared.Payroll;
 using MassageSaas.Shared.Queue;
 using MassageSaas.Shared.Reports;
 using MassageSaas.Shared.Reviews;
@@ -86,6 +87,15 @@ public interface IApiClient
 
     [Get("/members/{id}/recharges")]
     Task<List<RechargeRecordDto>> GetRechargeHistoryAsync(long id);
+
+    [Post("/members/{id}/refund")]
+    Task<RechargeRecordDto> RefundMemberAsync(long id, [Body] RefundMemberRequest req);
+
+    [Post("/members/{id}/transfer")]
+    Task<MemberDto> TransferMemberAsync(long id, [Body] TransferMemberRequest req);
+
+    [Get("/members/{id}/referrals")]
+    Task<ReferralSummaryDto> GetMemberReferralsAsync(long id);
 
     [Get("/orders")]
     Task<PagedResult<OrderListItemDto>> GetOrdersAsync(
@@ -300,4 +310,43 @@ public interface IApiClient
 
     [Post("/schedules/leaves/{id}/approve")]
     Task<LeaveRequestDto> ApproveLeaveAsync(long id, [Body] ApproveLeaveRequest req);
+
+    [Get("/payroll/profiles")]
+    Task<List<SalaryProfileDto>> GetSalaryProfilesAsync([Query] long? storeId = null);
+
+    [Get("/payroll/profiles/{userId}")]
+    Task<SalaryProfileDto> GetSalaryProfileAsync(long userId);
+
+    [Put("/payroll/profiles/{userId}")]
+    Task<SalaryProfileDto> UpsertSalaryProfileAsync(long userId, [Body] UpsertSalaryProfileRequest req);
+
+    [Get("/payroll/periods")]
+    Task<List<PayrollPeriodDto>> GetPayrollPeriodsAsync([Query] long storeId, [Query] int? year = null);
+
+    [Get("/payroll/periods/{id}")]
+    Task<PayrollPeriodDetailDto> GetPayrollPeriodAsync(long id);
+
+    [Post("/payroll/periods")]
+    Task<PayrollPeriodDetailDto> GeneratePayrollAsync([Body] GeneratePayrollRequest req);
+
+    [Post("/payroll/periods/{id}/lock")]
+    Task<PayrollPeriodDto> LockPayrollAsync(long id, [Body] LockPayrollRequest req);
+
+    [Post("/payroll/periods/{id}/mark-paid")]
+    Task<PayrollPeriodDto> MarkPayrollPaidAsync(long id);
+
+    [Delete("/payroll/periods/{id}")]
+    Task DeletePayrollDraftAsync(long id);
+
+    [Patch("/payroll/items/{id}")]
+    Task<PayrollItemDto> UpdatePayrollItemAsync(long id, [Body] UpdatePayrollItemRequest req);
+
+    [Post("/payroll/items/{id}/adjustments")]
+    Task<PayrollItemDto> AddPayrollAdjustmentAsync(long id, [Body] AddAdjustmentRequest req);
+
+    [Delete("/payroll/items/{itemId}/adjustments/{adjId}")]
+    Task<PayrollItemDto> RemovePayrollAdjustmentAsync(long itemId, long adjId);
+
+    [Get("/payroll/me")]
+    Task<List<PayrollItemDto>> GetMyPayrollAsync([Query] int take = 6);
 }

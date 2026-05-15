@@ -16,6 +16,11 @@ public class MemberRechargeRecord : BaseEntity, ITenantScoped
     public decimal BalanceAfter { get; set; }
 
     public PayMethod PayMethod { get; set; } = PayMethod.Cash;
+    /// <summary>流水类型。区分充值/退卡/转赠/返佣，便于审计与报表过滤。</summary>
+    public MemberRechargeKind Kind { get; set; } = MemberRechargeKind.Recharge;
+    /// <summary>转赠 / 返佣时的对手会员；其他场景为空。</summary>
+    public long? CounterpartyMemberId { get; set; }
+    public Member? CounterpartyMember { get; set; }
     public long? OperatorUserId { get; set; }
     public User? OperatorUser { get; set; }
     public string? Remark { get; set; }

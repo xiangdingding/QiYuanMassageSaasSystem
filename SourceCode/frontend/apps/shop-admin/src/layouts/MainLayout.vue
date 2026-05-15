@@ -83,6 +83,7 @@ import {
   Money,
   OfficeBuilding,
   StarFilled,
+  TakeawayBox,
   Tickets,
   TrendCharts,
   User,
@@ -116,8 +117,8 @@ const roleLabel = computed(() => (auth.user?.role ? ROLE_LABELS[auth.user.role] 
 
 const ICONS: Record<string, any> = {
   AlarmClock, Avatar, Box, Calendar, CreditCard, Discount, Goods, House,
-  List, Money, OfficeBuilding, StarFilled, Tickets, TrendCharts, User,
-  UserFilled, Wallet
+  List, Money, OfficeBuilding, StarFilled, TakeawayBox, Tickets, TrendCharts,
+  User, UserFilled, Wallet
 };
 function iconCmp(name: string) {
   return ICONS[name] ?? Tickets;

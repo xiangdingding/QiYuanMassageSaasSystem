@@ -58,6 +58,8 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '排班与请假', icon: 'AlarmClock', menu: true, roles: LEAD } },
       { path: 'commissions', component: () => import('@/views/CommissionsView.vue'),
         meta: { title: '提成规则', icon: 'Money', menu: true, roles: LEAD } },
+      { path: 'payroll', component: () => import('@/views/PayrollView.vue'),
+        meta: { title: '工资结算', icon: 'TakeawayBox', menu: true, roles: LEAD } },
       { path: 'staff', component: () => import('@/views/StaffView.vue'),
         meta: { title: '员工管理', icon: 'UserFilled', menu: true, roles: LEAD } },
       { path: 'stores', component: () => import('@/views/StoresView.vue'),

@@ -52,8 +52,19 @@ export interface MemberQuery {
   storeId?: number;
 }
 
+export interface ReferralSummaryDto {
+  referrerMemberId: number;
+  referrerName: string;
+  totalRewardEarned: number;
+  referredCount: number;
+  referredMembers: {
+    memberId: number; cardNo: string; name: string | null;
+    phone: string; totalRecharge: number; createdAt: string;
+  }[];
+}
+
 export const membersApi = {
-  list: (q: MemberQuery) =>
+  list: (q: MemberQuery & { includeClosed?: boolean }) =>
     http().get<PagedResult<Member>>('/members', { params: q }).then((r) => r.data),
   get: (id: number) => http().get<Member>(`/members/${id}`).then((r) => r.data),
   create: (body: any) => http().post<Member>('/members', body).then((r) => r.data),
@@ -61,7 +72,18 @@ export const membersApi = {
   recharge: (body: { memberId: number; amount: number; bonusAmount: number; payMethod: string; remark?: string | null }) =>
     http().post('/members/recharge', body).then((r) => r.data),
   rechargeHistory: (id: number) => http().get(`/members/${id}/recharges`).then((r) => r.data),
-  consumptionHistory: (id: number) => http().get(`/members/${id}/orders`).then((r) => r.data)
+  consumptionHistory: (id: number) => http().get(`/members/${id}/orders`).then((r) => r.data),
+  refund: (id: number, body: { refundAmount: number; refundMethod: string; reason?: string | null }) =>
+    http().post(`/members/${id}/refund`, body).then((r) => r.data),
+  transfer: (id: number, body: {
+    toMemberId?: number | null;
+    newMemberCardNo?: string | null;
+    newMemberPhone?: string | null;
+    newMemberName?: string | null;
+    reason?: string | null;
+  }) => http().post<Member>(`/members/${id}/transfer`, body).then((r) => r.data),
+  referrals: (id: number) =>
+    http().get<ReferralSummaryDto>(`/members/${id}/referrals`).then((r) => r.data)
 };
 
 export const ordersApi = {
@@ -269,6 +291,59 @@ export interface LeaveRequestDto {
   approverUserId: number | null; approverName: string | null;
   approvedAt: string | null; createdAt: string;
 }
+
+export interface SalaryProfileDto {
+  userId: number; userName: string;
+  baseMonthly: number; overtimeHourRate: number;
+  attendanceBonusAmount: number; requiredAttendanceDays: number;
+  remark: string | null;
+}
+export interface PayrollAdjustmentDto {
+  id: number; kind: string; amount: number; reason: string;
+  operatorName: string | null; createdAt: string;
+}
+export interface PayrollItemDto {
+  id: number; userId: number; userName: string; employeeNo: number | null;
+  baseSalary: number; commissionTotal: number; tipsTotal: number;
+  overtimeHours: number; overtimeAmount: number;
+  attendanceBonus: number; adjustmentTotal: number; netTotal: number;
+  servedRoundCount: number; scheduledDays: number; leaveDays: number;
+  remark: string | null;
+  adjustments: PayrollAdjustmentDto[];
+}
+export interface PayrollPeriodDto {
+  id: number; storeId: number; year: number; month: number;
+  status: string; generatedAt: string; lockedAt: string | null; paidAt: string | null;
+  operatorName: string | null; totalAmount: number; itemCount: number; remark: string | null;
+}
+export interface PayrollPeriodDetailDto { period: PayrollPeriodDto; items: PayrollItemDto[]; }
+
+export const payrollApi = {
+  profiles: (storeId?: number) =>
+    http().get<SalaryProfileDto[]>('/payroll/profiles', { params: { storeId } }).then((r) => r.data),
+  profile: (userId: number) =>
+    http().get<SalaryProfileDto>(`/payroll/profiles/${userId}`).then((r) => r.data),
+  upsertProfile: (userId: number, body: Partial<SalaryProfileDto>) =>
+    http().put<SalaryProfileDto>(`/payroll/profiles/${userId}`, body).then((r) => r.data),
+  periods: (storeId: number, year?: number) =>
+    http().get<PayrollPeriodDto[]>('/payroll/periods', { params: { storeId, year } }).then((r) => r.data),
+  period: (id: number) =>
+    http().get<PayrollPeriodDetailDto>(`/payroll/periods/${id}`).then((r) => r.data),
+  generate: (storeId: number, year: number, month: number, remark?: string | null) =>
+    http().post<PayrollPeriodDetailDto>('/payroll/periods', { storeId, year, month, remark }).then((r) => r.data),
+  lock: (id: number, remark?: string | null) =>
+    http().post<PayrollPeriodDto>(`/payroll/periods/${id}/lock`, { remark }).then((r) => r.data),
+  markPaid: (id: number) =>
+    http().post<PayrollPeriodDto>(`/payroll/periods/${id}/mark-paid`).then((r) => r.data),
+  removeDraft: (id: number) => http().delete(`/payroll/periods/${id}`),
+  updateItem: (id: number, overtimeHours: number, attendanceBonusOverride: number, remark?: string | null) =>
+    http().patch<PayrollItemDto>(`/payroll/items/${id}`, { overtimeHours, attendanceBonusOverride, remark }).then((r) => r.data),
+  addAdjustment: (itemId: number, kind: string, amount: number, reason: string) =>
+    http().post<PayrollItemDto>(`/payroll/items/${itemId}/adjustments`, { kind, amount, reason }).then((r) => r.data),
+  removeAdjustment: (itemId: number, adjId: number) =>
+    http().delete<PayrollItemDto>(`/payroll/items/${itemId}/adjustments/${adjId}`).then((r) => r.data),
+  me: (take = 6) => http().get<PayrollItemDto[]>('/payroll/me', { params: { take } }).then((r) => r.data)
+};
 
 export const schedulesApi = {
   list: (storeId: number, from?: string, to?: string) =>

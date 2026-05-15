@@ -152,3 +152,27 @@ public enum InventoryMovementKind
     Adjust = 20,     // 盘点调整
     Discard = 30     // 报损
 }
+
+/// <summary>工资单状态：Draft 可修改，Locked 封盘只读，Paid 已发放。</summary>
+public enum PayrollStatus
+{
+    Draft = 0,
+    Locked = 10,
+    Paid = 20
+}
+
+public enum PayrollAdjustmentKind
+{
+    Bonus = 0,       // 奖金（加项）
+    Deduction = 10   // 扣款（减项）
+}
+
+/// <summary>会员资金流水类型。Recharge 默认值兼容历史记录。</summary>
+public enum MemberRechargeKind
+{
+    Recharge = 0,        // 充值
+    Refund = 10,         // 退卡退款（金额为正、按 BalanceAfter=旧余额-退款 记账）
+    TransferOut = 20,    // 转赠转出（金额为正，从原会员扣）
+    TransferIn = 30,     // 转赠转入（金额为正，加到目标会员）
+    ReferralBonus = 40   // 引荐返佣（给引荐人）
+}

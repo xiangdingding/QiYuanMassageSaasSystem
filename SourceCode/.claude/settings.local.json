@@ -7,7 +7,13 @@
       "Bash(npm --version)",
       "Bash(npm -w platform-admin run build)",
       "Bash(npm -w shop-admin run build)",
-      "Bash(curl -s -X POST http://localhost:5050/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"admin@123\"}')"
+      "Bash(curl -s -X POST http://localhost:5050/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"admin@123\"}')",
+      "Bash(dotnet ef *)",
+      "Bash(npx vue-tsc *)",
+      "Bash(./node_modules/.bin/vue-tsc -p apps/shop-admin/tsconfig.json --noEmit)",
+      "Bash(node_modules/.bin/vue-tsc -p apps/shop-admin/tsconfig.json --noEmit)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(node_modules/.bin/tsc -p apps/miniprogram/tsconfig.json --noEmit)"
     ]
   }
 }

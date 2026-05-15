@@ -71,6 +71,9 @@ Page({
   goReviews() {
     wx.navigateTo({ url: '/pages/tech/reviews/reviews' });
   },
+  goPayroll() {
+    wx.navigateTo({ url: '/pages/tech/payroll/payroll' });
+  },
   async changeState(state: string, ok: string) {
     if (this.data.changing) return;
     this.setData({ changing: true });
