@@ -379,6 +379,26 @@ public class PayrollItemConfiguration : IEntityTypeConfiguration<PayrollItem>
     }
 }
 
+public class NotificationOutboxConfiguration : IEntityTypeConfiguration<NotificationOutbox>
+{
+    public void Configure(EntityTypeBuilder<NotificationOutbox> b)
+    {
+        b.ToTable("notification_outbox");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.DedupKey).HasMaxLength(128).IsRequired();
+        b.Property(x => x.RecipientOpenId).HasMaxLength(64);
+        b.Property(x => x.RecipientPhone).HasMaxLength(32);
+        b.Property(x => x.Title).HasMaxLength(200).IsRequired();
+        b.Property(x => x.Body).HasMaxLength(500).IsRequired();
+        b.Property(x => x.PayloadJson).HasColumnType("json");
+        b.Property(x => x.ErrorMessage).HasMaxLength(500);
+        b.HasOne(x => x.Member).WithMany().HasForeignKey(x => x.MemberId).OnDelete(DeleteBehavior.SetNull);
+        b.HasIndex(x => new { x.TenantId, x.DedupKey }).IsUnique();
+        b.HasIndex(x => new { x.Status, x.ScheduledAt });
+        b.HasIndex(x => new { x.TenantId, x.Kind, x.Status });
+    }
+}
+
 public class PayrollAdjustmentConfiguration : IEntityTypeConfiguration<PayrollAdjustment>
 {
     public void Configure(EntityTypeBuilder<PayrollAdjustment> b)

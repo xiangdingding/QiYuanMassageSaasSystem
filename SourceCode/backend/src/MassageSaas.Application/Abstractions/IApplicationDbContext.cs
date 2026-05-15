@@ -34,6 +34,7 @@ public interface IApplicationDbContext
     DbSet<PayrollPeriod> PayrollPeriods { get; }
     DbSet<PayrollItem> PayrollItems { get; }
     DbSet<PayrollAdjustment> PayrollAdjustments { get; }
+    DbSet<NotificationOutbox> NotificationOutbox { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

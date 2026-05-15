@@ -176,3 +176,20 @@ public enum MemberRechargeKind
     TransferIn = 30,     // 转赠转入（金额为正，加到目标会员）
     ReferralBonus = 40   // 引荐返佣（给引荐人）
 }
+
+/// <summary>通知出箱类型。每种类型对应一个生成场景与文案模板。</summary>
+public enum NotificationKind
+{
+    MemberBirthday = 0,         // 会员生日（每日扫描，今天生日的）
+    MemberPackageExpiring = 10, // 期限会员卡 N 日内到期
+    AppointmentReminder = 20,   // 预约前 30 分钟提醒
+    RechargeArrived = 30        // 充值到账（Recharge 接口同事务写入）
+}
+
+public enum NotificationStatus
+{
+    Pending = 0,
+    Sent = 10,
+    Failed = 20,
+    Cancelled = 90
+}

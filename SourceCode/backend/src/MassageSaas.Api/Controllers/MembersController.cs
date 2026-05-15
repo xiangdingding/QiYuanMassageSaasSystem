@@ -220,6 +220,8 @@ public class MembersController : ControllerBase
         };
         _db.MemberRechargeRecords.Add(record);
 
+        EnqueueRechargeArrivedNotification(m, req.Amount, req.BonusAmount);
+
         await _db.SaveChangesAsync(ct);
 
         if (m.ReferredByMemberId.HasValue)
@@ -428,6 +430,25 @@ public class MembersController : ControllerBase
             })
             .ToListAsync(ct);
         return Ok(data);
+    }
+
+    /// <summary>充值成功后写一条 RechargeArrived 通知到出箱。幂等键含 record 时间戳与会员，自然不重。</summary>
+    private void EnqueueRechargeArrivedNotification(Member m, decimal amount, decimal bonus)
+    {
+        var nowTicks = DateTime.UtcNow.Ticks;
+        var key = $"Recharge:{m.Id}:{nowTicks}";
+        _db.NotificationOutbox.Add(new NotificationOutbox
+        {
+            TenantId = m.TenantId,
+            Kind = NotificationKind.RechargeArrived,
+            Status = NotificationStatus.Pending,
+            DedupKey = key,
+            MemberId = m.Id,
+            RecipientPhone = m.Phone,
+            Title = "充值到账",
+            Body = $"充值 ¥{amount:F2}{(bonus > 0 ? $" + 赠送 ¥{bonus:F2}" : "")} 已到账，余额 ¥{m.Balance:F2}",
+            ScheduledAt = DateTime.UtcNow
+        });
     }
 
     /// <summary>给引荐人按租户配置百分比返佣。失败不影响主流程，只记录日志。</summary>

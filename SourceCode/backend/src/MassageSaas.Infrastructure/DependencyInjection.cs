@@ -1,5 +1,6 @@
 using MassageSaas.Application.Abstractions;
 using MassageSaas.Infrastructure.Multitenancy;
+using MassageSaas.Infrastructure.Notifications;
 using MassageSaas.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -12,6 +13,13 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<ITenantContext, TenantContext>();
+        services.AddSingleton<IClock, SystemClock>();
+        services.AddScoped<INotificationScanner, NotificationScanner>();
+        services.AddScoped<INotificationDispatcher, LoggingNotificationDispatcher>();
+        if (configuration.GetValue("Notifications:Enabled", true))
+        {
+            services.AddHostedService<NotificationDispatchService>();
+        }
 
         var connectionString = configuration.GetConnectionString("MySql")
             ?? throw new InvalidOperationException("Missing connection string 'MySql'");
