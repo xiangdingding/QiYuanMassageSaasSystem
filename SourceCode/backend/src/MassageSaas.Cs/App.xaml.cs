@@ -1,8 +1,10 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
 using MassageSaas.Cs.Services;
 using MassageSaas.Cs.Services.Devices;
+using MassageSaas.Cs.Services.Devices.EscPos;
 using MassageSaas.Cs.ViewModels;
 using MassageSaas.Cs.ViewModels.Pos;
 using MassageSaas.Cs.Views;
@@ -22,7 +24,10 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        var settings = new AppSettings();
+        // ESC/POS 中文小票走 GBK，.NET 默认不带该编码，需注册代码页提供程序
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+        var settings = AppSettings.Load();
         var refitSettings = new RefitSettings(new SystemTextJsonContentSerializer(new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -40,8 +45,11 @@ public partial class App : Application
                 services.AddSingleton<ISpeechAnnouncer, SpeechAnnouncer>();
                 services.AddTransient<AuthMessageHandler>();
 
-                // 外设：当前为占位实现，接入真实硬件后只换这几行注册
-                services.AddSingleton<IReceiptPrinter, LoggingReceiptPrinter>();
+                // 外设：小票打印机配置了就走真实 ESC/POS 驱动，否则走占位（日志）实现
+                if (settings.Printer.Enabled)
+                    services.AddSingleton<IReceiptPrinter, EscPosReceiptPrinter>();
+                else
+                    services.AddSingleton<IReceiptPrinter, LoggingReceiptPrinter>();
                 services.AddSingleton<ICustomerDisplay, LoggingCustomerDisplay>();
                 services.AddSingleton<ICallerIdMonitor, NullCallerIdMonitor>();
                 services.AddSingleton<ICardReader, NullCardReader>();
