@@ -1,6 +1,6 @@
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { DataAnalysis, Goods, OfficeBuilding, UserFilled } from '@element-plus/icons-vue';
+import { DataAnalysis, Goods, OfficeBuilding, TrendCharts, UserFilled } from '@element-plus/icons-vue';
 import { useAuthStore } from '@/stores/auth';
 const route = useRoute();
 const router = useRouter();
@@ -92,10 +92,10 @@ const __VLS_25 = {}.ElMenuItem;
 /** @type {[typeof __VLS_components.ElMenuItem, typeof __VLS_components.elMenuItem, typeof __VLS_components.ElMenuItem, typeof __VLS_components.elMenuItem, ]} */ ;
 // @ts-ignore
 const __VLS_26 = __VLS_asFunctionalComponent(__VLS_25, new __VLS_25({
-    index: "/tenants",
+    index: "/revenue",
 }));
 const __VLS_27 = __VLS_26({
-    index: "/tenants",
+    index: "/revenue",
 }, ...__VLS_functionalComponentArgsRest(__VLS_26));
 __VLS_28.slots.default;
 const __VLS_29 = {}.ElIcon;
@@ -104,8 +104,8 @@ const __VLS_29 = {}.ElIcon;
 const __VLS_30 = __VLS_asFunctionalComponent(__VLS_29, new __VLS_29({}));
 const __VLS_31 = __VLS_30({}, ...__VLS_functionalComponentArgsRest(__VLS_30));
 __VLS_32.slots.default;
-const __VLS_33 = {}.OfficeBuilding;
-/** @type {[typeof __VLS_components.OfficeBuilding, ]} */ ;
+const __VLS_33 = {}.TrendCharts;
+/** @type {[typeof __VLS_components.TrendCharts, ]} */ ;
 // @ts-ignore
 const __VLS_34 = __VLS_asFunctionalComponent(__VLS_33, new __VLS_33({}));
 const __VLS_35 = __VLS_34({}, ...__VLS_functionalComponentArgsRest(__VLS_34));
@@ -116,10 +116,10 @@ const __VLS_37 = {}.ElMenuItem;
 /** @type {[typeof __VLS_components.ElMenuItem, typeof __VLS_components.elMenuItem, typeof __VLS_components.ElMenuItem, typeof __VLS_components.elMenuItem, ]} */ ;
 // @ts-ignore
 const __VLS_38 = __VLS_asFunctionalComponent(__VLS_37, new __VLS_37({
-    index: "/plans",
+    index: "/tenants",
 }));
 const __VLS_39 = __VLS_38({
-    index: "/plans",
+    index: "/tenants",
 }, ...__VLS_functionalComponentArgsRest(__VLS_38));
 __VLS_40.slots.default;
 const __VLS_41 = {}.ElIcon;
@@ -128,108 +128,132 @@ const __VLS_41 = {}.ElIcon;
 const __VLS_42 = __VLS_asFunctionalComponent(__VLS_41, new __VLS_41({}));
 const __VLS_43 = __VLS_42({}, ...__VLS_functionalComponentArgsRest(__VLS_42));
 __VLS_44.slots.default;
-const __VLS_45 = {}.Goods;
-/** @type {[typeof __VLS_components.Goods, ]} */ ;
+const __VLS_45 = {}.OfficeBuilding;
+/** @type {[typeof __VLS_components.OfficeBuilding, ]} */ ;
 // @ts-ignore
 const __VLS_46 = __VLS_asFunctionalComponent(__VLS_45, new __VLS_45({}));
 const __VLS_47 = __VLS_46({}, ...__VLS_functionalComponentArgsRest(__VLS_46));
 var __VLS_44;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
 var __VLS_40;
+const __VLS_49 = {}.ElMenuItem;
+/** @type {[typeof __VLS_components.ElMenuItem, typeof __VLS_components.elMenuItem, typeof __VLS_components.ElMenuItem, typeof __VLS_components.elMenuItem, ]} */ ;
+// @ts-ignore
+const __VLS_50 = __VLS_asFunctionalComponent(__VLS_49, new __VLS_49({
+    index: "/plans",
+}));
+const __VLS_51 = __VLS_50({
+    index: "/plans",
+}, ...__VLS_functionalComponentArgsRest(__VLS_50));
+__VLS_52.slots.default;
+const __VLS_53 = {}.ElIcon;
+/** @type {[typeof __VLS_components.ElIcon, typeof __VLS_components.elIcon, typeof __VLS_components.ElIcon, typeof __VLS_components.elIcon, ]} */ ;
+// @ts-ignore
+const __VLS_54 = __VLS_asFunctionalComponent(__VLS_53, new __VLS_53({}));
+const __VLS_55 = __VLS_54({}, ...__VLS_functionalComponentArgsRest(__VLS_54));
+__VLS_56.slots.default;
+const __VLS_57 = {}.Goods;
+/** @type {[typeof __VLS_components.Goods, ]} */ ;
+// @ts-ignore
+const __VLS_58 = __VLS_asFunctionalComponent(__VLS_57, new __VLS_57({}));
+const __VLS_59 = __VLS_58({}, ...__VLS_functionalComponentArgsRest(__VLS_58));
+var __VLS_56;
+__VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
+var __VLS_52;
 var __VLS_12;
 var __VLS_8;
-const __VLS_49 = {}.ElContainer;
+const __VLS_61 = {}.ElContainer;
 /** @type {[typeof __VLS_components.ElContainer, typeof __VLS_components.elContainer, typeof __VLS_components.ElContainer, typeof __VLS_components.elContainer, ]} */ ;
 // @ts-ignore
-const __VLS_50 = __VLS_asFunctionalComponent(__VLS_49, new __VLS_49({}));
-const __VLS_51 = __VLS_50({}, ...__VLS_functionalComponentArgsRest(__VLS_50));
-__VLS_52.slots.default;
-const __VLS_53 = {}.ElHeader;
+const __VLS_62 = __VLS_asFunctionalComponent(__VLS_61, new __VLS_61({}));
+const __VLS_63 = __VLS_62({}, ...__VLS_functionalComponentArgsRest(__VLS_62));
+__VLS_64.slots.default;
+const __VLS_65 = {}.ElHeader;
 /** @type {[typeof __VLS_components.ElHeader, typeof __VLS_components.elHeader, typeof __VLS_components.ElHeader, typeof __VLS_components.elHeader, ]} */ ;
 // @ts-ignore
-const __VLS_54 = __VLS_asFunctionalComponent(__VLS_53, new __VLS_53({
+const __VLS_66 = __VLS_asFunctionalComponent(__VLS_65, new __VLS_65({
     ...{ class: "header" },
 }));
-const __VLS_55 = __VLS_54({
+const __VLS_67 = __VLS_66({
     ...{ class: "header" },
-}, ...__VLS_functionalComponentArgsRest(__VLS_54));
-__VLS_56.slots.default;
+}, ...__VLS_functionalComponentArgsRest(__VLS_66));
+__VLS_68.slots.default;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({});
 (__VLS_ctx.pageTitle);
-const __VLS_57 = {}.ElDropdown;
+const __VLS_69 = {}.ElDropdown;
 /** @type {[typeof __VLS_components.ElDropdown, typeof __VLS_components.elDropdown, typeof __VLS_components.ElDropdown, typeof __VLS_components.elDropdown, ]} */ ;
 // @ts-ignore
-const __VLS_58 = __VLS_asFunctionalComponent(__VLS_57, new __VLS_57({
+const __VLS_70 = __VLS_asFunctionalComponent(__VLS_69, new __VLS_69({
     ...{ 'onCommand': {} },
     trigger: "click",
 }));
-const __VLS_59 = __VLS_58({
+const __VLS_71 = __VLS_70({
     ...{ 'onCommand': {} },
     trigger: "click",
-}, ...__VLS_functionalComponentArgsRest(__VLS_58));
-let __VLS_61;
-let __VLS_62;
-let __VLS_63;
-const __VLS_64 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_70));
+let __VLS_73;
+let __VLS_74;
+let __VLS_75;
+const __VLS_76 = {
     onCommand: (__VLS_ctx.onCommand)
 };
-__VLS_60.slots.default;
+__VLS_72.slots.default;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
     ...{ class: "user" },
 });
-const __VLS_65 = {}.ElIcon;
+const __VLS_77 = {}.ElIcon;
 /** @type {[typeof __VLS_components.ElIcon, typeof __VLS_components.elIcon, typeof __VLS_components.ElIcon, typeof __VLS_components.elIcon, ]} */ ;
 // @ts-ignore
-const __VLS_66 = __VLS_asFunctionalComponent(__VLS_65, new __VLS_65({}));
-const __VLS_67 = __VLS_66({}, ...__VLS_functionalComponentArgsRest(__VLS_66));
-__VLS_68.slots.default;
-const __VLS_69 = {}.UserFilled;
+const __VLS_78 = __VLS_asFunctionalComponent(__VLS_77, new __VLS_77({}));
+const __VLS_79 = __VLS_78({}, ...__VLS_functionalComponentArgsRest(__VLS_78));
+__VLS_80.slots.default;
+const __VLS_81 = {}.UserFilled;
 /** @type {[typeof __VLS_components.UserFilled, ]} */ ;
 // @ts-ignore
-const __VLS_70 = __VLS_asFunctionalComponent(__VLS_69, new __VLS_69({}));
-const __VLS_71 = __VLS_70({}, ...__VLS_functionalComponentArgsRest(__VLS_70));
-var __VLS_68;
+const __VLS_82 = __VLS_asFunctionalComponent(__VLS_81, new __VLS_81({}));
+const __VLS_83 = __VLS_82({}, ...__VLS_functionalComponentArgsRest(__VLS_82));
+var __VLS_80;
 (__VLS_ctx.auth.user?.realName || __VLS_ctx.auth.user?.username);
 {
-    const { dropdown: __VLS_thisSlot } = __VLS_60.slots;
-    const __VLS_73 = {}.ElDropdownMenu;
+    const { dropdown: __VLS_thisSlot } = __VLS_72.slots;
+    const __VLS_85 = {}.ElDropdownMenu;
     /** @type {[typeof __VLS_components.ElDropdownMenu, typeof __VLS_components.elDropdownMenu, typeof __VLS_components.ElDropdownMenu, typeof __VLS_components.elDropdownMenu, ]} */ ;
     // @ts-ignore
-    const __VLS_74 = __VLS_asFunctionalComponent(__VLS_73, new __VLS_73({}));
-    const __VLS_75 = __VLS_74({}, ...__VLS_functionalComponentArgsRest(__VLS_74));
-    __VLS_76.slots.default;
-    const __VLS_77 = {}.ElDropdownItem;
+    const __VLS_86 = __VLS_asFunctionalComponent(__VLS_85, new __VLS_85({}));
+    const __VLS_87 = __VLS_86({}, ...__VLS_functionalComponentArgsRest(__VLS_86));
+    __VLS_88.slots.default;
+    const __VLS_89 = {}.ElDropdownItem;
     /** @type {[typeof __VLS_components.ElDropdownItem, typeof __VLS_components.elDropdownItem, typeof __VLS_components.ElDropdownItem, typeof __VLS_components.elDropdownItem, ]} */ ;
     // @ts-ignore
-    const __VLS_78 = __VLS_asFunctionalComponent(__VLS_77, new __VLS_77({
+    const __VLS_90 = __VLS_asFunctionalComponent(__VLS_89, new __VLS_89({
         command: "logout",
     }));
-    const __VLS_79 = __VLS_78({
+    const __VLS_91 = __VLS_90({
         command: "logout",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_78));
-    __VLS_80.slots.default;
-    var __VLS_80;
-    var __VLS_76;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_90));
+    __VLS_92.slots.default;
+    var __VLS_92;
+    var __VLS_88;
 }
-var __VLS_60;
-var __VLS_56;
-const __VLS_81 = {}.ElMain;
+var __VLS_72;
+var __VLS_68;
+const __VLS_93 = {}.ElMain;
 /** @type {[typeof __VLS_components.ElMain, typeof __VLS_components.elMain, typeof __VLS_components.ElMain, typeof __VLS_components.elMain, ]} */ ;
 // @ts-ignore
-const __VLS_82 = __VLS_asFunctionalComponent(__VLS_81, new __VLS_81({
+const __VLS_94 = __VLS_asFunctionalComponent(__VLS_93, new __VLS_93({
     ...{ class: "main" },
 }));
-const __VLS_83 = __VLS_82({
+const __VLS_95 = __VLS_94({
     ...{ class: "main" },
-}, ...__VLS_functionalComponentArgsRest(__VLS_82));
-__VLS_84.slots.default;
-const __VLS_85 = {}.RouterView;
+}, ...__VLS_functionalComponentArgsRest(__VLS_94));
+__VLS_96.slots.default;
+const __VLS_97 = {}.RouterView;
 /** @type {[typeof __VLS_components.RouterView, typeof __VLS_components.routerView, ]} */ ;
 // @ts-ignore
-const __VLS_86 = __VLS_asFunctionalComponent(__VLS_85, new __VLS_85({}));
-const __VLS_87 = __VLS_86({}, ...__VLS_functionalComponentArgsRest(__VLS_86));
-var __VLS_84;
-var __VLS_52;
+const __VLS_98 = __VLS_asFunctionalComponent(__VLS_97, new __VLS_97({}));
+const __VLS_99 = __VLS_98({}, ...__VLS_functionalComponentArgsRest(__VLS_98));
+var __VLS_96;
+var __VLS_64;
 var __VLS_3;
 /** @type {__VLS_StyleScopedClasses['layout']} */ ;
 /** @type {__VLS_StyleScopedClasses['aside']} */ ;
@@ -245,6 +269,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             DataAnalysis: DataAnalysis,
             Goods: Goods,
             OfficeBuilding: OfficeBuilding,
+            TrendCharts: TrendCharts,
             UserFilled: UserFilled,
             route: route,
             auth: auth,

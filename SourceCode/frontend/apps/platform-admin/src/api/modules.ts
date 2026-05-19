@@ -7,6 +7,7 @@ import type {
   PagedResult,
   Plan,
   PlatformDashboard,
+  PlatformRevenue,
   TenantDetail,
   TenantSummary
 } from './types';
@@ -42,7 +43,9 @@ export const tenantsApi = {
 };
 
 export const dashboardApi = {
-  platform: () => http().get<PlatformDashboard>('/dashboard/platform').then((r) => r.data)
+  platform: () => http().get<PlatformDashboard>('/dashboard/platform').then((r) => r.data),
+  revenue: (months: number) =>
+    http().get<PlatformRevenue>('/dashboard/platform/revenue', { params: { months } }).then((r) => r.data)
 };
 
 export const subscriptionsApi = {

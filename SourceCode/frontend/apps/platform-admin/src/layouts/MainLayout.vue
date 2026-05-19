@@ -14,6 +14,10 @@
           <el-icon><DataAnalysis /></el-icon>
           <span>运营大盘</span>
         </el-menu-item>
+        <el-menu-item index="/revenue">
+          <el-icon><TrendCharts /></el-icon>
+          <span>营收报表</span>
+        </el-menu-item>
         <el-menu-item index="/tenants">
           <el-icon><OfficeBuilding /></el-icon>
           <span>按摩店租户</span>
@@ -53,6 +57,7 @@ import {
   DataAnalysis,
   Goods,
   OfficeBuilding,
+  TrendCharts,
   UserFilled
 } from '@element-plus/icons-vue';
 import { useAuthStore } from '@/stores/auth';

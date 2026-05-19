@@ -98,3 +98,27 @@ export interface OfflineActivateRequest {
   amountReceived: number;
   remark?: string | null;
 }
+
+export interface RevenueMonth {
+  year: number;
+  month: number;
+  amount: number;
+  orderCount: number;
+}
+
+export interface RevenueBreakdown {
+  name: string;
+  amount: number;
+  orderCount: number;
+}
+
+export interface PlatformRevenue {
+  months: number;
+  totalAmount: number;
+  totalOrders: number;
+  newCustomerAmount: number;
+  renewalAmount: number;
+  monthlyTrend: RevenueMonth[];
+  byPlan: RevenueBreakdown[];
+  byChannel: RevenueBreakdown[];
+}

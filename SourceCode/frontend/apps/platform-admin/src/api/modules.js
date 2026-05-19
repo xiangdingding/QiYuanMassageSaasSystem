@@ -15,7 +15,8 @@ export const tenantsApi = {
     updateStatus: (id, status) => http().patch(`/tenants/${id}/status`, { status })
 };
 export const dashboardApi = {
-    platform: () => http().get('/dashboard/platform').then((r) => r.data)
+    platform: () => http().get('/dashboard/platform').then((r) => r.data),
+    revenue: (months) => http().get('/dashboard/platform/revenue', { params: { months } }).then((r) => r.data)
 };
 export const subscriptionsApi = {
     activateOffline: (req) => http().post('/subscriptions/activate-offline', req).then((r) => r.data),

@@ -75,4 +75,62 @@ public class DashboardController : ControllerBase
             total, active, expired, disabled,
             expIn30, expIn7, revenue30, revenueYtd, paidOrderCount30, recent));
     }
+
+    /// <summary>平台营收报表：近 N 个月订阅付费的月度趋势、按套餐/渠道拆分、新签 vs 续费。</summary>
+    [HttpGet("platform/revenue")]
+    public async Task<ActionResult<PlatformRevenueDto>> Revenue(
+        [FromQuery] int months = 12, CancellationToken ct = default)
+    {
+        months = Math.Clamp(months, 1, 36);
+        var now = DateTime.UtcNow;
+        var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var windowStart = currentMonthStart.AddMonths(-(months - 1));
+
+        var orders = await _db.PaymentOrders.AsNoTracking()
+            .Where(o => o.Status == PaymentStatus.Paid && o.PaidAt != null && o.PaidAt >= windowStart)
+            .Select(o => new
+            {
+                o.Id,
+                PaidAt = o.PaidAt!.Value,
+                o.Amount,
+                PlanName = o.Plan.Name,
+                o.Channel
+            })
+            .ToListAsync(ct);
+
+        // 每个租户最早一笔已支付订单 = 新签，其余 = 续费
+        var firstOrderIds = (await _db.PaymentOrders.AsNoTracking()
+            .Where(o => o.Status == PaymentStatus.Paid)
+            .GroupBy(o => o.TenantId)
+            .Select(g => g.Min(o => o.Id))
+            .ToListAsync(ct)).ToHashSet();
+
+        var monthly = new List<RevenueMonthDto>(months);
+        for (var i = 0; i < months; i++)
+        {
+            var m = windowStart.AddMonths(i);
+            var inMonth = orders.Where(o => o.PaidAt.Year == m.Year && o.PaidAt.Month == m.Month).ToList();
+            monthly.Add(new RevenueMonthDto(m.Year, m.Month, inMonth.Sum(x => x.Amount), inMonth.Count));
+        }
+
+        var byPlan = orders
+            .GroupBy(o => o.PlanName)
+            .Select(g => new RevenueBreakdownDto(g.Key, g.Sum(x => x.Amount), g.Count()))
+            .OrderByDescending(x => x.Amount)
+            .ToList();
+
+        var byChannel = orders
+            .GroupBy(o => o.Channel.ToString())
+            .Select(g => new RevenueBreakdownDto(g.Key, g.Sum(x => x.Amount), g.Count()))
+            .OrderByDescending(x => x.Amount)
+            .ToList();
+
+        var total = orders.Sum(o => o.Amount);
+        var newAmount = orders.Where(o => firstOrderIds.Contains(o.Id)).Sum(o => o.Amount);
+
+        return Ok(new PlatformRevenueDto(
+            months, total, orders.Count,
+            newAmount, total - newAmount,
+            monthly, byPlan, byChannel));
+    }
 }
