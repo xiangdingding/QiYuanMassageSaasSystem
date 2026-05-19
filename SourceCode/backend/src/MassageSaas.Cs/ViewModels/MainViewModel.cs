@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MassageSaas.Cs.Services;
+using MassageSaas.Cs.Services.Devices;
 using MassageSaas.Cs.ViewModels.Pos;
 using MassageSaas.Shared.Stores;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +21,8 @@ public partial class MainViewModel : ObservableObject
         SessionService session,
         AppContextService context,
         NavigationService navigation,
-        ISpeechAnnouncer speech)
+        ISpeechAnnouncer speech,
+        ICallerIdMonitor callerId)
     {
         _sp = sp;
         _api = api;
@@ -29,6 +31,15 @@ public partial class MainViewModel : ObservableObject
         Context = context;
         Navigation = navigation;
         BuildNav();
+
+        // 来电显示：识别到来电语音播报号码（占位监听器不会触发，接来电盒后即生效）
+        callerId.CallReceived += OnIncomingCall;
+        callerId.Start();
+    }
+
+    private void OnIncomingCall(object? sender, IncomingCall call)
+    {
+        _speech.SayAsync($"来电，号码 {call.PhoneNumber}");
     }
 
     public SessionService Session { get; }

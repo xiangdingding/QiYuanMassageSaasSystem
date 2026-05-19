@@ -87,6 +87,65 @@ public class TenantsController : ControllerBase
             t.CurrentPlan?.Name, storeCount, userCount, t.CreatedAt));
     }
 
+    /// <summary>单租户运营概览：门店/员工/会员规模、近 7/30 天营业额、技师营收榜。</summary>
+    [HttpGet("{id:long}/overview")]
+    public async Task<ActionResult<TenantOverviewDto>> Overview(long id, CancellationToken ct)
+    {
+        var t = await _db.Tenants.AsNoTracking()
+            .Include(x => x.CurrentPlan)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (t is null) return NotFound();
+
+        var now = DateTime.UtcNow;
+        var since7 = now.AddDays(-7);
+        var since30 = now.AddDays(-30);
+
+        var storeCount = await _db.Stores.CountAsync(s => s.TenantId == id, ct);
+        var activeStoreCount = await _db.Stores.CountAsync(s => s.TenantId == id && s.IsActive, ct);
+        var staffCount = await _db.Users.CountAsync(u => u.TenantId == id, ct);
+        var technicianCount = await _db.Users.CountAsync(
+            u => u.TenantId == id && u.Role == UserRole.Technician && u.IsActive, ct);
+        var memberCount = await _db.Members.CountAsync(m => m.TenantId == id, ct);
+
+        // 营业额：已完成订单的实收额（不含小费），按完成时间归集
+        var completed30 = _db.Orders.AsNoTracking()
+            .Where(o => o.TenantId == id && o.Status == OrderStatus.Completed
+                        && o.CompletedAt != null && o.CompletedAt >= since30);
+        var revenue30 = await completed30.SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
+        var revenue7 = await completed30
+            .Where(o => o.CompletedAt >= since7)
+            .SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
+        var orderCount30 = await completed30.CountAsync(ct);
+
+        var topRaw = await _db.OrderItems.AsNoTracking()
+            .Where(i => i.TenantId == id && i.Order.Status == OrderStatus.Completed
+                        && i.Order.CompletedAt != null && i.Order.CompletedAt >= since30)
+            .GroupBy(i => i.TechnicianId)
+            .Select(g => new { TechnicianId = g.Key, Rounds = g.Count(), Revenue = g.Sum(x => x.ItemTotal) })
+            .OrderByDescending(x => x.Revenue)
+            .Take(5)
+            .ToListAsync(ct);
+
+        var techIds = topRaw.Select(x => x.TechnicianId).ToList();
+        var techNames = await _db.Users.AsNoTracking()
+            .Where(u => techIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.RealName ?? u.Username, ct);
+
+        var topTechnicians = topRaw
+            .Select(x => new TenantTopTechnicianDto(
+                x.TechnicianId,
+                techNames.TryGetValue(x.TechnicianId, out var n) ? n : $"#{x.TechnicianId}",
+                x.Rounds, x.Revenue))
+            .ToList();
+
+        return Ok(new TenantOverviewDto(
+            t.Id, t.Name, t.Status.ToString(), t.ExpireAt,
+            t.ExpireAt.HasValue ? (int?)(t.ExpireAt.Value - now).TotalDays : null,
+            t.CurrentPlan?.Name,
+            storeCount, activeStoreCount, staffCount, technicianCount, memberCount,
+            revenue7, revenue30, orderCount30, topTechnicians));
+    }
+
     [HttpPost]
     public async Task<ActionResult<TenantDetailDto>> Create([FromBody] CreateTenantRequest req, CancellationToken ct)
     {

@@ -9,6 +9,7 @@ import type {
   PlatformDashboard,
   PlatformRevenue,
   TenantDetail,
+  TenantOverview,
   TenantSummary
 } from './types';
 
@@ -36,6 +37,8 @@ export const tenantsApi = {
   list: (q: TenantQuery) =>
     http().get<PagedResult<TenantSummary>>('/tenants', { params: q }).then((r) => r.data),
   get: (id: number) => http().get<TenantDetail>(`/tenants/${id}`).then((r) => r.data),
+  overview: (id: number) =>
+    http().get<TenantOverview>(`/tenants/${id}/overview`).then((r) => r.data),
   create: (body: CreateTenantRequest) =>
     http().post<TenantDetail>('/tenants', body).then((r) => r.data),
   updateStatus: (id: number, status: string) =>

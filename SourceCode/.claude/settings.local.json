@@ -14,7 +14,8 @@
       "Bash(node_modules/.bin/vue-tsc -p apps/shop-admin/tsconfig.json --noEmit)",
       "Bash(echo \"EXIT=$?\")",
       "Bash(node_modules/.bin/tsc -p apps/miniprogram/tsconfig.json --noEmit)",
-      "PowerShell(dotnet build *)"
+      "PowerShell(dotnet build *)",
+      "PowerShell(dotnet test *)"
     ]
   }
 }

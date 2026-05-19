@@ -3,6 +3,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MassageSaas.Cs.Services;
+using MassageSaas.Cs.Services.Devices;
 using MassageSaas.Shared.Members;
 using MassageSaas.Shared.Orders;
 using MassageSaas.Shared.Rooms;
@@ -16,12 +17,21 @@ public partial class PosViewModel : ObservableObject
     private readonly IApiClient _api;
     private readonly AppContextService _context;
     private readonly ISpeechAnnouncer _speech;
+    private readonly IReceiptPrinter _printer;
+    private readonly ICustomerDisplay _display;
 
-    public PosViewModel(IApiClient api, AppContextService context, ISpeechAnnouncer speech)
+    public PosViewModel(
+        IApiClient api,
+        AppContextService context,
+        ISpeechAnnouncer speech,
+        IReceiptPrinter printer,
+        ICustomerDisplay display)
     {
         _api = api;
         _context = context;
         _speech = speech;
+        _printer = printer;
+        _display = display;
         _ = LoadAsync();
     }
 
@@ -271,6 +281,22 @@ public partial class PosViewModel : ObservableObject
         if (change > 0) spoken += $"，找零 {YuanToReadable(change)}";
         _speech.SayAsync(spoken);
 
+        // 外设：打印小票、现金结账踢钱箱、客显展示实收金额
+        _printer.Print(new ReceiptDocument(
+            StoreName: _context.ActiveStore?.Name ?? string.Empty,
+            OrderNo: o.OrderNo,
+            PrintedAt: DateTime.Now,
+            Items: o.Items
+                .Select(i => new ReceiptLine(i.ServiceName, i.Quantity, i.TechnicianName ?? "—", i.ItemTotal))
+                .ToList(),
+            Total: o.Total,
+            Discount: o.DiscountAmount,
+            Paid: o.PaidAmount,
+            Change: change,
+            PayMethod: o.PayMethod));
+        if (PayMethod == "Cash") _printer.OpenCashDrawer();
+        _display.ShowAmount("实收", o.PaidAmount);
+
         var lines = new List<string>
         {
             $"订单：{o.OrderNo}",
@@ -302,5 +328,6 @@ public partial class PosViewModel : ObservableObject
         OnPropertyChanged(nameof(Payable));
         OnPropertyChanged(nameof(Change));
         if (PayMethod == "Cash" && CashReceived < Payable) CashReceived = Payable;
+        _display.ShowAmount("应付", Payable);
     }
 }

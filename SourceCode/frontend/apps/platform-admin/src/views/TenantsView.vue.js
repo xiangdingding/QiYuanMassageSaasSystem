@@ -3,6 +3,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { plansApi, tenantsApi } from '@/api/modules';
 import CreateTenantDialog from '@/views/components/CreateTenantDialog.vue';
 import OfflineActivateDialog from '@/views/components/OfflineActivateDialog.vue';
+import TenantOverviewDialog from '@/views/components/TenantOverviewDialog.vue';
 const rows = ref([]);
 const total = ref(0);
 const loading = ref(false);
@@ -16,6 +17,8 @@ const query = reactive({
 const createOpen = ref(false);
 const activateOpen = ref(false);
 const activateTarget = ref(null);
+const overviewOpen = ref(false);
+const overviewTarget = ref(null);
 function statusType(s) {
     if (s === 'Active')
         return 'success';
@@ -62,6 +65,10 @@ function onCreated() {
 function openActivate(row) {
     activateTarget.value = row;
     activateOpen.value = true;
+}
+function openOverview(row) {
+    overviewTarget.value = row;
+    overviewOpen.value = true;
 }
 async function changeStatus(row, status) {
     const verb = status === 'Disabled' ? '停用' : '启用';
@@ -380,12 +387,12 @@ const __VLS_88 = {}.ElTableColumn;
 // @ts-ignore
 const __VLS_89 = __VLS_asFunctionalComponent(__VLS_88, new __VLS_88({
     label: "操作",
-    width: "240",
+    width: "320",
     fixed: "right",
 }));
 const __VLS_90 = __VLS_89({
     label: "操作",
-    width: "240",
+    width: "320",
     fixed: "right",
 }, ...__VLS_functionalComponentArgsRest(__VLS_89));
 __VLS_91.slots.default;
@@ -410,72 +417,95 @@ __VLS_91.slots.default;
     let __VLS_98;
     const __VLS_99 = {
         onClick: (...[$event]) => {
-            __VLS_ctx.openActivate(row);
+            __VLS_ctx.openOverview(row);
         }
     };
     __VLS_95.slots.default;
     var __VLS_95;
+    const __VLS_100 = {}.ElButton;
+    /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
+    // @ts-ignore
+    const __VLS_101 = __VLS_asFunctionalComponent(__VLS_100, new __VLS_100({
+        ...{ 'onClick': {} },
+        link: true,
+        type: "primary",
+    }));
+    const __VLS_102 = __VLS_101({
+        ...{ 'onClick': {} },
+        link: true,
+        type: "primary",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_101));
+    let __VLS_104;
+    let __VLS_105;
+    let __VLS_106;
+    const __VLS_107 = {
+        onClick: (...[$event]) => {
+            __VLS_ctx.openActivate(row);
+        }
+    };
+    __VLS_103.slots.default;
+    var __VLS_103;
     if (row.status !== 'Disabled') {
-        const __VLS_100 = {}.ElButton;
-        /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
-        // @ts-ignore
-        const __VLS_101 = __VLS_asFunctionalComponent(__VLS_100, new __VLS_100({
-            ...{ 'onClick': {} },
-            link: true,
-            type: "danger",
-        }));
-        const __VLS_102 = __VLS_101({
-            ...{ 'onClick': {} },
-            link: true,
-            type: "danger",
-        }, ...__VLS_functionalComponentArgsRest(__VLS_101));
-        let __VLS_104;
-        let __VLS_105;
-        let __VLS_106;
-        const __VLS_107 = {
-            onClick: (...[$event]) => {
-                if (!(row.status !== 'Disabled'))
-                    return;
-                __VLS_ctx.changeStatus(row, 'Disabled');
-            }
-        };
-        __VLS_103.slots.default;
-        var __VLS_103;
-    }
-    else {
         const __VLS_108 = {}.ElButton;
         /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
         // @ts-ignore
         const __VLS_109 = __VLS_asFunctionalComponent(__VLS_108, new __VLS_108({
             ...{ 'onClick': {} },
             link: true,
-            type: "success",
+            type: "danger",
         }));
         const __VLS_110 = __VLS_109({
             ...{ 'onClick': {} },
             link: true,
-            type: "success",
+            type: "danger",
         }, ...__VLS_functionalComponentArgsRest(__VLS_109));
         let __VLS_112;
         let __VLS_113;
         let __VLS_114;
         const __VLS_115 = {
             onClick: (...[$event]) => {
-                if (!!(row.status !== 'Disabled'))
+                if (!(row.status !== 'Disabled'))
                     return;
-                __VLS_ctx.changeStatus(row, 'Active');
+                __VLS_ctx.changeStatus(row, 'Disabled');
             }
         };
         __VLS_111.slots.default;
         var __VLS_111;
     }
+    else {
+        const __VLS_116 = {}.ElButton;
+        /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
+        // @ts-ignore
+        const __VLS_117 = __VLS_asFunctionalComponent(__VLS_116, new __VLS_116({
+            ...{ 'onClick': {} },
+            link: true,
+            type: "success",
+        }));
+        const __VLS_118 = __VLS_117({
+            ...{ 'onClick': {} },
+            link: true,
+            type: "success",
+        }, ...__VLS_functionalComponentArgsRest(__VLS_117));
+        let __VLS_120;
+        let __VLS_121;
+        let __VLS_122;
+        const __VLS_123 = {
+            onClick: (...[$event]) => {
+                if (!!(row.status !== 'Disabled'))
+                    return;
+                __VLS_ctx.changeStatus(row, 'Active');
+            }
+        };
+        __VLS_119.slots.default;
+        var __VLS_119;
+    }
 }
 var __VLS_91;
 var __VLS_55;
-const __VLS_116 = {}.ElPagination;
+const __VLS_124 = {}.ElPagination;
 /** @type {[typeof __VLS_components.ElPagination, typeof __VLS_components.elPagination, ]} */ ;
 // @ts-ignore
-const __VLS_117 = __VLS_asFunctionalComponent(__VLS_116, new __VLS_116({
+const __VLS_125 = __VLS_asFunctionalComponent(__VLS_124, new __VLS_124({
     ...{ 'onCurrentChange': {} },
     ...{ 'onSizeChange': {} },
     ...{ style: {} },
@@ -484,68 +514,78 @@ const __VLS_117 = __VLS_asFunctionalComponent(__VLS_116, new __VLS_116({
     total: (__VLS_ctx.total),
     pageSizes: ([10, 20, 50]),
     layout: "total, sizes, prev, pager, next, jumper",
-}));
-const __VLS_118 = __VLS_117({
-    ...{ 'onCurrentChange': {} },
-    ...{ 'onSizeChange': {} },
-    ...{ style: {} },
-    currentPage: (__VLS_ctx.query.page),
-    pageSize: (__VLS_ctx.query.pageSize),
-    total: (__VLS_ctx.total),
-    pageSizes: ([10, 20, 50]),
-    layout: "total, sizes, prev, pager, next, jumper",
-}, ...__VLS_functionalComponentArgsRest(__VLS_117));
-let __VLS_120;
-let __VLS_121;
-let __VLS_122;
-const __VLS_123 = {
-    onCurrentChange: ((p) => { __VLS_ctx.query.page = p; __VLS_ctx.reload(); })
-};
-const __VLS_124 = {
-    onSizeChange: ((s) => { __VLS_ctx.query.pageSize = s; __VLS_ctx.query.page = 1; __VLS_ctx.reload(); })
-};
-var __VLS_119;
-var __VLS_3;
-/** @type {[typeof CreateTenantDialog, ]} */ ;
-// @ts-ignore
-const __VLS_125 = __VLS_asFunctionalComponent(CreateTenantDialog, new CreateTenantDialog({
-    ...{ 'onCreated': {} },
-    modelValue: (__VLS_ctx.createOpen),
-    plans: (__VLS_ctx.plans),
 }));
 const __VLS_126 = __VLS_125({
-    ...{ 'onCreated': {} },
-    modelValue: (__VLS_ctx.createOpen),
-    plans: (__VLS_ctx.plans),
+    ...{ 'onCurrentChange': {} },
+    ...{ 'onSizeChange': {} },
+    ...{ style: {} },
+    currentPage: (__VLS_ctx.query.page),
+    pageSize: (__VLS_ctx.query.pageSize),
+    total: (__VLS_ctx.total),
+    pageSizes: ([10, 20, 50]),
+    layout: "total, sizes, prev, pager, next, jumper",
 }, ...__VLS_functionalComponentArgsRest(__VLS_125));
 let __VLS_128;
 let __VLS_129;
 let __VLS_130;
 const __VLS_131 = {
-    onCreated: (__VLS_ctx.onCreated)
+    onCurrentChange: ((p) => { __VLS_ctx.query.page = p; __VLS_ctx.reload(); })
+};
+const __VLS_132 = {
+    onSizeChange: ((s) => { __VLS_ctx.query.pageSize = s; __VLS_ctx.query.page = 1; __VLS_ctx.reload(); })
 };
 var __VLS_127;
+var __VLS_3;
+/** @type {[typeof CreateTenantDialog, ]} */ ;
+// @ts-ignore
+const __VLS_133 = __VLS_asFunctionalComponent(CreateTenantDialog, new CreateTenantDialog({
+    ...{ 'onCreated': {} },
+    modelValue: (__VLS_ctx.createOpen),
+    plans: (__VLS_ctx.plans),
+}));
+const __VLS_134 = __VLS_133({
+    ...{ 'onCreated': {} },
+    modelValue: (__VLS_ctx.createOpen),
+    plans: (__VLS_ctx.plans),
+}, ...__VLS_functionalComponentArgsRest(__VLS_133));
+let __VLS_136;
+let __VLS_137;
+let __VLS_138;
+const __VLS_139 = {
+    onCreated: (__VLS_ctx.onCreated)
+};
+var __VLS_135;
 /** @type {[typeof OfflineActivateDialog, ]} */ ;
 // @ts-ignore
-const __VLS_132 = __VLS_asFunctionalComponent(OfflineActivateDialog, new OfflineActivateDialog({
+const __VLS_140 = __VLS_asFunctionalComponent(OfflineActivateDialog, new OfflineActivateDialog({
     ...{ 'onActivated': {} },
     modelValue: (__VLS_ctx.activateOpen),
     tenant: (__VLS_ctx.activateTarget),
     plans: (__VLS_ctx.plans),
 }));
-const __VLS_133 = __VLS_132({
+const __VLS_141 = __VLS_140({
     ...{ 'onActivated': {} },
     modelValue: (__VLS_ctx.activateOpen),
     tenant: (__VLS_ctx.activateTarget),
     plans: (__VLS_ctx.plans),
-}, ...__VLS_functionalComponentArgsRest(__VLS_132));
-let __VLS_135;
-let __VLS_136;
-let __VLS_137;
-const __VLS_138 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_140));
+let __VLS_143;
+let __VLS_144;
+let __VLS_145;
+const __VLS_146 = {
     onActivated: (__VLS_ctx.reload)
 };
-var __VLS_134;
+var __VLS_142;
+/** @type {[typeof TenantOverviewDialog, ]} */ ;
+// @ts-ignore
+const __VLS_147 = __VLS_asFunctionalComponent(TenantOverviewDialog, new TenantOverviewDialog({
+    modelValue: (__VLS_ctx.overviewOpen),
+    tenant: (__VLS_ctx.overviewTarget),
+}));
+const __VLS_148 = __VLS_147({
+    modelValue: (__VLS_ctx.overviewOpen),
+    tenant: (__VLS_ctx.overviewTarget),
+}, ...__VLS_functionalComponentArgsRest(__VLS_147));
 /** @type {__VLS_StyleScopedClasses['page']} */ ;
 /** @type {__VLS_StyleScopedClasses['toolbar']} */ ;
 var __VLS_dollars;
@@ -554,6 +594,7 @@ const __VLS_self = (await import('vue')).defineComponent({
         return {
             CreateTenantDialog: CreateTenantDialog,
             OfflineActivateDialog: OfflineActivateDialog,
+            TenantOverviewDialog: TenantOverviewDialog,
             rows: rows,
             total: total,
             loading: loading,
@@ -562,6 +603,8 @@ const __VLS_self = (await import('vue')).defineComponent({
             createOpen: createOpen,
             activateOpen: activateOpen,
             activateTarget: activateTarget,
+            overviewOpen: overviewOpen,
+            overviewTarget: overviewTarget,
             statusType: statusType,
             statusLabel: statusLabel,
             formatDate: formatDate,
@@ -570,6 +613,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             openCreate: openCreate,
             onCreated: onCreated,
             openActivate: openActivate,
+            openOverview: openOverview,
             changeStatus: changeStatus,
         };
     },

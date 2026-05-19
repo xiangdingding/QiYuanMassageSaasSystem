@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
 using MassageSaas.Cs.Services;
+using MassageSaas.Cs.Services.Devices;
 using MassageSaas.Cs.ViewModels;
 using MassageSaas.Cs.ViewModels.Pos;
 using MassageSaas.Cs.Views;
@@ -38,6 +39,11 @@ public partial class App : Application
                 services.AddSingleton<AppContextService>();
                 services.AddSingleton<ISpeechAnnouncer, SpeechAnnouncer>();
                 services.AddTransient<AuthMessageHandler>();
+
+                // 外设：当前为占位实现，接入真实硬件后只换这三行注册
+                services.AddSingleton<IReceiptPrinter, LoggingReceiptPrinter>();
+                services.AddSingleton<ICustomerDisplay, LoggingCustomerDisplay>();
+                services.AddSingleton<ICallerIdMonitor, NullCallerIdMonitor>();
 
                 services.AddRefitClient<IApiClient>(refitSettings)
                     .ConfigureHttpClient(c => c.BaseAddress = new Uri(settings.ApiBaseUrl))

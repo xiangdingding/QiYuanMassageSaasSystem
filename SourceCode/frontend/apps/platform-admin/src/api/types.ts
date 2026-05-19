@@ -122,3 +122,28 @@ export interface PlatformRevenue {
   byPlan: RevenueBreakdown[];
   byChannel: RevenueBreakdown[];
 }
+
+export interface TenantTopTechnician {
+  technicianId: number;
+  name: string;
+  roundCount: number;
+  revenue: number;
+}
+
+export interface TenantOverview {
+  tenantId: number;
+  name: string;
+  status: string;
+  expireAt?: string | null;
+  daysToExpire?: number | null;
+  currentPlanName?: string | null;
+  storeCount: number;
+  activeStoreCount: number;
+  staffCount: number;
+  technicianCount: number;
+  memberCount: number;
+  revenue7Days: number;
+  revenue30Days: number;
+  orderCount30Days: number;
+  topTechnicians: TenantTopTechnician[];
+}

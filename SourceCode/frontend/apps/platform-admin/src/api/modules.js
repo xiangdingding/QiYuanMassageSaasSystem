@@ -11,6 +11,7 @@ export const plansApi = {
 export const tenantsApi = {
     list: (q) => http().get('/tenants', { params: q }).then((r) => r.data),
     get: (id) => http().get(`/tenants/${id}`).then((r) => r.data),
+    overview: (id) => http().get(`/tenants/${id}/overview`).then((r) => r.data),
     create: (body) => http().post('/tenants', body).then((r) => r.data),
     updateStatus: (id, status) => http().patch(`/tenants/${id}/status`, { status })
 };

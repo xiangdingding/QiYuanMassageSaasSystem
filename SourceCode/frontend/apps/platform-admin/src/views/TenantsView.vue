@@ -47,8 +47,9 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" @click="openOverview(row)">运营概览</el-button>
             <el-button link type="primary" @click="openActivate(row)">续费/激活</el-button>
             <el-button
               v-if="row.status !== 'Disabled'"
@@ -85,6 +86,7 @@
       :plans="plans"
       @activated="reload"
     />
+    <TenantOverviewDialog v-model="overviewOpen" :tenant="overviewTarget" />
   </div>
 </template>
 
@@ -95,6 +97,7 @@ import { plansApi, tenantsApi } from '@/api/modules';
 import type { Plan, TenantSummary } from '@/api/types';
 import CreateTenantDialog from '@/views/components/CreateTenantDialog.vue';
 import OfflineActivateDialog from '@/views/components/OfflineActivateDialog.vue';
+import TenantOverviewDialog from '@/views/components/TenantOverviewDialog.vue';
 
 const rows = ref<TenantSummary[]>([]);
 const total = ref(0);
@@ -111,6 +114,8 @@ const query = reactive<{ page: number; pageSize: number; keyword: string; status
 const createOpen = ref(false);
 const activateOpen = ref(false);
 const activateTarget = ref<TenantSummary | null>(null);
+const overviewOpen = ref(false);
+const overviewTarget = ref<TenantSummary | null>(null);
 
 function statusType(s: string) {
   if (s === 'Active') return 'success';
@@ -158,6 +163,10 @@ function onCreated() {
 function openActivate(row: TenantSummary) {
   activateTarget.value = row;
   activateOpen.value = true;
+}
+function openOverview(row: TenantSummary) {
+  overviewTarget.value = row;
+  overviewOpen.value = true;
 }
 
 async function changeStatus(row: TenantSummary, status: 'Active' | 'Disabled') {
