@@ -62,6 +62,9 @@ public partial class App : Application
                 services.AddTransient<ReviewsViewModel>();
                 services.AddTransient<ComplaintsViewModel>();
                 services.AddTransient<SchedulesViewModel>();
+                services.AddTransient<MemberPackagesViewModel>();
+                services.AddTransient<VouchersViewModel>();
+                services.AddTransient<PayrollViewModel>();
             })
             .Build();
 

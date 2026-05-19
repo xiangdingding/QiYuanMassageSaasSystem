@@ -67,6 +67,15 @@
             <DataTemplate DataType="{x:Type vm:SchedulesViewModel}">
                 <views:SchedulesView />
             </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:MemberPackagesViewModel}">
+                <views:MemberPackagesView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:VouchersViewModel}">
+                <views:VouchersView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:PayrollViewModel}">
+                <views:PayrollView />
+            </DataTemplate>
 
             <SolidColorBrush x:Key="SidebarBg" Color="#1F2D3D" />
             <SolidColorBrush x:Key="SidebarText" Color="#BFCBD9" />
