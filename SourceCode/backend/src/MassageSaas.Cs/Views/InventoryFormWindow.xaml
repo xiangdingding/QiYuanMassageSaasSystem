@@ -1,0 +1,53 @@
+<Window x:Class="MassageSaas.Cs.Views.InventoryFormWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="耗材"
+        Height="540" Width="420"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="编码" Margin="0,0,0,4" />
+        <TextBox Grid.Row="1" x:Name="CodeBox" Padding="6" Margin="0,0,0,12" />
+
+        <TextBlock Grid.Row="2" Text="名称" Margin="0,0,0,4" />
+        <TextBox Grid.Row="3" x:Name="NameBox" Padding="6" Margin="0,0,0,12" />
+
+        <TextBlock Grid.Row="4" Text="单位（如 瓶 / 条 / 包）" Margin="0,0,0,4" />
+        <TextBox Grid.Row="5" x:Name="UnitBox" Padding="6" Margin="0,0,0,12" />
+
+        <TextBlock Grid.Row="6" x:Name="QtyLabel" Text="初始库存数量" Margin="0,0,0,4" />
+        <TextBox Grid.Row="7" x:Name="QtyBox" Padding="6" Margin="0,0,0,12" Text="0" />
+
+        <TextBlock Grid.Row="8" Text="低库存预警线" Margin="0,0,0,4" />
+        <TextBox Grid.Row="9" x:Name="MinBox" Padding="6" Margin="0,0,0,12" Text="0" />
+
+        <TextBlock Grid.Row="10" Text="单位成本（可空）" Margin="0,0,0,4" />
+        <TextBox Grid.Row="11" x:Name="CostBox" Padding="6" Margin="0,0,0,12" />
+
+        <CheckBox Grid.Row="12" x:Name="ActiveBox" Content="启用" IsChecked="True" VerticalAlignment="Top" />
+
+        <Border Grid.Row="13" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="取消" Padding="16,6" Margin="0,0,8,0" Click="Cancel_Click" />
+                <Button Content="保存" Padding="16,6" Background="#2D6A4F" Foreground="White" BorderThickness="0" Click="Save_Click" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

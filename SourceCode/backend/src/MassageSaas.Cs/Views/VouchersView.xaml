@@ -1,0 +1,58 @@
+<UserControl x:Class="MassageSaas.Cs.Views.VouchersView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Background="White" CornerRadius="4" Padding="16">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                <TextBlock DockPanel.Dock="Left" Text="优惠券" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <TextBox Width="150" Height="30" Margin="0,0,8,0"
+                             Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="按券码或标题搜索" />
+                    <TextBlock Text="状态" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <ComboBox SelectedIndex="{Binding StatusFilter, Mode=TwoWay}" Width="110" Height="30"
+                              AutomationProperties.Name="按状态筛选">
+                        <ComboBoxItem Content="全部" />
+                        <ComboBoxItem Content="未核销" />
+                        <ComboBoxItem Content="已核销" />
+                        <ComboBoxItem Content="已过期" />
+                        <ComboBoxItem Content="已作废" />
+                    </ComboBox>
+                    <Button Content="录入券" Padding="12,6" Margin="12,0,0,0" Background="#2D6A4F" Foreground="White" BorderThickness="0" Command="{Binding CreateCommand}" />
+                    <Button Content="刷新" Padding="12,6" Margin="8,0,0,0" Command="{Binding ReloadCommand}" />
+                </StackPanel>
+            </DockPanel>
+
+            <DataGrid Grid.Row="1" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
+                      CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
+                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      AlternatingRowBackground="#FAFAFA">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="券码" Binding="{Binding Code}" Width="140" />
+                    <DataGridTextColumn Header="标题" Binding="{Binding Title}" Width="160" />
+                    <DataGridTextColumn Header="类型" Binding="{Binding Kind}" Width="90" />
+                    <DataGridTextColumn Header="平台" Binding="{Binding Platform}" Width="90" />
+                    <DataGridTextColumn Header="面值" Binding="{Binding FaceValue, StringFormat='¥{0:F2}'}" Width="90" />
+                    <DataGridTextColumn Header="最低消费" Binding="{Binding MinOrderAmount, StringFormat='¥{0:F2}'}" Width="100" />
+                    <DataGridTextColumn Header="折扣%" Binding="{Binding DiscountPercent}" Width="70" />
+                    <DataGridTextColumn Header="有效期至" Binding="{Binding ExpiresAt, StringFormat='{}{0:yyyy-MM-dd}'}" Width="110" />
+                    <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="80" />
+                    <DataGridTemplateColumn Header="操作" Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Margin="2" Padding="6,2" Content="作废" Background="#D9534F" Foreground="White" BorderThickness="0"
+                                        Command="{Binding DataContext.CancelCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+    </Border>
+</UserControl>

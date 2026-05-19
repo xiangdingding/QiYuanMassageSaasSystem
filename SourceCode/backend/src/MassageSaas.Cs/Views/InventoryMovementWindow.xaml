@@ -1,0 +1,45 @@
+<Window x:Class="MassageSaas.Cs.Views.InventoryMovementWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="出入库登记"
+        Height="380" Width="400"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" x:Name="ItemLabel" FontWeight="SemiBold" Margin="0,0,0,12" />
+
+        <TextBlock Grid.Row="1" Text="类型" Margin="0,0,0,4" />
+        <ComboBox Grid.Row="2" x:Name="KindBox" Height="32" Margin="0,0,0,12"
+                  SelectionChanged="KindBox_SelectionChanged">
+            <ComboBoxItem Content="采购入库" Tag="PurchaseIn" />
+            <ComboBoxItem Content="服务消耗" Tag="Consume" />
+            <ComboBoxItem Content="盘点调整" Tag="Adjust" />
+            <ComboBoxItem Content="报损" Tag="Discard" />
+        </ComboBox>
+
+        <TextBlock Grid.Row="3" x:Name="DeltaHint" Text="数量变化（正数入库，负数出库 / 报损）" Margin="0,0,0,4" />
+        <TextBox Grid.Row="4" x:Name="DeltaBox" Padding="6" Margin="0,0,0,12" />
+
+        <TextBlock Grid.Row="5" Text="备注" Margin="0,0,0,4" />
+        <TextBox Grid.Row="6" x:Name="RemarkBox" Padding="6" Height="56" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,12" />
+
+        <Border Grid.Row="8" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="0,12,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="取消" Padding="16,6" Margin="0,0,8,0" Click="Cancel_Click" />
+                <Button Content="提交" Padding="16,6" Background="#2D6A4F" Foreground="White" BorderThickness="0" Click="Save_Click" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

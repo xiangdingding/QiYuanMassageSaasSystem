@@ -1,0 +1,79 @@
+<UserControl x:Class="MassageSaas.Cs.Views.InventoryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border Background="White" CornerRadius="4" Padding="16">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="1.3*" />
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                    <TextBlock DockPanel.Dock="Left" Text="物耗库存" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <CheckBox Content="仅看低库存" IsChecked="{Binding OnlyLowStock}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <Button Content="新建耗材" Padding="12,6" Background="#2D6A4F" Foreground="White" BorderThickness="0" Command="{Binding CreateCommand}" />
+                        <Button Content="刷新" Padding="12,6" Margin="8,0,0,0" Command="{Binding ReloadCommand}" />
+                    </StackPanel>
+                </DockPanel>
+
+                <DataGrid Grid.Row="1" ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}"
+                          AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                          AlternatingRowBackground="#FAFAFA">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="编码" Binding="{Binding Code}" Width="90" />
+                        <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="160" />
+                        <DataGridTextColumn Header="单位" Binding="{Binding Unit}" Width="60" />
+                        <DataGridTextColumn Header="结存" Binding="{Binding Quantity, StringFormat='{}{0:F1}'}" Width="80" />
+                        <DataGridTextColumn Header="预警线" Binding="{Binding MinQuantity, StringFormat='{}{0:F1}'}" Width="80" />
+                        <DataGridTextColumn Header="低库存" Binding="{Binding LowStock}" Width="70" />
+                        <DataGridTemplateColumn Header="操作" Width="190">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Margin="2" Padding="6,2" Content="出入库"
+                                                Command="{Binding DataContext.MoveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}" />
+                                        <Button Margin="2" Padding="6,2" Content="编辑"
+                                                Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+
+            <!-- 选中耗材的出入库流水 -->
+            <Border Grid.Column="2" Background="#F7F9FB" CornerRadius="4" Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="出入库流水" FontWeight="SemiBold" Margin="0,0,0,8" />
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding Movements}" AutoGenerateColumns="False"
+                              CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal" Background="Transparent">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='{}{0:MM-dd HH:mm}'}" Width="100" />
+                            <DataGridTextColumn Header="类型" Binding="{Binding Kind}" Width="90" />
+                            <DataGridTextColumn Header="变化" Binding="{Binding Delta, StringFormat='{}{0:+0.#;-0.#}'}" Width="70" />
+                            <DataGridTextColumn Header="结存" Binding="{Binding QuantityAfter, StringFormat='{}{0:F1}'}" Width="70" />
+                            <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

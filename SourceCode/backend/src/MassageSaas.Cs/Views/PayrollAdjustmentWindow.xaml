@@ -1,0 +1,41 @@
+<Window x:Class="MassageSaas.Cs.Views.PayrollAdjustmentWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="新增奖金 / 扣款"
+        Height="360" Width="400"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" x:Name="UserLabel" FontWeight="SemiBold" Margin="0,0,0,12" />
+
+        <TextBlock Grid.Row="1" Text="类型" Margin="0,0,0,4" />
+        <ComboBox Grid.Row="2" x:Name="KindBox" Height="32" Margin="0,0,0,12">
+            <ComboBoxItem Content="奖金（加项）" Tag="Bonus" />
+            <ComboBoxItem Content="扣款（减项）" Tag="Deduction" />
+        </ComboBox>
+
+        <TextBlock Grid.Row="3" Text="金额（填正数）" Margin="0,0,0,4" />
+        <TextBox Grid.Row="4" x:Name="AmountBox" Padding="6" Margin="0,0,0,12" />
+
+        <TextBlock Grid.Row="5" Text="原因" Margin="0,0,0,4" />
+        <TextBox Grid.Row="6" x:Name="ReasonBox" Padding="6" Height="56" TextWrapping="Wrap" AcceptsReturn="True" VerticalAlignment="Top" />
+
+        <Border Grid.Row="7" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="取消" Padding="16,6" Margin="0,0,8,0" Click="Cancel_Click" />
+                <Button Content="保存" Padding="16,6" Background="#2D6A4F" Foreground="White" BorderThickness="0" Click="Save_Click" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
