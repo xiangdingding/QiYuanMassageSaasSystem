@@ -231,6 +231,13 @@
                             Content="下单并结账"
                             Command="{Binding CheckoutCommand}"
                             AutomationProperties.Name="下单并结账" />
+
+                    <Button Margin="0,8,0,0" Height="32" Background="Transparent"
+                            BorderBrush="#CBD5E0" BorderThickness="1" Foreground="#555" Cursor="Hand"
+                            Content="测试打印小票"
+                            Command="{Binding TestPrintCommand}"
+                            AutomationProperties.Name="测试打印小票"
+                            AutomationProperties.HelpText="发送一张测试小票并踢钱箱，用于调试打印机" />
                 </StackPanel>
             </Grid>
         </Border>

@@ -173,6 +173,17 @@ public partial class PosViewModel : ObservableObject
         if (LookupMemberCommand.CanExecute(null)) LookupMemberCommand.Execute(null);
     }
 
+    /// <summary>测试打印：发一张样张并踢钱箱，现场调试打印机连线/编码/切纸用。</summary>
+    [RelayCommand]
+    private void TestPrint()
+    {
+        var result = _printer.SelfTest(_context.ActiveStore?.Name ?? "测试小票");
+        _speech.SayAsync(result.Success ? "测试打印已发送" : "测试打印失败");
+        MessageBox.Show(result.Message, result.Success ? "测试打印" : "测试打印失败",
+            MessageBoxButton.OK,
+            result.Success ? MessageBoxImage.Information : MessageBoxImage.Warning);
+    }
+
     [RelayCommand]
     private void ClearMember()
     {
