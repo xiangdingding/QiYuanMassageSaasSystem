@@ -1,7 +1,9 @@
 using MassageSaas.Api.Extensions;
+using MassageSaas.Api.HealthChecks;
 using MassageSaas.Api.Middleware;
 using MassageSaas.Infrastructure;
 using MassageSaas.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,6 +52,9 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddAuth(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "db" });
+
 var app = builder.Build();
 
 if (app.Configuration.GetValue("Database:RunMigrationsOnStartup", true))
@@ -80,7 +85,10 @@ app.UseAuthorization();
 app.UseMiddleware<TenantStatusMiddleware>();
 
 app.MapControllers();
-app.MapGet("/health", () => Results.Ok(new { status = "ok", time = DateTime.UtcNow })).AllowAnonymous();
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = HealthResponseWriter.WriteAsync
+}).AllowAnonymous();
 
 app.Run();
 

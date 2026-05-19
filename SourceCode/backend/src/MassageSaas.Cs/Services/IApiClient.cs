@@ -175,6 +175,31 @@ public interface IApiClient
         [Query] DateTime from,
         [Query] DateTime to);
 
+    [Get("/reports/monthly")]
+    Task<MonthlyReportDto> GetMonthlyReportAsync(
+        [Query] long storeId, [Query] int? year = null, [Query] int? month = null);
+
+    [Get("/reports/yearly")]
+    Task<YearlyReportDto> GetYearlyReportAsync([Query] long storeId, [Query] int? year = null);
+
+    [Get("/reports/service-popularity")]
+    Task<List<ServicePopularityDto>> GetServicePopularityAsync(
+        [Query] long storeId, [Query] DateTime from, [Query] DateTime to);
+
+    [Get("/reports/customer-flow")]
+    Task<List<CustomerFlowPointDto>> GetCustomerFlowAsync(
+        [Query] long storeId, [Query] DateTime from, [Query] DateTime to);
+
+    [Get("/reports/member-analysis")]
+    Task<MemberAnalysisDto> GetMemberAnalysisAsync([Query] long storeId);
+
+    [Get("/reports/service-trend")]
+    Task<ServicePopularityTrendDto> GetServiceTrendAsync([Query] long storeId, [Query] int months = 6);
+
+    [Get("/reports/technician-quality")]
+    Task<List<TechnicianQualityDto>> GetTechnicianQualityAsync(
+        [Query] long storeId, [Query] DateTime from, [Query] DateTime to);
+
     [Get("/subscriptions/me")]
     Task<TenantSubscriptionStatusDto> GetMySubscriptionAsync();
 
