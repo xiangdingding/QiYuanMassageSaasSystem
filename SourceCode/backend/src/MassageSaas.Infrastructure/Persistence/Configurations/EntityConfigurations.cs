@@ -123,6 +123,8 @@ public class MemberConfiguration : IEntityTypeConfiguration<Member>
         b.HasIndex(x => new { x.TenantId, x.CardNo }).IsUnique();
         b.HasIndex(x => new { x.TenantId, x.Phone });
         b.HasIndex(x => x.ReferredByMemberId);
+        // 顾客小程序按 OpenId 跨租户反查会员（storefront/member），建索引避免全表扫描
+        b.HasIndex(x => x.WechatOpenId);
         b.HasOne(x => x.Tenant).WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.ReferredByMember).WithMany().HasForeignKey(x => x.ReferredByMemberId).OnDelete(DeleteBehavior.SetNull);

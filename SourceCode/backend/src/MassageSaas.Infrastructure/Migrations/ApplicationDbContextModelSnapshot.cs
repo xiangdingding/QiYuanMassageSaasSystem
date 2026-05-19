@@ -517,6 +517,8 @@ namespace MassageSaas.Infrastructure.Migrations
 
                     b.HasIndex("StoreId");
 
+                    b.HasIndex("WechatOpenId");
+
                     b.HasIndex("TenantId", "CardNo")
                         .IsUnique();
 

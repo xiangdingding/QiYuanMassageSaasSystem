@@ -26,11 +26,35 @@ interface BoundMemberDto {
   level: string;
 }
 
+interface StorefrontPackage {
+  id: number;
+  title: string;
+  kind: string;
+  serviceName?: string;
+  remainCount: number;
+  totalCount: number;
+  expiresAt?: string;
+  status: string;
+}
+
+interface StorefrontMember extends BoundMemberDto {
+  packages: StorefrontPackage[];
+}
+
 interface BoundView {
   cardNo: string;
   name: string;
   balanceText: string;
   levelText: string;
+}
+
+interface PackageView {
+  id: number;
+  title: string;
+  kindText: string;
+  serviceText: string;
+  countText: string;
+  expiryText: string;
 }
 
 const STATUS_MAP: Record<string, string> = {
@@ -62,6 +86,23 @@ const toBoundView = (m: BoundMemberDto): BoundView => ({
   levelText: LEVEL_MAP[m.level] ?? m.level
 });
 
+const toPackageView = (p: StorefrontPackage): PackageView => {
+  const isCounter = p.kind === 'Counter';
+  const countText = isCounter
+    ? `剩 ${p.remainCount} / ${p.totalCount} 次`
+    : p.totalCount > 0
+      ? `期限内剩 ${p.remainCount} 次`
+      : '期限内不限次';
+  return {
+    id: p.id,
+    title: p.title,
+    kindText: isCounter ? '计次卡' : '期限卡',
+    serviceText: p.serviceName || '不限服务项目',
+    countText,
+    expiryText: p.expiresAt ? `${p.expiresAt.slice(0, 10)} 到期` : '无到期日'
+  };
+};
+
 Page({
   data: {
     phone: '',
@@ -72,6 +113,7 @@ Page({
     storeName: '',
     storeId: 0,
     bound: null as BoundView | null,
+    packages: [] as PackageView[],
     binding: false
   },
   onShow() {
@@ -82,9 +124,28 @@ Page({
       storeName: lastStore?.name ?? '',
       bound: cached ? toBoundView(cached) : null
     });
+    // 已绑定的，进页面就拉一次实时余额与套餐
+    if (cached) this.refreshMember();
   },
   onPhone(e: WechatMiniprogram.Input) {
     this.setData({ phone: e.detail.value });
+  },
+  /** 按缓存的 openId 拉取会员卡实时余额与在用套餐。 */
+  async refreshMember() {
+    const openId = wx.getStorageSync('openId') as string | undefined;
+    if (!openId) return;
+    try {
+      const m = await api.get<StorefrontMember>('/storefront/member', { openId });
+      wx.setStorageSync('boundMember', {
+        memberId: m.memberId, cardNo: m.cardNo, name: m.name, balance: m.balance, level: m.level
+      });
+      this.setData({
+        bound: toBoundView(m),
+        packages: (m.packages ?? []).map(toPackageView)
+      });
+    } catch (e: unknown) {
+      // 拉取失败保留缓存展示，不打断页面
+    }
   },
   async query() {
     if (!/^1\d{10}$/.test(this.data.phone)) {
@@ -140,6 +201,7 @@ Page({
       wx.setStorageSync('boundMember', m);
       this.setData({ bound: toBoundView(m) });
       wx.showToast({ title: '绑定成功', icon: 'success' });
+      this.refreshMember();
     } catch (e: unknown) {
       // 错误已由 api 层 toast
     } finally {
@@ -148,7 +210,7 @@ Page({
   },
   unbind() {
     wx.removeStorageSync('boundMember');
-    this.setData({ bound: null });
+    this.setData({ bound: null, packages: [] });
     wx.showToast({ title: '已解除显示', icon: 'none' });
   },
   cancel(e: WechatMiniprogram.TouchEvent) {

@@ -18,6 +18,22 @@
   </view>
 
   <view class="a11y-section">
+    <text class="a11y-label" id="lbl-service">服务项目</text>
+    <picker mode="selector" range="{{serviceLabels}}" value="{{serviceIndex}}"
+            bindchange="onService" aria-labelledby="lbl-service">
+      <view class="a11y-input">{{serviceLabels[serviceIndex]}}</view>
+    </picker>
+  </view>
+
+  <view class="a11y-section">
+    <text class="a11y-label" id="lbl-tech">指定技师</text>
+    <picker mode="selector" range="{{techLabels}}" value="{{techIndex}}"
+            bindchange="onTech" aria-labelledby="lbl-tech">
+      <view class="a11y-input">{{techLabels[techIndex]}}</view>
+    </picker>
+  </view>
+
+  <view class="a11y-section">
     <text class="a11y-label" id="lbl-date">到店日期</text>
     <picker mode="date" value="{{form.date}}" bindchange="onDate"
             aria-labelledby="lbl-date">
@@ -44,7 +60,7 @@
   <view class="a11y-section">
     <text class="a11y-label" id="lbl-remark">备注</text>
     <input class="a11y-input" aria-labelledby="lbl-remark"
-           placeholder="可填指定技师 / 偏好（可选）"
+           placeholder="按摩偏好 / 健康提示（可选）"
            value="{{form.remark}}" bindinput="onRemark" />
   </view>
 

@@ -41,7 +41,32 @@
     </button>
   </view>
 
-  <button wx:else class="a11y-btn" aria-label="绑定会员卡，接收微信通知"
+  <!-- 在用会员套餐（计次卡 / 期限卡） -->
+  <view wx:if="{{bound}}" class="a11y-section" aria-live="polite">
+    <text class="a11y-label">我的会员套餐</text>
+    <text wx:if="{{packages.length === 0}}" class="a11y-value">暂无在用套餐</text>
+  </view>
+
+  <view wx:for="{{packages}}" wx:key="id" class="a11y-card" role="article" aria-label="会员套餐">
+    <view class="a11y-section">
+      <text class="a11y-label">套餐</text>
+      <text class="a11y-value">{{item.title}}（{{item.kindText}}）</text>
+    </view>
+    <view class="a11y-section">
+      <text class="a11y-label">适用服务</text>
+      <text class="a11y-value">{{item.serviceText}}</text>
+    </view>
+    <view class="a11y-section">
+      <text class="a11y-label">剩余</text>
+      <text class="a11y-value">{{item.countText}}</text>
+    </view>
+    <view class="a11y-section">
+      <text class="a11y-label">有效期</text>
+      <text class="a11y-value">{{item.expiryText}}</text>
+    </view>
+  </view>
+
+  <button wx:if="{{!bound}}" class="a11y-btn" aria-label="绑定会员卡，接收微信通知"
           bindtap="bindMember" loading="{{binding}}" disabled="{{binding}}">
     绑定会员卡（接收微信通知）
   </button>
