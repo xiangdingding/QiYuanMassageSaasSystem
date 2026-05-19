@@ -22,7 +22,8 @@ public partial class MainViewModel : ObservableObject
         AppContextService context,
         NavigationService navigation,
         ISpeechAnnouncer speech,
-        ICallerIdMonitor callerId)
+        ICallerIdMonitor callerId,
+        ICardReader cardReader)
     {
         _sp = sp;
         _api = api;
@@ -32,14 +33,29 @@ public partial class MainViewModel : ObservableObject
         Navigation = navigation;
         BuildNav();
 
-        // 来电显示：识别到来电语音播报号码（占位监听器不会触发，接来电盒后即生效）
+        // 外设事件：MainViewModel 是单例，在此统一订阅，避免转瞬即逝的页面 VM 反复挂事件
         callerId.CallReceived += OnIncomingCall;
         callerId.Start();
+        cardReader.CardSwiped += OnCardSwiped;
+        cardReader.Start();
     }
 
+    // 来电显示：识别到来电语音播报号码（占位监听器不会触发，接来电盒后即生效）
     private void OnIncomingCall(object? sender, IncomingCall call)
     {
         _speech.SayAsync($"来电，号码 {call.PhoneNumber}");
+    }
+
+    // 磁条会员卡刷卡：在收银台界面时把卡号转给 PosViewModel 自动调出会员
+    private void OnCardSwiped(object? sender, CardSwipe swipe)
+    {
+        App.Current?.Dispatcher.Invoke(() =>
+        {
+            if (Navigation.CurrentViewModel is PosViewModel pos)
+                pos.ApplyCardSwipe(swipe.CardNumber);
+            else
+                _speech.SayAsync("请先切换到收银台再刷卡");
+        });
     }
 
     public SessionService Session { get; }

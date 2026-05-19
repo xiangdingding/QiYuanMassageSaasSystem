@@ -40,10 +40,11 @@ public partial class App : Application
                 services.AddSingleton<ISpeechAnnouncer, SpeechAnnouncer>();
                 services.AddTransient<AuthMessageHandler>();
 
-                // 外设：当前为占位实现，接入真实硬件后只换这三行注册
+                // 外设：当前为占位实现，接入真实硬件后只换这几行注册
                 services.AddSingleton<IReceiptPrinter, LoggingReceiptPrinter>();
                 services.AddSingleton<ICustomerDisplay, LoggingCustomerDisplay>();
                 services.AddSingleton<ICallerIdMonitor, NullCallerIdMonitor>();
+                services.AddSingleton<ICardReader, NullCardReader>();
 
                 services.AddRefitClient<IApiClient>(refitSettings)
                     .ConfigureHttpClient(c => c.BaseAddress = new Uri(settings.ApiBaseUrl))

@@ -165,6 +165,14 @@ public partial class PosViewModel : ObservableObject
         catch (Exception ex) { ErrorReporter.Show(ex); }
     }
 
+    /// <summary>磁条会员卡刷卡：用卡号自动调出会员。由 MainViewModel 在收银台界面时转发。</summary>
+    public void ApplyCardSwipe(string cardNumber)
+    {
+        if (string.IsNullOrWhiteSpace(cardNumber)) return;
+        MemberKeyword = cardNumber.Trim();
+        if (LookupMemberCommand.CanExecute(null)) LookupMemberCommand.Execute(null);
+    }
+
     [RelayCommand]
     private void ClearMember()
     {
