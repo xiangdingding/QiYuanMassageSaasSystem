@@ -1,6 +1,6 @@
 import { computed, onMounted, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { Avatar, CreditCard, Goods, List, Money, OfficeBuilding, Tickets, TrendCharts, User, UserFilled } from '@element-plus/icons-vue';
+import { AlarmClock, Avatar, Box, Calendar, CreditCard, Discount, Goods, House, List, Money, OfficeBuilding, StarFilled, TakeawayBox, Tickets, TrendCharts, User, UserFilled, Wallet, WarnTriangleFilled } from '@element-plus/icons-vue';
 import { canSee, useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
 import { subscriptionsApi } from '@/api/modules';
@@ -22,8 +22,9 @@ const ROLE_LABELS = {
 };
 const roleLabel = computed(() => (auth.user?.role ? ROLE_LABELS[auth.user.role] : ''));
 const ICONS = {
-    Avatar, CreditCard, Goods, List, Money, OfficeBuilding,
-    Tickets, TrendCharts, User, UserFilled
+    AlarmClock, Avatar, Box, Calendar, CreditCard, Discount, Goods, House,
+    List, Money, OfficeBuilding, StarFilled, TakeawayBox, Tickets, TrendCharts,
+    User, UserFilled, Wallet, WarnTriangleFilled
 };
 function iconCmp(name) {
     return ICONS[name] ?? Tickets;
@@ -69,6 +70,7 @@ debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
 let __VLS_components;
 let __VLS_directives;
+/** @type {__VLS_StyleScopedClasses['skip-link']} */ ;
 // CSS variable injection 
 // CSS variable injection end 
 const __VLS_0 = {}.ElContainer;
@@ -82,16 +84,25 @@ const __VLS_2 = __VLS_1({
 }, ...__VLS_functionalComponentArgsRest(__VLS_1));
 var __VLS_4 = {};
 __VLS_3.slots.default;
+__VLS_asFunctionalElement(__VLS_intrinsicElements.a, __VLS_intrinsicElements.a)({
+    href: "#main-content",
+    ...{ class: "skip-link" },
+    'aria-label': "跳到主要内容",
+});
 const __VLS_5 = {}.ElAside;
 /** @type {[typeof __VLS_components.ElAside, typeof __VLS_components.elAside, typeof __VLS_components.ElAside, typeof __VLS_components.elAside, ]} */ ;
 // @ts-ignore
 const __VLS_6 = __VLS_asFunctionalComponent(__VLS_5, new __VLS_5({
     width: "220px",
     ...{ class: "aside" },
+    role: "navigation",
+    'aria-label': "主导航",
 }));
 const __VLS_7 = __VLS_6({
     width: "220px",
     ...{ class: "aside" },
+    role: "navigation",
+    'aria-label': "主导航",
 }, ...__VLS_functionalComponentArgsRest(__VLS_6));
 __VLS_8.slots.default;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -124,9 +135,11 @@ for (const [item] of __VLS_getVForSourceType((__VLS_ctx.visibleMenu))) {
     // @ts-ignore
     const __VLS_14 = __VLS_asFunctionalComponent(__VLS_13, new __VLS_13({
         index: (item.path),
+        'aria-label': (item.title),
     }));
     const __VLS_15 = __VLS_14({
         index: (item.path),
+        'aria-label': (item.title),
     }, ...__VLS_functionalComponentArgsRest(__VLS_14));
     __VLS_16.slots.default;
     if (item.icon) {
@@ -159,16 +172,19 @@ const __VLS_29 = {}.ElHeader;
 // @ts-ignore
 const __VLS_30 = __VLS_asFunctionalComponent(__VLS_29, new __VLS_29({
     ...{ class: "header" },
+    role: "banner",
 }));
 const __VLS_31 = __VLS_30({
     ...{ class: "header" },
+    role: "banner",
 }, ...__VLS_functionalComponentArgsRest(__VLS_30));
 __VLS_32.slots.default;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "header-left" },
 });
-__VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+__VLS_asFunctionalElement(__VLS_intrinsicElements.h1, __VLS_intrinsicElements.h1)({
     ...{ class: "page-title" },
+    'aria-live': "polite",
 });
 (__VLS_ctx.pageTitle);
 if (__VLS_ctx.expireWarn) {
@@ -214,12 +230,14 @@ if (__VLS_ctx.appStore.stores.length > 1) {
         modelValue: (__VLS_ctx.appStore.activeStoreId),
         size: "small",
         ...{ style: {} },
+        'aria-label': "切换门店",
     }));
     const __VLS_43 = __VLS_42({
         ...{ 'onChange': {} },
         modelValue: (__VLS_ctx.appStore.activeStoreId),
         size: "small",
         ...{ style: {} },
+        'aria-label': "切换门店",
     }, ...__VLS_functionalComponentArgsRest(__VLS_42));
     let __VLS_45;
     let __VLS_46;
@@ -321,9 +339,15 @@ const __VLS_81 = {}.ElMain;
 // @ts-ignore
 const __VLS_82 = __VLS_asFunctionalComponent(__VLS_81, new __VLS_81({
     ...{ class: "main" },
+    role: "main",
+    id: "main-content",
+    tabindex: "-1",
 }));
 const __VLS_83 = __VLS_82({
     ...{ class: "main" },
+    role: "main",
+    id: "main-content",
+    tabindex: "-1",
 }, ...__VLS_functionalComponentArgsRest(__VLS_82));
 __VLS_84.slots.default;
 const __VLS_85 = {}.RouterView;
@@ -335,6 +359,7 @@ var __VLS_84;
 var __VLS_28;
 var __VLS_3;
 /** @type {__VLS_StyleScopedClasses['layout']} */ ;
+/** @type {__VLS_StyleScopedClasses['skip-link']} */ ;
 /** @type {__VLS_StyleScopedClasses['aside']} */ ;
 /** @type {__VLS_StyleScopedClasses['brand']} */ ;
 /** @type {__VLS_StyleScopedClasses['menu']} */ ;

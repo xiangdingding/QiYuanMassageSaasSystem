@@ -165,11 +165,13 @@ if (__VLS_ctx.canManage) {
         ...{ 'onClick': {} },
         type: "primary",
         icon: (__VLS_ctx.Bell),
+        'aria-label': "叫下一个排队技师",
     }));
     const __VLS_18 = __VLS_17({
         ...{ 'onClick': {} },
         type: "primary",
         icon: (__VLS_ctx.Bell),
+        'aria-label': "叫下一个排队技师",
     }, ...__VLS_functionalComponentArgsRest(__VLS_17));
     let __VLS_20;
     let __VLS_21;
@@ -187,10 +189,12 @@ if (__VLS_ctx.canManage) {
     const __VLS_25 = __VLS_asFunctionalComponent(__VLS_24, new __VLS_24({
         ...{ 'onClick': {} },
         icon: (__VLS_ctx.Refresh),
+        'aria-label': "重置今日轮次计数",
     }));
     const __VLS_26 = __VLS_25({
         ...{ 'onClick': {} },
         icon: (__VLS_ctx.Refresh),
+        'aria-label': "重置今日轮次计数",
     }, ...__VLS_functionalComponentArgsRest(__VLS_25));
     let __VLS_28;
     let __VLS_29;
@@ -367,12 +371,14 @@ if (__VLS_ctx.canManage) {
             size: "small",
             type: (row.state === 'OnDuty' ? '' : 'primary'),
             disabled: (row.state === 'OnDuty'),
+            'aria-label': (`将技师 ${row.technicianName} 设为上钟`),
         }));
         const __VLS_74 = __VLS_73({
             ...{ 'onClick': {} },
             size: "small",
             type: (row.state === 'OnDuty' ? '' : 'primary'),
             disabled: (row.state === 'OnDuty'),
+            'aria-label': (`将技师 ${row.technicianName} 设为上钟`),
         }, ...__VLS_functionalComponentArgsRest(__VLS_73));
         let __VLS_76;
         let __VLS_77;
@@ -394,12 +400,14 @@ if (__VLS_ctx.canManage) {
             size: "small",
             type: (row.state === 'Resting' ? '' : 'warning'),
             disabled: (row.state === 'Resting' || row.state === 'OffDuty'),
+            'aria-label': (`将技师 ${row.technicianName} 设为休息`),
         }));
         const __VLS_82 = __VLS_81({
             ...{ 'onClick': {} },
             size: "small",
             type: (row.state === 'Resting' ? '' : 'warning'),
             disabled: (row.state === 'Resting' || row.state === 'OffDuty'),
+            'aria-label': (`将技师 ${row.technicianName} 设为休息`),
         }, ...__VLS_functionalComponentArgsRest(__VLS_81));
         let __VLS_84;
         let __VLS_85;
@@ -421,12 +429,14 @@ if (__VLS_ctx.canManage) {
             size: "small",
             type: (row.state === 'OffDuty' ? '' : 'info'),
             disabled: (row.state === 'OffDuty'),
+            'aria-label': (`将技师 ${row.technicianName} 设为下班`),
         }));
         const __VLS_90 = __VLS_89({
             ...{ 'onClick': {} },
             size: "small",
             type: (row.state === 'OffDuty' ? '' : 'info'),
             disabled: (row.state === 'OffDuty'),
+            'aria-label': (`将技师 ${row.technicianName} 设为下班`),
         }, ...__VLS_functionalComponentArgsRest(__VLS_89));
         let __VLS_92;
         let __VLS_93;

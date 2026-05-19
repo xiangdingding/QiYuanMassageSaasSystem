@@ -247,6 +247,115 @@
           </el-table>
         </el-card>
       </el-tab-pane>
+
+      <el-tab-pane label="会员分析" name="memberAnalysis">
+        <el-card shadow="never">
+          <div class="toolbar">
+            <el-button type="primary" @click="loadMemberAnalysis">刷新</el-button>
+          </div>
+          <div v-if="memberAnalysis" style="margin-top: 16px">
+            <el-row :gutter="16">
+              <el-col :span="6">
+                <el-card class="metric" shadow="hover">
+                  <div class="m-label">会员总数</div>
+                  <div class="m-value">{{ memberAnalysis.totalMembers }}</div>
+                  <div class="m-sub">本月新增 {{ memberAnalysis.newMembersThisMonth }}</div>
+                </el-card>
+              </el-col>
+              <el-col :span="6">
+                <el-card class="metric" shadow="hover">
+                  <div class="m-label">活跃 · 30 天内消费</div>
+                  <div class="m-value">{{ memberAnalysis.activeMembers }}</div>
+                </el-card>
+              </el-col>
+              <el-col :span="6">
+                <el-card class="metric" shadow="hover">
+                  <div class="m-label">沉睡 · 31-90 天</div>
+                  <div class="m-value">{{ memberAnalysis.dormantMembers }}</div>
+                </el-card>
+              </el-col>
+              <el-col :span="6">
+                <el-card class="metric" shadow="hover">
+                  <div class="m-label">流失 · 超 90 天</div>
+                  <div class="m-value">{{ memberAnalysis.lostMembers }}</div>
+                </el-card>
+              </el-col>
+            </el-row>
+            <el-row :gutter="16" style="margin-top: 16px">
+              <el-col :span="8">
+                <el-card class="metric" shadow="hover">
+                  <div class="m-label">从未消费</div>
+                  <div class="m-value">{{ memberAnalysis.neverConsumed }}</div>
+                </el-card>
+              </el-col>
+              <el-col :span="8">
+                <el-card class="metric" shadow="hover">
+                  <div class="m-label">复购会员 · 累计 ≥2 单</div>
+                  <div class="m-value">{{ memberAnalysis.repeatMembers }}</div>
+                </el-card>
+              </el-col>
+              <el-col :span="8">
+                <el-card class="metric" shadow="hover">
+                  <div class="m-label">复购率</div>
+                  <div class="m-value">{{ memberAnalysis.repeatRate }}%</div>
+                </el-card>
+              </el-col>
+            </el-row>
+          </div>
+        </el-card>
+      </el-tab-pane>
+
+      <el-tab-pane label="服务趋势" name="serviceTrend">
+        <el-card shadow="never">
+          <div class="toolbar">
+            <el-select v-model="trendMonths" style="width: 150px" @change="loadServiceTrend">
+              <el-option :value="6" label="近 6 个月" />
+              <el-option :value="12" label="近 12 个月" />
+            </el-select>
+            <el-button type="primary" @click="loadServiceTrend">查询</el-button>
+          </div>
+          <el-table :data="serviceTrend?.services ?? []" v-loading="trendLoading" stripe style="margin-top: 12px">
+            <el-table-column prop="serviceName" label="服务" min-width="140" fixed />
+            <el-table-column prop="totalRounds" label="总钟数" width="90" />
+            <el-table-column
+              v-for="(label, idx) in trendMonthHeaders"
+              :key="idx"
+              :label="label"
+              width="88"
+            >
+              <template #default="{ row }">{{ row.months[idx]?.rounds ?? 0 }}</template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-tab-pane>
+
+      <el-tab-pane label="技师质量" name="quality">
+        <el-card shadow="never">
+          <div class="toolbar">
+            <el-date-picker
+              v-model="qualityRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始" end-placeholder="结束"
+              format="YYYY-MM-DD" value-format="YYYY-MM-DD"
+            />
+            <el-button type="primary" @click="loadQuality">查询</el-button>
+          </div>
+          <el-table :data="quality" v-loading="qualityLoading" stripe style="margin-top: 12px">
+            <el-table-column prop="employeeNo" label="工号" width="80" />
+            <el-table-column prop="technicianName" label="技师" min-width="120" />
+            <el-table-column prop="roundCount" label="钟数" width="100" />
+            <el-table-column prop="complaintCount" label="投诉数" width="100" />
+            <el-table-column label="投诉率" width="120">
+              <template #default="{ row }">
+                <span :style="{ color: row.complaintRate > 5 ? '#d9534f' : '#2d6a4f', fontWeight: 600 }">
+                  {{ row.complaintRate }}%
+                </span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -258,13 +367,17 @@ import { ElMessage } from 'element-plus';
 import {
   reportsApi,
   type MonthlyReport, type YearlyReport,
-  type ServicePopularity, type CustomerFlowPoint
+  type ServicePopularity, type CustomerFlowPoint,
+  type MemberAnalysis, type ServicePopularityTrend, type TechnicianQuality
 } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
 import type { DailyReport, TechnicianPerformance } from '@/api/types';
 
 const appStore = useAppStore();
-const tab = ref<'daily' | 'performance' | 'monthly' | 'yearly' | 'popularity' | 'flow'>('daily');
+const tab = ref<
+  'daily' | 'performance' | 'monthly' | 'yearly' | 'popularity' | 'flow'
+  | 'memberAnalysis' | 'serviceTrend' | 'quality'
+>('daily');
 
 const dailyDate = ref(dayjs().format('YYYY-MM-DD'));
 const daily = ref<DailyReport | null>(null);
@@ -296,8 +409,27 @@ const flowRange = ref<[string, string]>([
 const flow = ref<CustomerFlowPoint[]>([]);
 const flowLoading = ref(false);
 
+const memberAnalysis = ref<MemberAnalysis | null>(null);
+
+const trendMonths = ref(6);
+const serviceTrend = ref<ServicePopularityTrend | null>(null);
+const trendLoading = ref(false);
+
+const qualityRange = ref<[string, string]>([
+  dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
+  dayjs().format('YYYY-MM-DD')
+]);
+const quality = ref<TechnicianQuality[]>([]);
+const qualityLoading = ref(false);
+
 function formatDate(s: string) { return dayjs(s).format('YYYY-MM-DD'); }
 function formatMonth(s: string) { return dayjs(s).format('YYYY-MM'); }
+
+const trendMonthHeaders = computed(() => {
+  const first = serviceTrend.value?.services[0];
+  if (!first) return [] as string[];
+  return first.months.map((m) => `${m.year}-${String(m.month).padStart(2, '0')}`);
+});
 
 const payMethodRows = computed(() => {
   if (!daily.value) return [];
@@ -372,6 +504,36 @@ async function loadFlow() {
     );
   } finally {
     flowLoading.value = false;
+  }
+}
+
+async function loadMemberAnalysis() {
+  if (!appStore.activeStoreId) return;
+  memberAnalysis.value = await reportsApi.memberAnalysis(appStore.activeStoreId);
+}
+
+async function loadServiceTrend() {
+  if (!appStore.activeStoreId) return;
+  trendLoading.value = true;
+  try {
+    serviceTrend.value = await reportsApi.serviceTrend(appStore.activeStoreId, trendMonths.value);
+  } finally {
+    trendLoading.value = false;
+  }
+}
+
+async function loadQuality() {
+  if (!appStore.activeStoreId) return;
+  const [from, to] = qualityRange.value;
+  qualityLoading.value = true;
+  try {
+    quality.value = await reportsApi.technicianQuality(
+      appStore.activeStoreId,
+      `${from}T00:00:00Z`,
+      `${dayjs(to).add(1, 'day').format('YYYY-MM-DD')}T00:00:00Z`
+    );
+  } finally {
+    qualityLoading.value = false;
   }
 }
 

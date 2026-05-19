@@ -303,4 +303,133 @@ public class ReportsController : ControllerBase
             .ToListAsync(ct);
         return Ok(data);
     }
+
+    /// <summary>会员分析：按最近消费时间分活跃(≤30天)/沉睡(31-90天)/流失(>90天)，含本月新增与复购率。</summary>
+    [HttpGet("member-analysis")]
+    [Authorize(Policy = "ShopStaff")]
+    public async Task<ActionResult<MemberAnalysisDto>> MemberAnalysis(
+        [FromQuery] long storeId, CancellationToken ct = default)
+    {
+        var now = DateTime.UtcNow;
+        var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var d30 = now.AddDays(-30);
+        var d90 = now.AddDays(-90);
+
+        var members = _db.Members.AsNoTracking().Where(m => m.StoreId == storeId);
+        var total = await members.CountAsync(ct);
+        var newThisMonth = await members.CountAsync(m => m.CreatedAt >= monthStart, ct);
+
+        var storeMemberIds = members.Select(m => m.Id);
+        var consumption = await _db.Orders.AsNoTracking()
+            .Where(o => o.Status == OrderStatus.Completed
+                        && o.MemberId != null && o.CompletedAt != null
+                        && storeMemberIds.Contains(o.MemberId!.Value))
+            .GroupBy(o => o.MemberId!.Value)
+            .Select(g => new { LastAt = g.Max(o => o.CompletedAt!.Value), Count = g.Count() })
+            .ToListAsync(ct);
+
+        var consumed = consumption.Count;
+        var active = consumption.Count(c => c.LastAt >= d30);
+        var dormant = consumption.Count(c => c.LastAt < d30 && c.LastAt >= d90);
+        var lost = consumption.Count(c => c.LastAt < d90);
+        var repeat = consumption.Count(c => c.Count >= 2);
+        var repeatRate = consumed > 0 ? Math.Round((decimal)repeat / consumed * 100m, 1) : 0m;
+
+        return Ok(new MemberAnalysisDto(
+            storeId, total, total - consumed,
+            active, dormant, lost,
+            newThisMonth, repeat, repeatRate));
+    }
+
+    /// <summary>服务热度趋势：近 N 个月最热门服务（按总钟数取前 8）的逐月钟数。</summary>
+    [HttpGet("service-trend")]
+    [Authorize(Policy = "ShopStaff")]
+    public async Task<ActionResult<ServicePopularityTrendDto>> ServiceTrend(
+        [FromQuery] long storeId, [FromQuery] int months = 6, CancellationToken ct = default)
+    {
+        months = Math.Clamp(months, 1, 24);
+        var now = DateTime.UtcNow;
+        var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var windowStart = currentMonthStart.AddMonths(-(months - 1));
+
+        var rows = await _db.OrderItems.AsNoTracking()
+            .Where(oi => oi.Order.StoreId == storeId
+                         && oi.Order.Status == OrderStatus.Completed
+                         && oi.Order.CompletedAt != null && oi.Order.CompletedAt >= windowStart)
+            .Select(oi => new
+            {
+                oi.ServiceId,
+                oi.ServiceName,
+                oi.Quantity,
+                Completed = oi.Order.CompletedAt!.Value
+            })
+            .ToListAsync(ct);
+
+        const int topN = 8;
+        var services = rows
+            .GroupBy(r => new { r.ServiceId, r.ServiceName })
+            .Select(g => new { g.Key.ServiceId, g.Key.ServiceName, Total = g.Sum(x => x.Quantity), Rows = g.ToList() })
+            .OrderByDescending(s => s.Total)
+            .Take(topN)
+            .Select(s => new ServiceTrendDto(
+                s.ServiceId, s.ServiceName, s.Total,
+                Enumerable.Range(0, months).Select(i =>
+                {
+                    var m = windowStart.AddMonths(i);
+                    var rounds = s.Rows
+                        .Where(r => r.Completed.Year == m.Year && r.Completed.Month == m.Month)
+                        .Sum(r => r.Quantity);
+                    return new ServiceTrendMonthDto(m.Year, m.Month, rounds);
+                }).ToList()))
+            .ToList();
+
+        return Ok(new ServicePopularityTrendDto(months, services));
+    }
+
+    /// <summary>技师质量：指定区间内各技师的钟数、有效投诉数与投诉率（已撤销投诉不计）。</summary>
+    [HttpGet("technician-quality")]
+    [Authorize(Policy = "ShopStaff")]
+    public async Task<ActionResult<IReadOnlyList<TechnicianQualityDto>>> TechnicianQuality(
+        [FromQuery] long storeId,
+        [FromQuery] DateTime from,
+        [FromQuery] DateTime to,
+        CancellationToken ct = default)
+    {
+        if (to <= from) return BadRequest(new { code = "InvalidRange", message = "结束时间必须大于开始时间" });
+
+        var rounds = await _db.OrderItems.AsNoTracking()
+            .Where(oi => oi.Order.StoreId == storeId
+                         && oi.Order.Status == OrderStatus.Completed
+                         && oi.Order.CompletedAt >= from && oi.Order.CompletedAt < to)
+            .GroupBy(oi => new { oi.TechnicianId, oi.Technician.RealName, oi.Technician.Username, oi.Technician.EmployeeNo })
+            .Select(g => new
+            {
+                g.Key.TechnicianId,
+                Name = g.Key.RealName ?? g.Key.Username,
+                g.Key.EmployeeNo,
+                Rounds = g.Sum(x => x.Quantity)
+            })
+            .ToListAsync(ct);
+
+        var complaintMap = (await _db.ServiceComplaints.AsNoTracking()
+            .Where(c => c.StoreId == storeId && c.Status != ComplaintStatus.Cancelled
+                        && c.CreatedAt >= from && c.CreatedAt < to)
+            .GroupBy(c => c.OriginalTechnicianId)
+            .Select(g => new { TechnicianId = g.Key, Count = g.Count() })
+            .ToListAsync(ct))
+            .ToDictionary(x => x.TechnicianId, x => x.Count);
+
+        var result = rounds
+            .Select(r =>
+            {
+                var cc = complaintMap.TryGetValue(r.TechnicianId, out var c) ? c : 0;
+                var rate = r.Rounds > 0 ? Math.Round((decimal)cc / r.Rounds * 100m, 2) : 0m;
+                return new TechnicianQualityDto(r.TechnicianId, r.Name, r.EmployeeNo, r.Rounds, cc, rate);
+            })
+            .OrderByDescending(d => d.ComplaintRate)
+            .ThenByDescending(d => d.ComplaintCount)
+            .ToList();
+
+        return Ok(result);
+    }
 }

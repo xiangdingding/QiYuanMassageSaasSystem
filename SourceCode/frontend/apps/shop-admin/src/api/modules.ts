@@ -153,6 +153,19 @@ export interface YearlyReport {
 export interface ServicePopularity { serviceId: number; serviceName: string; orderItemCount: number; roundsCount: number; revenue: number; }
 export interface CustomerFlowPoint { date: string; orderCount: number; uniqueMembers: number; }
 
+export interface MemberAnalysis {
+  storeId: number; totalMembers: number; neverConsumed: number;
+  activeMembers: number; dormantMembers: number; lostMembers: number;
+  newMembersThisMonth: number; repeatMembers: number; repeatRate: number;
+}
+export interface ServiceTrendMonth { year: number; month: number; rounds: number; }
+export interface ServiceTrend { serviceId: number; serviceName: string; totalRounds: number; months: ServiceTrendMonth[]; }
+export interface ServicePopularityTrend { months: number; services: ServiceTrend[]; }
+export interface TechnicianQuality {
+  technicianId: number; technicianName: string; employeeNo: number | null;
+  roundCount: number; complaintCount: number; complaintRate: number;
+}
+
 export const reportsApi = {
   daily: (storeId: number, date?: string) =>
     http().get<DailyReport>('/reports/daily', { params: { storeId, date } }).then((r) => r.data),
@@ -165,7 +178,13 @@ export const reportsApi = {
   servicePopularity: (storeId: number, from: string, to: string) =>
     http().get<ServicePopularity[]>('/reports/service-popularity', { params: { storeId, from, to } }).then((r) => r.data),
   customerFlow: (storeId: number, from: string, to: string) =>
-    http().get<CustomerFlowPoint[]>('/reports/customer-flow', { params: { storeId, from, to } }).then((r) => r.data)
+    http().get<CustomerFlowPoint[]>('/reports/customer-flow', { params: { storeId, from, to } }).then((r) => r.data),
+  memberAnalysis: (storeId: number) =>
+    http().get<MemberAnalysis>('/reports/member-analysis', { params: { storeId } }).then((r) => r.data),
+  serviceTrend: (storeId: number, months: number) =>
+    http().get<ServicePopularityTrend>('/reports/service-trend', { params: { storeId, months } }).then((r) => r.data),
+  technicianQuality: (storeId: number, from: string, to: string) =>
+    http().get<TechnicianQuality[]>('/reports/technician-quality', { params: { storeId, from, to } }).then((r) => r.data)
 };
 
 export const subscriptionsApi = {

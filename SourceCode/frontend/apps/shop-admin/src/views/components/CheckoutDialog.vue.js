@@ -24,6 +24,12 @@ function onOpen() {
     form.payMethod = 'Cash';
     form.paidAmount = props.payable;
     form.remark = '';
+    // 弹窗打开后把焦点放到第一个 RadioButton（el-dialog 自带焦点陷阱，Tab 不会跑出去）
+    // Element Plus 已自动 focus 到 dialog 内首个可聚焦元素，不再额外处理
+}
+function onCtrlEnter() {
+    if (canSubmit.value)
+        submit();
 }
 function submit() {
     emit('submit', {
@@ -44,16 +50,24 @@ const __VLS_0 = {}.ElDialog;
 const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
     ...{ 'onUpdate:modelValue': {} },
     ...{ 'onOpen': {} },
+    ...{ 'onKeydown': {} },
     modelValue: (__VLS_ctx.modelValue),
     title: "结账",
     width: "460px",
+    'aria-label': "结账对话框，按 Esc 关闭，Ctrl+回车确认",
+    closeOnPressEscape: (true),
+    closeOnClickModal: (false),
 }));
 const __VLS_2 = __VLS_1({
     ...{ 'onUpdate:modelValue': {} },
     ...{ 'onOpen': {} },
+    ...{ 'onKeydown': {} },
     modelValue: (__VLS_ctx.modelValue),
     title: "结账",
     width: "460px",
+    'aria-label': "结账对话框，按 Esc 关闭，Ctrl+回车确认",
+    closeOnPressEscape: (true),
+    closeOnClickModal: (false),
 }, ...__VLS_functionalComponentArgsRest(__VLS_1));
 let __VLS_4;
 let __VLS_5;
@@ -64,30 +78,33 @@ const __VLS_7 = {
 const __VLS_8 = {
     onOpen: (__VLS_ctx.onOpen)
 };
-var __VLS_9 = {};
+const __VLS_9 = {
+    onKeydown: (__VLS_ctx.onCtrlEnter)
+};
+var __VLS_10 = {};
 __VLS_3.slots.default;
-const __VLS_10 = {}.ElForm;
+const __VLS_11 = {}.ElForm;
 /** @type {[typeof __VLS_components.ElForm, typeof __VLS_components.elForm, typeof __VLS_components.ElForm, typeof __VLS_components.elForm, ]} */ ;
 // @ts-ignore
-const __VLS_11 = __VLS_asFunctionalComponent(__VLS_10, new __VLS_10({
+const __VLS_12 = __VLS_asFunctionalComponent(__VLS_11, new __VLS_11({
     model: (__VLS_ctx.form),
     labelWidth: "90px",
 }));
-const __VLS_12 = __VLS_11({
+const __VLS_13 = __VLS_12({
     model: (__VLS_ctx.form),
     labelWidth: "90px",
-}, ...__VLS_functionalComponentArgsRest(__VLS_11));
-__VLS_13.slots.default;
-const __VLS_14 = {}.ElFormItem;
+}, ...__VLS_functionalComponentArgsRest(__VLS_12));
+__VLS_14.slots.default;
+const __VLS_15 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
-const __VLS_15 = __VLS_asFunctionalComponent(__VLS_14, new __VLS_14({
+const __VLS_16 = __VLS_asFunctionalComponent(__VLS_15, new __VLS_15({
     label: "应收",
 }));
-const __VLS_16 = __VLS_15({
+const __VLS_17 = __VLS_16({
     label: "应收",
-}, ...__VLS_functionalComponentArgsRest(__VLS_15));
-__VLS_17.slots.default;
+}, ...__VLS_functionalComponentArgsRest(__VLS_16));
+__VLS_18.slots.default;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
     ...{ class: "payable" },
 });
@@ -99,97 +116,97 @@ if (__VLS_ctx.total !== __VLS_ctx.payable) {
     });
     (__VLS_ctx.total.toFixed(2));
 }
-var __VLS_17;
-const __VLS_18 = {}.ElFormItem;
+var __VLS_18;
+const __VLS_19 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
-const __VLS_19 = __VLS_asFunctionalComponent(__VLS_18, new __VLS_18({
+const __VLS_20 = __VLS_asFunctionalComponent(__VLS_19, new __VLS_19({
     label: "支付方式",
 }));
-const __VLS_20 = __VLS_19({
+const __VLS_21 = __VLS_20({
     label: "支付方式",
-}, ...__VLS_functionalComponentArgsRest(__VLS_19));
-__VLS_21.slots.default;
-const __VLS_22 = {}.ElRadioGroup;
+}, ...__VLS_functionalComponentArgsRest(__VLS_20));
+__VLS_22.slots.default;
+const __VLS_23 = {}.ElRadioGroup;
 /** @type {[typeof __VLS_components.ElRadioGroup, typeof __VLS_components.elRadioGroup, typeof __VLS_components.ElRadioGroup, typeof __VLS_components.elRadioGroup, ]} */ ;
 // @ts-ignore
-const __VLS_23 = __VLS_asFunctionalComponent(__VLS_22, new __VLS_22({
+const __VLS_24 = __VLS_asFunctionalComponent(__VLS_23, new __VLS_23({
     modelValue: (__VLS_ctx.form.payMethod),
 }));
-const __VLS_24 = __VLS_23({
+const __VLS_25 = __VLS_24({
     modelValue: (__VLS_ctx.form.payMethod),
-}, ...__VLS_functionalComponentArgsRest(__VLS_23));
-__VLS_25.slots.default;
-const __VLS_26 = {}.ElRadioButton;
+}, ...__VLS_functionalComponentArgsRest(__VLS_24));
+__VLS_26.slots.default;
+const __VLS_27 = {}.ElRadioButton;
 /** @type {[typeof __VLS_components.ElRadioButton, typeof __VLS_components.elRadioButton, typeof __VLS_components.ElRadioButton, typeof __VLS_components.elRadioButton, ]} */ ;
 // @ts-ignore
-const __VLS_27 = __VLS_asFunctionalComponent(__VLS_26, new __VLS_26({
+const __VLS_28 = __VLS_asFunctionalComponent(__VLS_27, new __VLS_27({
     value: "Cash",
 }));
-const __VLS_28 = __VLS_27({
+const __VLS_29 = __VLS_28({
     value: "Cash",
-}, ...__VLS_functionalComponentArgsRest(__VLS_27));
-__VLS_29.slots.default;
-var __VLS_29;
-const __VLS_30 = {}.ElRadioButton;
+}, ...__VLS_functionalComponentArgsRest(__VLS_28));
+__VLS_30.slots.default;
+var __VLS_30;
+const __VLS_31 = {}.ElRadioButton;
 /** @type {[typeof __VLS_components.ElRadioButton, typeof __VLS_components.elRadioButton, typeof __VLS_components.ElRadioButton, typeof __VLS_components.elRadioButton, ]} */ ;
 // @ts-ignore
-const __VLS_31 = __VLS_asFunctionalComponent(__VLS_30, new __VLS_30({
+const __VLS_32 = __VLS_asFunctionalComponent(__VLS_31, new __VLS_31({
     value: "MemberCard",
     disabled: (!__VLS_ctx.hasMember),
 }));
-const __VLS_32 = __VLS_31({
+const __VLS_33 = __VLS_32({
     value: "MemberCard",
     disabled: (!__VLS_ctx.hasMember),
-}, ...__VLS_functionalComponentArgsRest(__VLS_31));
-__VLS_33.slots.default;
-var __VLS_33;
-const __VLS_34 = {}.ElRadioButton;
+}, ...__VLS_functionalComponentArgsRest(__VLS_32));
+__VLS_34.slots.default;
+var __VLS_34;
+const __VLS_35 = {}.ElRadioButton;
 /** @type {[typeof __VLS_components.ElRadioButton, typeof __VLS_components.elRadioButton, typeof __VLS_components.ElRadioButton, typeof __VLS_components.elRadioButton, ]} */ ;
 // @ts-ignore
-const __VLS_35 = __VLS_asFunctionalComponent(__VLS_34, new __VLS_34({
+const __VLS_36 = __VLS_asFunctionalComponent(__VLS_35, new __VLS_35({
     value: "Wechat",
 }));
-const __VLS_36 = __VLS_35({
+const __VLS_37 = __VLS_36({
     value: "Wechat",
-}, ...__VLS_functionalComponentArgsRest(__VLS_35));
-__VLS_37.slots.default;
-var __VLS_37;
-const __VLS_38 = {}.ElRadioButton;
+}, ...__VLS_functionalComponentArgsRest(__VLS_36));
+__VLS_38.slots.default;
+var __VLS_38;
+const __VLS_39 = {}.ElRadioButton;
 /** @type {[typeof __VLS_components.ElRadioButton, typeof __VLS_components.elRadioButton, typeof __VLS_components.ElRadioButton, typeof __VLS_components.elRadioButton, ]} */ ;
 // @ts-ignore
-const __VLS_39 = __VLS_asFunctionalComponent(__VLS_38, new __VLS_38({
+const __VLS_40 = __VLS_asFunctionalComponent(__VLS_39, new __VLS_39({
     value: "Alipay",
 }));
-const __VLS_40 = __VLS_39({
+const __VLS_41 = __VLS_40({
     value: "Alipay",
-}, ...__VLS_functionalComponentArgsRest(__VLS_39));
-__VLS_41.slots.default;
-var __VLS_41;
-const __VLS_42 = {}.ElRadioButton;
+}, ...__VLS_functionalComponentArgsRest(__VLS_40));
+__VLS_42.slots.default;
+var __VLS_42;
+const __VLS_43 = {}.ElRadioButton;
 /** @type {[typeof __VLS_components.ElRadioButton, typeof __VLS_components.elRadioButton, typeof __VLS_components.ElRadioButton, typeof __VLS_components.elRadioButton, ]} */ ;
 // @ts-ignore
-const __VLS_43 = __VLS_asFunctionalComponent(__VLS_42, new __VLS_42({
+const __VLS_44 = __VLS_asFunctionalComponent(__VLS_43, new __VLS_43({
     value: "BankCard",
 }));
-const __VLS_44 = __VLS_43({
+const __VLS_45 = __VLS_44({
     value: "BankCard",
-}, ...__VLS_functionalComponentArgsRest(__VLS_43));
-__VLS_45.slots.default;
-var __VLS_45;
-var __VLS_25;
-var __VLS_21;
+}, ...__VLS_functionalComponentArgsRest(__VLS_44));
+__VLS_46.slots.default;
+var __VLS_46;
+var __VLS_26;
+var __VLS_22;
 if (__VLS_ctx.form.payMethod === 'MemberCard') {
-    const __VLS_46 = {}.ElFormItem;
+    const __VLS_47 = {}.ElFormItem;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
-    const __VLS_47 = __VLS_asFunctionalComponent(__VLS_46, new __VLS_46({
+    const __VLS_48 = __VLS_asFunctionalComponent(__VLS_47, new __VLS_47({
         label: "会员余额",
     }));
-    const __VLS_48 = __VLS_47({
+    const __VLS_49 = __VLS_48({
         label: "会员余额",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_47));
-    __VLS_49.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_48));
+    __VLS_50.slots.default;
     __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
         ...{ class: ({ insufficient: __VLS_ctx.memberBalance < __VLS_ctx.payable }) },
     });
@@ -200,36 +217,36 @@ if (__VLS_ctx.form.payMethod === 'MemberCard') {
             ...{ style: {} },
         });
     }
-    var __VLS_49;
+    var __VLS_50;
 }
 if (__VLS_ctx.form.payMethod === 'Cash') {
-    const __VLS_50 = {}.ElFormItem;
+    const __VLS_51 = {}.ElFormItem;
     /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
     // @ts-ignore
-    const __VLS_51 = __VLS_asFunctionalComponent(__VLS_50, new __VLS_50({
+    const __VLS_52 = __VLS_asFunctionalComponent(__VLS_51, new __VLS_51({
         label: "实收金额",
     }));
-    const __VLS_52 = __VLS_51({
+    const __VLS_53 = __VLS_52({
         label: "实收金额",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_51));
-    __VLS_53.slots.default;
-    const __VLS_54 = {}.ElInputNumber;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_52));
+    __VLS_54.slots.default;
+    const __VLS_55 = {}.ElInputNumber;
     /** @type {[typeof __VLS_components.ElInputNumber, typeof __VLS_components.elInputNumber, ]} */ ;
     // @ts-ignore
-    const __VLS_55 = __VLS_asFunctionalComponent(__VLS_54, new __VLS_54({
+    const __VLS_56 = __VLS_asFunctionalComponent(__VLS_55, new __VLS_55({
         modelValue: (__VLS_ctx.form.paidAmount),
         min: (__VLS_ctx.payable),
         precision: (2),
         step: (10),
         ...{ style: {} },
     }));
-    const __VLS_56 = __VLS_55({
+    const __VLS_57 = __VLS_56({
         modelValue: (__VLS_ctx.form.paidAmount),
         min: (__VLS_ctx.payable),
         precision: (2),
         step: (10),
         ...{ style: {} },
-    }, ...__VLS_functionalComponentArgsRest(__VLS_55));
+    }, ...__VLS_functionalComponentArgsRest(__VLS_56));
     if (__VLS_ctx.form.paidAmount && __VLS_ctx.form.paidAmount > __VLS_ctx.payable) {
         __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
             ...{ class: "muted" },
@@ -237,79 +254,79 @@ if (__VLS_ctx.form.payMethod === 'Cash') {
         });
         ((__VLS_ctx.form.paidAmount - __VLS_ctx.payable).toFixed(2));
     }
-    var __VLS_53;
+    var __VLS_54;
 }
-const __VLS_58 = {}.ElFormItem;
+const __VLS_59 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
-const __VLS_59 = __VLS_asFunctionalComponent(__VLS_58, new __VLS_58({
+const __VLS_60 = __VLS_asFunctionalComponent(__VLS_59, new __VLS_59({
     label: "备注",
 }));
-const __VLS_60 = __VLS_59({
+const __VLS_61 = __VLS_60({
     label: "备注",
-}, ...__VLS_functionalComponentArgsRest(__VLS_59));
-__VLS_61.slots.default;
-const __VLS_62 = {}.ElInput;
+}, ...__VLS_functionalComponentArgsRest(__VLS_60));
+__VLS_62.slots.default;
+const __VLS_63 = {}.ElInput;
 /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
 // @ts-ignore
-const __VLS_63 = __VLS_asFunctionalComponent(__VLS_62, new __VLS_62({
+const __VLS_64 = __VLS_asFunctionalComponent(__VLS_63, new __VLS_63({
     modelValue: (__VLS_ctx.form.remark),
     type: "textarea",
     rows: (2),
     placeholder: "可选",
 }));
-const __VLS_64 = __VLS_63({
+const __VLS_65 = __VLS_64({
     modelValue: (__VLS_ctx.form.remark),
     type: "textarea",
     rows: (2),
     placeholder: "可选",
-}, ...__VLS_functionalComponentArgsRest(__VLS_63));
-var __VLS_61;
-var __VLS_13;
+}, ...__VLS_functionalComponentArgsRest(__VLS_64));
+var __VLS_62;
+var __VLS_14;
 {
     const { footer: __VLS_thisSlot } = __VLS_3.slots;
-    const __VLS_66 = {}.ElButton;
+    const __VLS_67 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
     // @ts-ignore
-    const __VLS_67 = __VLS_asFunctionalComponent(__VLS_66, new __VLS_66({
+    const __VLS_68 = __VLS_asFunctionalComponent(__VLS_67, new __VLS_67({
         ...{ 'onClick': {} },
     }));
-    const __VLS_68 = __VLS_67({
+    const __VLS_69 = __VLS_68({
         ...{ 'onClick': {} },
-    }, ...__VLS_functionalComponentArgsRest(__VLS_67));
-    let __VLS_70;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_68));
     let __VLS_71;
     let __VLS_72;
-    const __VLS_73 = {
+    let __VLS_73;
+    const __VLS_74 = {
         onClick: (...[$event]) => {
             __VLS_ctx.emit('update:modelValue', false);
         }
     };
-    __VLS_69.slots.default;
-    var __VLS_69;
-    const __VLS_74 = {}.ElButton;
+    __VLS_70.slots.default;
+    var __VLS_70;
+    const __VLS_75 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
     // @ts-ignore
-    const __VLS_75 = __VLS_asFunctionalComponent(__VLS_74, new __VLS_74({
+    const __VLS_76 = __VLS_asFunctionalComponent(__VLS_75, new __VLS_75({
         ...{ 'onClick': {} },
         type: "primary",
         loading: (__VLS_ctx.loading),
         disabled: (!__VLS_ctx.canSubmit),
     }));
-    const __VLS_76 = __VLS_75({
+    const __VLS_77 = __VLS_76({
         ...{ 'onClick': {} },
         type: "primary",
         loading: (__VLS_ctx.loading),
         disabled: (!__VLS_ctx.canSubmit),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_75));
-    let __VLS_78;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_76));
     let __VLS_79;
     let __VLS_80;
-    const __VLS_81 = {
+    let __VLS_81;
+    const __VLS_82 = {
         onClick: (__VLS_ctx.submit)
     };
-    __VLS_77.slots.default;
-    var __VLS_77;
+    __VLS_78.slots.default;
+    var __VLS_78;
 }
 var __VLS_3;
 /** @type {__VLS_StyleScopedClasses['payable']} */ ;
@@ -324,6 +341,7 @@ const __VLS_self = (await import('vue')).defineComponent({
             form: form,
             canSubmit: canSubmit,
             onOpen: onOpen,
+            onCtrlEnter: onCtrlEnter,
             submit: submit,
         };
     },
