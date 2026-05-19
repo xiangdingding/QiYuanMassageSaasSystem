@@ -2,6 +2,10 @@ interface SessionResp {
   openId: string;
 }
 
+interface SubscribeTemplatesResp {
+  templates: Record<string, string>;
+}
+
 App<IAppOption>({
   globalData: {
     apiBase: 'http://localhost:5000/api'
@@ -16,6 +20,24 @@ App<IAppOption>({
       }
     });
     this.ensureWeChatOpenId();
+    this.ensureSubscribeTemplates();
+  },
+  /**
+   * 拉取面向顾客的订阅消息模板 ID 并缓存。下单 / 绑卡时据此调
+   * wx.requestSubscribeMessage 申请授权——微信订阅消息是一次性的，
+   * 用户每授权一次后端才有一次下发额度。失败不打扰用户，仅影响通知。
+   */
+  ensureSubscribeTemplates() {
+    wx.request({
+      url: `${this.globalData.apiBase}/wechat/subscribe-templates`,
+      method: 'GET',
+      success: (r) => {
+        if (r.statusCode >= 200 && r.statusCode < 300) {
+          const data = r.data as unknown as SubscribeTemplatesResp | undefined;
+          if (data?.templates) wx.setStorageSync('subTemplates', data.templates);
+        }
+      }
+    });
   },
   /**
    * 静默换取微信 OpenId 并缓存。预约下单、绑定会员卡都要带上它，
@@ -51,4 +73,5 @@ interface IAppOption {
     token?: string;
   };
   ensureWeChatOpenId(): void;
+  ensureSubscribeTemplates(): void;
 }

@@ -1,4 +1,4 @@
-import { api } from '../../../utils/api';
+import { api, requestSubscribe } from '../../../utils/api';
 
 interface AppointmentDto {
   id: number;
@@ -127,6 +127,9 @@ Page({
       getApp<IAppOption>().ensureWeChatOpenId();
       return;
     }
+    // 申请充值 / 生日 / 到期三类订阅授权——须在首个 await 前，否则微信拦截
+    await requestSubscribe(['RechargeArrived', 'MemberBirthday', 'MemberPackageExpiring']);
+
     this.setData({ binding: true });
     try {
       const m = await api.post<BoundMemberDto>('/wechat/bind-member', {

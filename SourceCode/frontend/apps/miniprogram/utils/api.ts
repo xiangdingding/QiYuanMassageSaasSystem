@@ -79,3 +79,27 @@ export function yuanToReadable(amount: number): string {
   const jiao = Math.round((amount - yuan) * 10);
   return jiao === 0 ? `${yuan} 元` : `${yuan} 元 ${jiao} 角`;
 }
+
+/**
+ * 申请微信订阅消息授权。kinds 是 NotificationKind 名（如 AppointmentReminder），
+ * 从启动时缓存的 subTemplates 映射到模板 ID。微信订阅消息是"一次性订阅"：
+ * 用户每授权一次，后端才有一次对应类型的下发额度。
+ *
+ * 必须在用户点击事件里**第一时间**调用（首个 await 之前），否则微信会拦截。
+ * 始终 resolve（best-effort）：用户拒绝授权不应阻断下单 / 绑卡主流程。
+ * 单次最多 3 个模板，超出截断。
+ */
+export function requestSubscribe(kinds: string[]): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const map = (wx.getStorageSync('subTemplates') || {}) as Record<string, string>;
+    const tmplIds = kinds
+      .map((k) => map[k])
+      .filter((id): id is string => typeof id === 'string' && id.length > 0)
+      .slice(0, 3);
+    if (tmplIds.length === 0) {
+      resolve();
+      return;
+    }
+    wx.requestSubscribeMessage({ tmplIds, complete: () => resolve() });
+  });
+}

@@ -1,4 +1,4 @@
-import { api } from '../../../utils/api';
+import { api, requestSubscribe } from '../../../utils/api';
 
 interface AppointmentResp {
   id: number;
@@ -76,6 +76,9 @@ Page({
       this.setData({ error: '到店时间不能早于当前时间' });
       return;
     }
+
+    // 申请"预约提醒"订阅授权——须在首个 await 前，否则微信拦截
+    await requestSubscribe(['AppointmentReminder']);
 
     this.setData({ loading: true, error: '' });
     try {
