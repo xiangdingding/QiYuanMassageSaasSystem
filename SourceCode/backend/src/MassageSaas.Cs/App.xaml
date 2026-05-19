@@ -55,6 +55,18 @@
             <DataTemplate DataType="{x:Type vm:DayCloseViewModel}">
                 <views:DayCloseView />
             </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:InventoryViewModel}">
+                <views:InventoryView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ReviewsViewModel}">
+                <views:ReviewsView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ComplaintsViewModel}">
+                <views:ComplaintsView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SchedulesViewModel}">
+                <views:SchedulesView />
+            </DataTemplate>
 
             <SolidColorBrush x:Key="SidebarBg" Color="#1F2D3D" />
             <SolidColorBrush x:Key="SidebarText" Color="#BFCBD9" />

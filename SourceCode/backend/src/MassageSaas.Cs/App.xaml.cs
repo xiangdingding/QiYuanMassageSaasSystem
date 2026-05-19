@@ -58,6 +58,10 @@ public partial class App : Application
                 services.AddTransient<AppointmentsViewModel>();
                 services.AddTransient<RoomsViewModel>();
                 services.AddTransient<DayCloseViewModel>();
+                services.AddTransient<InventoryViewModel>();
+                services.AddTransient<ReviewsViewModel>();
+                services.AddTransient<ComplaintsViewModel>();
+                services.AddTransient<SchedulesViewModel>();
             })
             .Build();
 

@@ -115,6 +115,10 @@ public partial class MainViewModel : ObservableObject
         if (canPos) items.Add(new NavItem("日报与业绩", "reports", () => _sp.GetRequiredService<ReportsViewModel>()));
         if (canPos) items.Add(new NavItem("日结/交班", "day-close", () => _sp.GetRequiredService<DayCloseViewModel>()));
         if (canLead) items.Add(new NavItem("服务项目", "services", () => _sp.GetRequiredService<ServicesViewModel>()));
+        if (canPos) items.Add(new NavItem("物耗库存", "inventory", () => _sp.GetRequiredService<InventoryViewModel>()));
+        if (canPos) items.Add(new NavItem("服务评价", "reviews", () => _sp.GetRequiredService<ReviewsViewModel>()));
+        if (canPos) items.Add(new NavItem("投诉处理", "complaints", () => _sp.GetRequiredService<ComplaintsViewModel>()));
+        if (canLead) items.Add(new NavItem("排班与请假", "schedules", () => _sp.GetRequiredService<SchedulesViewModel>()));
         if (canLead) items.Add(new NavItem("提成规则", "commissions", () => _sp.GetRequiredService<CommissionsViewModel>()));
         if (canLead) items.Add(new NavItem("员工管理", "staff", () => _sp.GetRequiredService<StaffViewModel>()));
         if (isOwner) items.Add(new NavItem("门店管理", "stores", () => _sp.GetRequiredService<StoresViewModel>()));
