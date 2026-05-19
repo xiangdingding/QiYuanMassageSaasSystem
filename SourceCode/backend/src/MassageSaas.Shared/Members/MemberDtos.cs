@@ -22,6 +22,7 @@ public record MemberDto(
     long? ReferredByMemberId,
     string? ReferredByMemberName,
     decimal ReferralRewardEarned,
+    string? WechatOpenId,
     DateTime CreatedAt);
 
 public record CreateMemberRequest(
@@ -46,7 +47,8 @@ public record UpdateMemberRequest(
     string? Level = null,
     string? PreferenceNotes = null,
     string? HealthNotes = null,
-    long? ReferredByMemberId = null);
+    long? ReferredByMemberId = null,
+    string? WechatOpenId = null);
 
 public record RechargeRequest(
     long MemberId,

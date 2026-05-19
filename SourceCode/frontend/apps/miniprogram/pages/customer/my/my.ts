@@ -18,6 +18,21 @@ interface ViewItem {
   cancellable: boolean;
 }
 
+interface BoundMemberDto {
+  memberId: number;
+  cardNo: string;
+  name?: string;
+  balance: number;
+  level: string;
+}
+
+interface BoundView {
+  cardNo: string;
+  name: string;
+  balanceText: string;
+  levelText: string;
+}
+
 const STATUS_MAP: Record<string, string> = {
   Pending: '待确认',
   Confirmed: '已确认',
@@ -27,18 +42,46 @@ const STATUS_MAP: Record<string, string> = {
   NoShow: '未到店'
 };
 
+const LEVEL_MAP: Record<string, string> = {
+  Regular: '普通卡',
+  Silver: '银卡',
+  Gold: '金卡',
+  Diamond: '钻石卡'
+};
+
 const formatArrive = (iso: string): string => {
   const d = new Date(iso);
   const pad = (n: number): string => (n < 10 ? `0${n}` : `${n}`);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
+const toBoundView = (m: BoundMemberDto): BoundView => ({
+  cardNo: m.cardNo,
+  name: m.name || '未填写姓名',
+  balanceText: `${m.balance.toFixed(2)} 元`,
+  levelText: LEVEL_MAP[m.level] ?? m.level
+});
+
 Page({
   data: {
     phone: '',
     items: [] as ViewItem[],
     loading: false,
-    empty: false
+    empty: false,
+    // 会员卡绑定
+    storeName: '',
+    storeId: 0,
+    bound: null as BoundView | null,
+    binding: false
+  },
+  onShow() {
+    const lastStore = wx.getStorageSync('lastStore') as { id: number; name: string } | undefined;
+    const cached = wx.getStorageSync('boundMember') as BoundMemberDto | undefined;
+    this.setData({
+      storeId: lastStore?.id ?? 0,
+      storeName: lastStore?.name ?? '',
+      bound: cached ? toBoundView(cached) : null
+    });
   },
   onPhone(e: WechatMiniprogram.Input) {
     this.setData({ phone: e.detail.value });
@@ -64,6 +107,46 @@ Page({
     } finally {
       this.setData({ loading: false });
     }
+  },
+  /**
+   * 绑定会员卡：把当前微信账号与门店下手机号匹配的会员卡关联。
+   * 绑定后充值到账、生日祝福、会员卡到期等通知会推到微信。
+   */
+  async bindMember() {
+    if (!/^1\d{10}$/.test(this.data.phone)) {
+      wx.showToast({ title: '请先输入会员卡预留手机号', icon: 'none' });
+      return;
+    }
+    if (!this.data.storeId) {
+      wx.showToast({ title: '请先扫门店二维码进入预约页一次', icon: 'none' });
+      return;
+    }
+    const openId = wx.getStorageSync('openId') as string | undefined;
+    if (!openId) {
+      wx.showToast({ title: '微信登录中，请稍后重试', icon: 'none' });
+      getApp<IAppOption>().ensureWeChatOpenId();
+      return;
+    }
+    this.setData({ binding: true });
+    try {
+      const m = await api.post<BoundMemberDto>('/wechat/bind-member', {
+        storeId: this.data.storeId,
+        phone: this.data.phone,
+        openId
+      }, { noAuth: true });
+      wx.setStorageSync('boundMember', m);
+      this.setData({ bound: toBoundView(m) });
+      wx.showToast({ title: '绑定成功', icon: 'success' });
+    } catch (e: unknown) {
+      // 错误已由 api 层 toast
+    } finally {
+      this.setData({ binding: false });
+    }
+  },
+  unbind() {
+    wx.removeStorageSync('boundMember');
+    this.setData({ bound: null });
+    wx.showToast({ title: '已解除显示', icon: 'none' });
   },
   cancel(e: WechatMiniprogram.TouchEvent) {
     const id = Number(e.currentTarget.dataset.id);

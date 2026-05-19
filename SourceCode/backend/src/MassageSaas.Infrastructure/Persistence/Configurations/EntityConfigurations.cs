@@ -119,6 +119,7 @@ public class MemberConfiguration : IEntityTypeConfiguration<Member>
         b.Property(x => x.HealthNotes).HasMaxLength(1000);
         b.Property(x => x.CloseReason).HasMaxLength(200);
         b.Property(x => x.ReferralRewardEarned).HasPrecision(18, 2);
+        b.Property(x => x.WechatOpenId).HasMaxLength(64);
         b.HasIndex(x => new { x.TenantId, x.CardNo }).IsUnique();
         b.HasIndex(x => new { x.TenantId, x.Phone });
         b.HasIndex(x => x.ReferredByMemberId);

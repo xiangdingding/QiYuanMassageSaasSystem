@@ -38,4 +38,7 @@ public class Member : BaseEntity, ITenantScoped
 
     /// <summary>本会员作为引荐人累计获得的返佣金额（不含其它流水）。</summary>
     public decimal ReferralRewardEarned { get; set; }
+
+    /// <summary>会员在本店小程序的 OpenId。绑定后生日/到期/充值等通知才能推微信订阅消息。</summary>
+    public string? WechatOpenId { get; set; }
 }

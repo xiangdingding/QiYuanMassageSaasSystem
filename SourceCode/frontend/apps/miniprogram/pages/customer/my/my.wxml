@@ -3,13 +3,47 @@
     <text class="a11y-label" id="lbl-phone">手机号</text>
     <input class="a11y-input" type="number" maxlength="11"
            aria-labelledby="lbl-phone"
-           placeholder="输入手机号查询预约"
+           placeholder="输入会员卡 / 预约预留手机号"
            value="{{phone}}" bindinput="onPhone" />
   </view>
 
   <button class="a11y-btn" aria-label="查询我的预约" bindtap="query"
           loading="{{loading}}" disabled="{{loading}}">
-    查询
+    查询我的预约
+  </button>
+
+  <!-- 会员卡绑定：绑定后可在微信收到充值到账 / 生日祝福 / 会员卡到期提醒 -->
+  <view class="a11y-section" aria-live="polite">
+    <text class="a11y-label">会员卡微信通知</text>
+    <text wx:if="{{bound}}" class="a11y-value">已绑定，会按时收到充值、生日与到期提醒</text>
+    <text wx:else class="a11y-value">绑定会员卡后，充值到账、生日祝福、会员卡到期都会推送到微信</text>
+  </view>
+
+  <view wx:if="{{bound}}" class="a11y-card" role="article" aria-label="已绑定的会员卡">
+    <view class="a11y-section">
+      <text class="a11y-label">持卡人</text>
+      <text class="a11y-value">{{bound.name}}</text>
+    </view>
+    <view class="a11y-section">
+      <text class="a11y-label">卡号</text>
+      <text class="a11y-value">{{bound.cardNo}}</text>
+    </view>
+    <view class="a11y-section">
+      <text class="a11y-label">等级</text>
+      <text class="a11y-value">{{bound.levelText}}</text>
+    </view>
+    <view class="a11y-section">
+      <text class="a11y-label">卡内余额</text>
+      <text class="a11y-value">{{bound.balanceText}}</text>
+    </view>
+    <button class="a11y-btn-secondary" aria-label="解除本机会员卡显示" bindtap="unbind">
+      解除本机显示
+    </button>
+  </view>
+
+  <button wx:else class="a11y-btn" aria-label="绑定会员卡，接收微信通知"
+          bindtap="bindMember" loading="{{binding}}" disabled="{{binding}}">
+    绑定会员卡（接收微信通知）
   </button>
 
   <view wx:if="{{empty}}" class="a11y-section" aria-live="polite">

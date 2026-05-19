@@ -37,6 +37,10 @@ Page({
     const storeId = Number(query.storeId ?? 0);
     const storeName = query.storeName ?? '';
     this.setData({ storeId, storeName });
+    // 记住最近到访门店，供"我的预约"页绑定会员卡时定位租户
+    if (storeId) {
+      wx.setStorageSync('lastStore', { id: storeId, name: storeName });
+    }
   },
   onName(e: WechatMiniprogram.Input) {
     this.setData({ 'form.customerName': e.detail.value });

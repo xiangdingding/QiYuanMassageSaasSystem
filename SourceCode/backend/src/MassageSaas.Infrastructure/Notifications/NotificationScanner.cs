@@ -71,7 +71,7 @@ public class NotificationScanner : INotificationScanner
             .Where(m => m.IsActive && m.Birthday != null
                         && m.Birthday!.Value.Month == today.Month
                         && m.Birthday!.Value.Day == today.Day)
-            .Select(m => new { m.Id, m.TenantId, m.Name, m.CardNo, m.Phone })
+            .Select(m => new { m.Id, m.TenantId, m.Name, m.CardNo, m.Phone, m.WechatOpenId })
             .ToListAsync(ct);
 
         var n = 0;
@@ -88,6 +88,7 @@ public class NotificationScanner : INotificationScanner
                 DedupKey = key,
                 MemberId = m.Id,
                 RecipientPhone = m.Phone,
+                RecipientOpenId = m.WechatOpenId,
                 Title = "生日祝福",
                 Body = $"祝 {name} 生日快乐！今日到店赠送精美礼品。",
                 ScheduledAt = _clock.UtcNow
@@ -127,6 +128,7 @@ public class NotificationScanner : INotificationScanner
                 DedupKey = key,
                 MemberId = p.MemberId,
                 RecipientPhone = p.Member.Phone,
+                RecipientOpenId = p.Member.WechatOpenId,
                 Title = "会员套餐即将到期",
                 Body = $"{name} 的「{p.Title}」将于 {expireDay:yyyy-MM-dd} 到期（剩 {Math.Max(daysLeft, 0)} 天），可提前续卡。",
                 RelatedEntityId = p.Id,

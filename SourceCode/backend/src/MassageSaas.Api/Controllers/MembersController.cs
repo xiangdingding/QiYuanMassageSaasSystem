@@ -85,6 +85,7 @@ public class MembersController : ControllerBase
         m.ReferredByMemberId,
         m.ReferredByMember?.Name ?? m.ReferredByMember?.CardNo,
         m.ReferralRewardEarned,
+        m.WechatOpenId,
         m.CreatedAt);
 
     [HttpPost]
@@ -171,6 +172,8 @@ public class MembersController : ControllerBase
             m.Level = ml;
         m.PreferenceNotes = req.PreferenceNotes;
         m.HealthNotes = req.HealthNotes;
+        if (req.WechatOpenId is not null)
+            m.WechatOpenId = string.IsNullOrWhiteSpace(req.WechatOpenId) ? null : req.WechatOpenId.Trim();
 
         if (req.ReferredByMemberId.HasValue && req.ReferredByMemberId.Value != m.ReferredByMemberId)
         {
@@ -445,6 +448,7 @@ public class MembersController : ControllerBase
             DedupKey = key,
             MemberId = m.Id,
             RecipientPhone = m.Phone,
+            RecipientOpenId = m.WechatOpenId,
             Title = "充值到账",
             Body = $"充值 ¥{amount:F2}{(bonus > 0 ? $" + 赠送 ¥{bonus:F2}" : "")} 已到账，余额 ¥{m.Balance:F2}",
             ScheduledAt = DateTime.UtcNow
