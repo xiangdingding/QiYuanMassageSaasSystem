@@ -36,14 +36,16 @@ public class DashboardController : ControllerBase
 
         var total = await tenants.CountAsync(ct);
         var active = await tenants.CountAsync(t => t.Status == TenantStatus.Active, ct);
+        var trial = await tenants.CountAsync(t => t.Status == TenantStatus.Trial, ct);
         var expired = await tenants.CountAsync(t => t.Status == TenantStatus.Expired, ct);
         var disabled = await tenants.CountAsync(t => t.Status == TenantStatus.Disabled, ct);
+        // 「N 天内到期」对 Active 与 Trial 都计——试用即将结束同样需要催签约
         var expIn30 = await tenants.CountAsync(t =>
-            t.Status == TenantStatus.Active && t.ExpireAt != null
-            && t.ExpireAt > now && t.ExpireAt <= in30, ct);
+            (t.Status == TenantStatus.Active || t.Status == TenantStatus.Trial)
+            && t.ExpireAt != null && t.ExpireAt > now && t.ExpireAt <= in30, ct);
         var expIn7 = await tenants.CountAsync(t =>
-            t.Status == TenantStatus.Active && t.ExpireAt != null
-            && t.ExpireAt > now && t.ExpireAt <= in7, ct);
+            (t.Status == TenantStatus.Active || t.Status == TenantStatus.Trial)
+            && t.ExpireAt != null && t.ExpireAt > now && t.ExpireAt <= in7, ct);
 
         var paidOrders = _db.PaymentOrders.AsNoTracking().Where(o => o.Status == PaymentStatus.Paid);
         var revenue30 = await paidOrders
@@ -72,7 +74,7 @@ public class DashboardController : ControllerBase
             .ToListAsync(ct);
 
         return Ok(new PlatformDashboardDto(
-            total, active, expired, disabled,
+            total, active, trial, expired, disabled,
             expIn30, expIn7, revenue30, revenueYtd, paidOrderCount30, recent));
     }
 

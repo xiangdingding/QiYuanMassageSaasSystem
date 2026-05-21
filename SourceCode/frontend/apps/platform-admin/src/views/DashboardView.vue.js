@@ -69,6 +69,10 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.d
     ...{ class: "metric-sub" },
 });
 (__VLS_ctx.data?.activeTenants ?? 0);
+__VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
+    ...{ class: "trial" },
+});
+(__VLS_ctx.data?.trialTenants ?? 0);
 var __VLS_11;
 var __VLS_7;
 const __VLS_12 = {}.ElCol;
@@ -300,6 +304,7 @@ var __VLS_39;
 /** @type {__VLS_StyleScopedClasses['metric-label']} */ ;
 /** @type {__VLS_StyleScopedClasses['metric-value']} */ ;
 /** @type {__VLS_StyleScopedClasses['metric-sub']} */ ;
+/** @type {__VLS_StyleScopedClasses['trial']} */ ;
 /** @type {__VLS_StyleScopedClasses['metric-label']} */ ;
 /** @type {__VLS_StyleScopedClasses['metric-value']} */ ;
 /** @type {__VLS_StyleScopedClasses['warn']} */ ;

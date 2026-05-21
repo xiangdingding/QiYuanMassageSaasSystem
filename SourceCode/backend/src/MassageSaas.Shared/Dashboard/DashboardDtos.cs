@@ -3,6 +3,7 @@ namespace MassageSaas.Shared.Dashboard;
 public record PlatformDashboardDto(
     int TotalTenants,
     int ActiveTenants,
+    int TrialTenants,
     int ExpiredTenants,
     int DisabledTenants,
     int ExpiringIn30Days,

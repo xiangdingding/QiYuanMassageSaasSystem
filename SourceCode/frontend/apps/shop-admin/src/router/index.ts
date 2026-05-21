@@ -23,6 +23,11 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true }
   },
   {
+    path: '/register',
+    component: () => import('@/views/RegisterView.vue'),
+    meta: { public: true }
+  },
+  {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
     children: [
@@ -83,7 +88,7 @@ router.beforeEach((to) => {
   if (!to.meta.public && !auth.isAuthenticated) {
     return { path: '/login', query: { redirect: to.fullPath } };
   }
-  if (to.path === '/login' && auth.isAuthenticated) return { path: '/' };
+  if ((to.path === '/login' || to.path === '/register') && auth.isAuthenticated) return { path: '/' };
   if (to.meta.roles && !canSee(to.meta.roles, auth.role)) {
     return { path: '/' };
   }

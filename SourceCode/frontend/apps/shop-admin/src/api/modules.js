@@ -3,6 +3,9 @@ export const authApi = {
     login: (req) => http().post('/auth/login', req).then((r) => r.data),
     me: () => http().get('/auth/me').then((r) => r.data)
 };
+export const tenantsApi = {
+    register: (req) => http().post('/tenants/register', req).then((r) => r.data)
+};
 export const storesApi = {
     list: () => http().get('/stores').then((r) => r.data),
     create: (body) => http().post('/stores', body).then((r) => r.data),

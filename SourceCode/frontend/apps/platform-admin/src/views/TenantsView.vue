@@ -11,6 +11,7 @@
         />
         <el-select v-model="query.status" placeholder="全部状态" clearable style="width: 140px">
           <el-option label="活跃" value="Active" />
+          <el-option label="试用中" value="Trial" />
           <el-option label="已过期" value="Expired" />
           <el-option label="已停用" value="Disabled" />
         </el-select>
@@ -150,11 +151,12 @@ const overviewTarget = ref<TenantSummary | null>(null);
 
 function statusType(s: string) {
   if (s === 'Active') return 'success';
+  if (s === 'Trial') return 'info';
   if (s === 'Expired') return 'warning';
   return 'danger';
 }
 function statusLabel(s: string) {
-  return { Active: '活跃', Expired: '已过期', Disabled: '已停用' }[s] ?? s;
+  return { Active: '活跃', Trial: '试用中', Expired: '已过期', Disabled: '已停用' }[s] ?? s;
 }
 function formatDate(v: string) {
   return new Date(v).toLocaleDateString('zh-CN');

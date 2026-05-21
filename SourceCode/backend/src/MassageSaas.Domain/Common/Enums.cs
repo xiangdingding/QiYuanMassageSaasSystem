@@ -4,7 +4,9 @@ public enum TenantStatus
 {
     Active = 0,
     Expired = 1,
-    Disabled = 2
+    Disabled = 2,
+    /// <summary>试用期内。中间件视作可写（直到 ExpireAt 过期），到期后由首次写请求触发归并到 Expired。</summary>
+    Trial = 3
 }
 
 public enum UserRole

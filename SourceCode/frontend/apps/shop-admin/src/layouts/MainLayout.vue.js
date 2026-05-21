@@ -45,7 +45,9 @@ const visibleMenu = computed(() => {
 });
 const pageTitle = computed(() => route.meta.title ?? '');
 const activeStoreName = computed(() => appStore.stores.find((s) => s.id === appStore.activeStoreId)?.name ?? '');
-const expireWarn = computed(() => subStore.daysToExpire !== null && subStore.daysToExpire > 0 && subStore.daysToExpire <= 30 && !subStore.expired);
+// Trial 状态走「试用中，剩 X 天」标签，不再重复弹"X 天后到期"——避免双标
+const expireWarn = computed(() => subStore.status === 'Active' &&
+    subStore.daysToExpire !== null && subStore.daysToExpire > 0 && subStore.daysToExpire <= 30 && !subStore.expired);
 function onCommand(cmd) {
     if (cmd === 'logout') {
         auth.logout();
@@ -59,7 +61,8 @@ onMounted(async () => {
             const sub = await subscriptionsApi.me();
             subStore.daysToExpire = sub.daysToExpire ?? null;
             subStore.status = sub.status;
-            subStore.expired = sub.status !== 'Active';
+            // Trial 与 Active 同样视为可写；只有 Expired / Disabled 才标"只读"
+            subStore.expired = sub.status === 'Expired' || sub.status === 'Disabled';
         }
         catch {
             /* ignore */
@@ -187,175 +190,191 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.h1, __VLS_intrinsicElements.h1
     'aria-live': "polite",
 });
 (__VLS_ctx.pageTitle);
-if (__VLS_ctx.expireWarn) {
+if (__VLS_ctx.subStore.status === 'Trial' && !__VLS_ctx.subStore.expired) {
     const __VLS_33 = {}.ElTag;
     /** @type {[typeof __VLS_components.ElTag, typeof __VLS_components.elTag, typeof __VLS_components.ElTag, typeof __VLS_components.elTag, ]} */ ;
     // @ts-ignore
     const __VLS_34 = __VLS_asFunctionalComponent(__VLS_33, new __VLS_33({
-        type: "warning",
+        type: "info",
         size: "small",
     }));
     const __VLS_35 = __VLS_34({
-        type: "warning",
+        type: "info",
         size: "small",
     }, ...__VLS_functionalComponentArgsRest(__VLS_34));
     __VLS_36.slots.default;
-    (__VLS_ctx.subStore.daysToExpire);
+    (__VLS_ctx.subStore.daysToExpire != null ? `，剩 ${__VLS_ctx.subStore.daysToExpire} 天` : '');
     var __VLS_36;
 }
-if (__VLS_ctx.subStore.expired) {
+if (__VLS_ctx.expireWarn) {
     const __VLS_37 = {}.ElTag;
     /** @type {[typeof __VLS_components.ElTag, typeof __VLS_components.elTag, typeof __VLS_components.ElTag, typeof __VLS_components.elTag, ]} */ ;
     // @ts-ignore
     const __VLS_38 = __VLS_asFunctionalComponent(__VLS_37, new __VLS_37({
-        type: "danger",
+        type: "warning",
         size: "small",
     }));
     const __VLS_39 = __VLS_38({
-        type: "danger",
+        type: "warning",
         size: "small",
     }, ...__VLS_functionalComponentArgsRest(__VLS_38));
     __VLS_40.slots.default;
+    (__VLS_ctx.subStore.daysToExpire);
     var __VLS_40;
+}
+if (__VLS_ctx.subStore.expired) {
+    const __VLS_41 = {}.ElTag;
+    /** @type {[typeof __VLS_components.ElTag, typeof __VLS_components.elTag, typeof __VLS_components.ElTag, typeof __VLS_components.elTag, ]} */ ;
+    // @ts-ignore
+    const __VLS_42 = __VLS_asFunctionalComponent(__VLS_41, new __VLS_41({
+        type: "danger",
+        size: "small",
+    }));
+    const __VLS_43 = __VLS_42({
+        type: "danger",
+        size: "small",
+    }, ...__VLS_functionalComponentArgsRest(__VLS_42));
+    __VLS_44.slots.default;
+    var __VLS_44;
 }
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "header-right" },
 });
 if (__VLS_ctx.appStore.stores.length > 1) {
-    const __VLS_41 = {}.ElSelect;
+    const __VLS_45 = {}.ElSelect;
     /** @type {[typeof __VLS_components.ElSelect, typeof __VLS_components.elSelect, typeof __VLS_components.ElSelect, typeof __VLS_components.elSelect, ]} */ ;
     // @ts-ignore
-    const __VLS_42 = __VLS_asFunctionalComponent(__VLS_41, new __VLS_41({
+    const __VLS_46 = __VLS_asFunctionalComponent(__VLS_45, new __VLS_45({
         ...{ 'onChange': {} },
         modelValue: (__VLS_ctx.appStore.activeStoreId),
         size: "small",
         ...{ style: {} },
         'aria-label': "切换门店",
     }));
-    const __VLS_43 = __VLS_42({
+    const __VLS_47 = __VLS_46({
         ...{ 'onChange': {} },
         modelValue: (__VLS_ctx.appStore.activeStoreId),
         size: "small",
         ...{ style: {} },
         'aria-label': "切换门店",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_42));
-    let __VLS_45;
-    let __VLS_46;
-    let __VLS_47;
-    const __VLS_48 = {
+    }, ...__VLS_functionalComponentArgsRest(__VLS_46));
+    let __VLS_49;
+    let __VLS_50;
+    let __VLS_51;
+    const __VLS_52 = {
         onChange: ((v) => __VLS_ctx.appStore.setActiveStore(v))
     };
-    __VLS_44.slots.default;
+    __VLS_48.slots.default;
     for (const [s] of __VLS_getVForSourceType((__VLS_ctx.appStore.stores))) {
-        const __VLS_49 = {}.ElOption;
+        const __VLS_53 = {}.ElOption;
         /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
         // @ts-ignore
-        const __VLS_50 = __VLS_asFunctionalComponent(__VLS_49, new __VLS_49({
+        const __VLS_54 = __VLS_asFunctionalComponent(__VLS_53, new __VLS_53({
             key: (s.id),
             label: (s.name + (s.isHeadquarters ? '（总店）' : '')),
             value: (s.id),
         }));
-        const __VLS_51 = __VLS_50({
+        const __VLS_55 = __VLS_54({
             key: (s.id),
             label: (s.name + (s.isHeadquarters ? '（总店）' : '')),
             value: (s.id),
-        }, ...__VLS_functionalComponentArgsRest(__VLS_50));
+        }, ...__VLS_functionalComponentArgsRest(__VLS_54));
     }
-    var __VLS_44;
+    var __VLS_48;
 }
-const __VLS_53 = {}.ElDropdown;
+const __VLS_57 = {}.ElDropdown;
 /** @type {[typeof __VLS_components.ElDropdown, typeof __VLS_components.elDropdown, typeof __VLS_components.ElDropdown, typeof __VLS_components.elDropdown, ]} */ ;
 // @ts-ignore
-const __VLS_54 = __VLS_asFunctionalComponent(__VLS_53, new __VLS_53({
+const __VLS_58 = __VLS_asFunctionalComponent(__VLS_57, new __VLS_57({
     ...{ 'onCommand': {} },
     trigger: "click",
 }));
-const __VLS_55 = __VLS_54({
+const __VLS_59 = __VLS_58({
     ...{ 'onCommand': {} },
     trigger: "click",
-}, ...__VLS_functionalComponentArgsRest(__VLS_54));
-let __VLS_57;
-let __VLS_58;
-let __VLS_59;
-const __VLS_60 = {
+}, ...__VLS_functionalComponentArgsRest(__VLS_58));
+let __VLS_61;
+let __VLS_62;
+let __VLS_63;
+const __VLS_64 = {
     onCommand: (__VLS_ctx.onCommand)
 };
-__VLS_56.slots.default;
+__VLS_60.slots.default;
 __VLS_asFunctionalElement(__VLS_intrinsicElements.span, __VLS_intrinsicElements.span)({
     ...{ class: "user" },
 });
-const __VLS_61 = {}.ElIcon;
+const __VLS_65 = {}.ElIcon;
 /** @type {[typeof __VLS_components.ElIcon, typeof __VLS_components.elIcon, typeof __VLS_components.ElIcon, typeof __VLS_components.elIcon, ]} */ ;
-// @ts-ignore
-const __VLS_62 = __VLS_asFunctionalComponent(__VLS_61, new __VLS_61({}));
-const __VLS_63 = __VLS_62({}, ...__VLS_functionalComponentArgsRest(__VLS_62));
-__VLS_64.slots.default;
-const __VLS_65 = {}.UserFilled;
-/** @type {[typeof __VLS_components.UserFilled, ]} */ ;
 // @ts-ignore
 const __VLS_66 = __VLS_asFunctionalComponent(__VLS_65, new __VLS_65({}));
 const __VLS_67 = __VLS_66({}, ...__VLS_functionalComponentArgsRest(__VLS_66));
-var __VLS_64;
+__VLS_68.slots.default;
+const __VLS_69 = {}.UserFilled;
+/** @type {[typeof __VLS_components.UserFilled, ]} */ ;
+// @ts-ignore
+const __VLS_70 = __VLS_asFunctionalComponent(__VLS_69, new __VLS_69({}));
+const __VLS_71 = __VLS_70({}, ...__VLS_functionalComponentArgsRest(__VLS_70));
+var __VLS_68;
 (__VLS_ctx.auth.user?.realName || __VLS_ctx.auth.user?.username);
-const __VLS_69 = {}.ElTag;
+const __VLS_73 = {}.ElTag;
 /** @type {[typeof __VLS_components.ElTag, typeof __VLS_components.elTag, typeof __VLS_components.ElTag, typeof __VLS_components.elTag, ]} */ ;
 // @ts-ignore
-const __VLS_70 = __VLS_asFunctionalComponent(__VLS_69, new __VLS_69({
+const __VLS_74 = __VLS_asFunctionalComponent(__VLS_73, new __VLS_73({
     size: "small",
     effect: "plain",
 }));
-const __VLS_71 = __VLS_70({
+const __VLS_75 = __VLS_74({
     size: "small",
     effect: "plain",
-}, ...__VLS_functionalComponentArgsRest(__VLS_70));
-__VLS_72.slots.default;
+}, ...__VLS_functionalComponentArgsRest(__VLS_74));
+__VLS_76.slots.default;
 (__VLS_ctx.roleLabel);
-var __VLS_72;
+var __VLS_76;
 {
-    const { dropdown: __VLS_thisSlot } = __VLS_56.slots;
-    const __VLS_73 = {}.ElDropdownMenu;
+    const { dropdown: __VLS_thisSlot } = __VLS_60.slots;
+    const __VLS_77 = {}.ElDropdownMenu;
     /** @type {[typeof __VLS_components.ElDropdownMenu, typeof __VLS_components.elDropdownMenu, typeof __VLS_components.ElDropdownMenu, typeof __VLS_components.elDropdownMenu, ]} */ ;
     // @ts-ignore
-    const __VLS_74 = __VLS_asFunctionalComponent(__VLS_73, new __VLS_73({}));
-    const __VLS_75 = __VLS_74({}, ...__VLS_functionalComponentArgsRest(__VLS_74));
-    __VLS_76.slots.default;
-    const __VLS_77 = {}.ElDropdownItem;
+    const __VLS_78 = __VLS_asFunctionalComponent(__VLS_77, new __VLS_77({}));
+    const __VLS_79 = __VLS_78({}, ...__VLS_functionalComponentArgsRest(__VLS_78));
+    __VLS_80.slots.default;
+    const __VLS_81 = {}.ElDropdownItem;
     /** @type {[typeof __VLS_components.ElDropdownItem, typeof __VLS_components.elDropdownItem, typeof __VLS_components.ElDropdownItem, typeof __VLS_components.elDropdownItem, ]} */ ;
     // @ts-ignore
-    const __VLS_78 = __VLS_asFunctionalComponent(__VLS_77, new __VLS_77({
+    const __VLS_82 = __VLS_asFunctionalComponent(__VLS_81, new __VLS_81({
         command: "logout",
     }));
-    const __VLS_79 = __VLS_78({
+    const __VLS_83 = __VLS_82({
         command: "logout",
-    }, ...__VLS_functionalComponentArgsRest(__VLS_78));
-    __VLS_80.slots.default;
+    }, ...__VLS_functionalComponentArgsRest(__VLS_82));
+    __VLS_84.slots.default;
+    var __VLS_84;
     var __VLS_80;
-    var __VLS_76;
 }
-var __VLS_56;
+var __VLS_60;
 var __VLS_32;
-const __VLS_81 = {}.ElMain;
+const __VLS_85 = {}.ElMain;
 /** @type {[typeof __VLS_components.ElMain, typeof __VLS_components.elMain, typeof __VLS_components.ElMain, typeof __VLS_components.elMain, ]} */ ;
 // @ts-ignore
-const __VLS_82 = __VLS_asFunctionalComponent(__VLS_81, new __VLS_81({
+const __VLS_86 = __VLS_asFunctionalComponent(__VLS_85, new __VLS_85({
     ...{ class: "main" },
     role: "main",
     id: "main-content",
     tabindex: "-1",
 }));
-const __VLS_83 = __VLS_82({
+const __VLS_87 = __VLS_86({
     ...{ class: "main" },
     role: "main",
     id: "main-content",
     tabindex: "-1",
-}, ...__VLS_functionalComponentArgsRest(__VLS_82));
-__VLS_84.slots.default;
-const __VLS_85 = {}.RouterView;
+}, ...__VLS_functionalComponentArgsRest(__VLS_86));
+__VLS_88.slots.default;
+const __VLS_89 = {}.RouterView;
 /** @type {[typeof __VLS_components.RouterView, typeof __VLS_components.routerView, ]} */ ;
 // @ts-ignore
-const __VLS_86 = __VLS_asFunctionalComponent(__VLS_85, new __VLS_85({}));
-const __VLS_87 = __VLS_86({}, ...__VLS_functionalComponentArgsRest(__VLS_86));
-var __VLS_84;
+const __VLS_90 = __VLS_asFunctionalComponent(__VLS_89, new __VLS_89({}));
+const __VLS_91 = __VLS_90({}, ...__VLS_functionalComponentArgsRest(__VLS_90));
+var __VLS_88;
 var __VLS_28;
 var __VLS_3;
 /** @type {__VLS_StyleScopedClasses['layout']} */ ;

@@ -17,14 +17,28 @@ public class TenantsController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
     private readonly ITenantContext _tenantContext;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<TenantsController> _logger;
 
-    public TenantsController(ApplicationDbContext db, ITenantContext tenantContext, ILogger<TenantsController> logger)
+    public TenantsController(
+        ApplicationDbContext db,
+        ITenantContext tenantContext,
+        IConfiguration configuration,
+        ILogger<TenantsController> logger)
     {
         _db = db;
         _tenantContext = tenantContext;
+        _configuration = configuration;
         _logger = logger;
         _tenantContext.BypassTenantFilter();
+    }
+
+    /// <summary>取 Tenancy:DefaultTrialDays，缺省 30，限制在 1-365 之间。</summary>
+    private int ResolveTrialDays(int? requested)
+    {
+        var defaultDays = _configuration.GetValue<int?>("Tenancy:DefaultTrialDays") ?? 30;
+        var picked = requested ?? defaultDays;
+        return Math.Clamp(picked, 1, 365);
     }
 
     [HttpGet]
@@ -193,19 +207,22 @@ public class TenantsController : ControllerBase
         if (req.OwnerPassword.Length < 6)
             return BadRequest(new { code = "WeakPassword", message = "密码至少 6 位" });
 
+        var trialDays = ResolveTrialDays(req.TrialDays);
+        var now = DateTime.UtcNow;
+
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
-        // 新建租户一律未激活：Status=Expired、无 CurrentPlanId、无 ExpireAt。
-        // 走"激活"按钮（SubscriptionsController.ActivateOffline）才会建 PaymentOrder + Subscription，
-        // 大盘和报表里的金额由 PaymentOrder.Amount 求和而来，确保口径一致。
+        // 新建租户默认 N 天试用：Status=Trial、ExpireAt=now+TrialDays、无 Subscription 与 PaymentOrder。
+        // 试用期内可正常使用；到期后中间件拦截写请求；激活时由 ActivateOffline 建 PaymentOrder + Subscription，
+        // 此时金额才会入大盘营收。
         var tenant = new Tenant
         {
             Name = req.Name.Trim(),
             ContactPhone = req.ContactPhone.Trim(),
             ContactName = req.ContactName?.Trim(),
-            Status = TenantStatus.Expired,
+            Status = TenantStatus.Trial,
             CurrentPlanId = null,
-            ExpireAt = null
+            ExpireAt = now.AddDays(trialDays)
         };
         _db.Tenants.Add(tenant);
         await _db.SaveChangesAsync(ct);
@@ -234,7 +251,9 @@ public class TenantsController : ControllerBase
         await _db.SaveChangesAsync(ct);
 
         await tx.CommitAsync(ct);
-        _logger.LogInformation("Created tenant {TenantId} ({Name}) with owner {Username}", tenant.Id, tenant.Name, owner.Username);
+        _logger.LogInformation(
+            "Created tenant {TenantId} ({Name}) trial={TrialDays}d owner={Username}",
+            tenant.Id, tenant.Name, trialDays, owner.Username);
 
         return CreatedAtAction(nameof(Get), new { id = tenant.Id },
             new TenantDetailDto(tenant.Id, tenant.Name, tenant.ContactPhone, tenant.ContactName,
@@ -301,5 +320,77 @@ public class TenantsController : ControllerBase
             id, tenant.Name, stores.Count, users.Count);
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// 按摩店自助注册：公开匿名端点，注册后获得固定 30 天试用（Tenancy:DefaultTrialDays）。
+    /// 注册者用返回的 ownerUsername + 自己设置的密码登录 shop-admin。
+    /// </summary>
+    [HttpPost("register")]
+    [AllowAnonymous]
+    public async Task<ActionResult<RegisterTenantResponse>> Register(
+        [FromBody] RegisterTenantRequest req,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(req.Name) || string.IsNullOrWhiteSpace(req.ContactPhone))
+            return BadRequest(new { code = "InvalidInput", message = "店铺名与联系电话必填" });
+        if (string.IsNullOrWhiteSpace(req.OwnerUsername) || string.IsNullOrWhiteSpace(req.OwnerPassword))
+            return BadRequest(new { code = "InvalidInput", message = "登录账号与密码必填" });
+        if (req.OwnerPassword.Length < 6)
+            return BadRequest(new { code = "WeakPassword", message = "密码至少 6 位" });
+
+        var username = req.OwnerUsername.Trim();
+        // 用户名全局唯一（用户表）—— 提前查重给清晰错误，避免 DB 约束抛 500
+        var usernameTaken = await _db.Users.AnyAsync(u => u.Username == username, ct);
+        if (usernameTaken)
+            return Conflict(new { code = "UsernameTaken", message = "该登录账号已被占用，请换一个" });
+
+        var trialDays = ResolveTrialDays(null);
+        var now = DateTime.UtcNow;
+        var expireAt = now.AddDays(trialDays);
+
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+
+        var tenant = new Tenant
+        {
+            Name = req.Name.Trim(),
+            ContactPhone = req.ContactPhone.Trim(),
+            ContactName = req.ContactName?.Trim(),
+            Status = TenantStatus.Trial,
+            CurrentPlanId = null,
+            ExpireAt = expireAt
+        };
+        _db.Tenants.Add(tenant);
+        await _db.SaveChangesAsync(ct);
+
+        var headquarters = new Store
+        {
+            TenantId = tenant.Id,
+            ParentStoreId = null,
+            Name = $"{tenant.Name}总店",
+            IsActive = true
+        };
+        _db.Stores.Add(headquarters);
+        await _db.SaveChangesAsync(ct);
+
+        var owner = new User
+        {
+            TenantId = tenant.Id,
+            StoreId = headquarters.Id,
+            Username = username,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.OwnerPassword),
+            RealName = req.OwnerRealName?.Trim(),
+            Role = UserRole.ShopOwner,
+            IsActive = true
+        };
+        _db.Users.Add(owner);
+        await _db.SaveChangesAsync(ct);
+
+        await tx.CommitAsync(ct);
+        _logger.LogInformation(
+            "Self-registered tenant {TenantId} ({Name}) trial={TrialDays}d owner={Username}",
+            tenant.Id, tenant.Name, trialDays, owner.Username);
+
+        return Ok(new RegisterTenantResponse(tenant.Id, tenant.Name, owner.Username, expireAt, trialDays));
     }
 }

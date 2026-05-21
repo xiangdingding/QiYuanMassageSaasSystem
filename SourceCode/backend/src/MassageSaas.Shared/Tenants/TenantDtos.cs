@@ -33,6 +33,24 @@ public record CreateTenantRequest(
     string OwnerUsername,
     string OwnerPassword,
     string? OwnerRealName,
-    string HeadquartersName);
+    string HeadquartersName,
+    int? TrialDays);
+
+/// <summary>按摩店自助注册请求（公开匿名端点）。试用天数由系统默认（30），不接受外部指定。</summary>
+public record RegisterTenantRequest(
+    string Name,
+    string ContactPhone,
+    string? ContactName,
+    string OwnerUsername,
+    string OwnerPassword,
+    string? OwnerRealName);
+
+/// <summary>注册成功响应。</summary>
+public record RegisterTenantResponse(
+    long TenantId,
+    string TenantName,
+    string OwnerUsername,
+    DateTime ExpireAt,
+    int TrialDays);
 
 public record UpdateTenantStatusRequest(string Status);

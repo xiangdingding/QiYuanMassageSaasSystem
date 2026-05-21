@@ -21,6 +21,9 @@
         <el-button type="primary" size="large" :loading="loading" style="width: 100%" @click="submit">
           登录
         </el-button>
+        <div class="footer-link">
+          还没有账号？<router-link to="/register">免费注册（30 天试用）</router-link>
+        </div>
       </el-form>
     </el-card>
   </div>
@@ -28,16 +31,18 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { Lock, User } from '@element-plus/icons-vue';
 import { authApi } from '@/api/modules';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
+const route = useRoute();
 const auth = useAuthStore();
 
-const form = reactive({ username: '', password: '' });
+// 从注册页跳过来时携带刚创建的用户名，预填到账号框
+const form = reactive({ username: (route.query.u as string) || '', password: '' });
 const formRef = ref<FormInstance>();
 const loading = ref(false);
 
@@ -82,5 +87,15 @@ async function submit() {
   text-align: center;
   color: var(--el-text-color-secondary);
   margin: 4px 0 24px;
+}
+.footer-link {
+  text-align: center;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+}
+.footer-link a {
+  color: var(--el-color-primary);
+  text-decoration: none;
 }
 </style>

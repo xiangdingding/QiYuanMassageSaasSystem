@@ -16,6 +16,7 @@ public class TenantStatusMiddleware
         "/api/callback/",
         "/api/subscriptions/pay",
         "/api/subscriptions/activate-offline",
+        "/api/tenants/register",
         "/health"
     };
 
@@ -58,6 +59,7 @@ public class TenantStatusMiddleware
             return;
         }
 
+        // Trial 与 Active 同样允许写——是否到期完全由 ExpireAt 判断
         var expired = tenant.Status == TenantStatus.Expired
             || tenant.Status == TenantStatus.Disabled
             || (tenant.ExpireAt.HasValue && tenant.ExpireAt.Value < DateTime.UtcNow);

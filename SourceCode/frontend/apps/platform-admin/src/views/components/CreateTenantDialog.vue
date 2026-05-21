@@ -28,10 +28,14 @@
       <el-form-item label="店主姓名">
         <el-input v-model="form.ownerRealName" />
       </el-form-item>
+      <el-form-item label="试用天数" prop="trialDays">
+        <el-input-number v-model="form.trialDays" :min="1" :max="365" />
+        <span style="margin-left: 8px; color: var(--el-text-color-secondary)">天（默认 30 天）</span>
+      </el-form-item>
       <el-alert
         type="info"
         :closable="false"
-        title="租户创建后处于未激活状态，请在租户列表点「激活」录入实收金额开通服务。"
+        title="租户创建后立即进入试用期，到期前请走「激活」按钮录入实收金额转正。"
         style="margin: 0 0 12px 120px; width: calc(100% - 120px)"
       />
     </el-form>
@@ -64,7 +68,8 @@ const form = reactive<CreateTenantRequest>({
   ownerUsername: '',
   ownerPassword: '',
   ownerRealName: '',
-  headquartersName: ''
+  headquartersName: '',
+  trialDays: 30
 });
 
 const rules: FormRules = {
@@ -86,6 +91,7 @@ function reset() {
   form.ownerPassword = '';
   form.ownerRealName = '';
   form.headquartersName = '';
+  form.trialDays = 30;
 }
 
 async function submit() {

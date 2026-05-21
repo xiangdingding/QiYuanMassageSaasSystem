@@ -8,6 +8,7 @@ using MassageSaas.Shared.Tenants;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace MassageSaas.UnitTests.Tenants;
@@ -75,7 +76,8 @@ public class TenantOverviewTests
             new OrderItem { Id = 3, TenantId = 1, OrderId = 2, Order = order2, ServiceId = 1, TechnicianId = 10, ServiceName = "全身", ItemTotal = 150m });
         db.SaveChanges();
 
-        return new TenantsController(db, ctx, NullLogger<TenantsController>.Instance);
+        var config = new ConfigurationBuilder().AddInMemoryCollection().Build();
+        return new TenantsController(db, ctx, config, NullLogger<TenantsController>.Instance);
     }
 
     [Fact]

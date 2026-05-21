@@ -23,6 +23,9 @@
       <el-header class="header" role="banner">
         <div class="header-left">
           <h1 class="page-title" aria-live="polite">{{ pageTitle }}</h1>
+          <el-tag v-if="subStore.status === 'Trial' && !subStore.expired" type="info" size="small">
+            试用中{{ subStore.daysToExpire != null ? `，剩 ${subStore.daysToExpire} 天` : '' }}
+          </el-tag>
           <el-tag v-if="expireWarn" type="warning" size="small">
             订阅 {{ subStore.daysToExpire }} 天后到期
           </el-tag>
@@ -145,8 +148,10 @@ const pageTitle = computed(() => (route.meta.title as string) ?? '');
 const activeStoreName = computed(
   () => appStore.stores.find((s) => s.id === appStore.activeStoreId)?.name ?? ''
 );
+// Trial 状态走「试用中，剩 X 天」标签，不再重复弹"X 天后到期"——避免双标
 const expireWarn = computed(
-  () => subStore.daysToExpire !== null && subStore.daysToExpire > 0 && subStore.daysToExpire <= 30 && !subStore.expired
+  () => subStore.status === 'Active' &&
+    subStore.daysToExpire !== null && subStore.daysToExpire > 0 && subStore.daysToExpire <= 30 && !subStore.expired
 );
 
 function onCommand(cmd: string) {
@@ -163,7 +168,8 @@ onMounted(async () => {
       const sub = await subscriptionsApi.me();
       subStore.daysToExpire = sub.daysToExpire ?? null;
       subStore.status = sub.status;
-      subStore.expired = sub.status !== 'Active';
+      // Trial 与 Active 同样视为可写；只有 Expired / Disabled 才标"只读"
+      subStore.expired = sub.status === 'Expired' || sub.status === 'Disabled';
     } catch {
       /* ignore */
     }

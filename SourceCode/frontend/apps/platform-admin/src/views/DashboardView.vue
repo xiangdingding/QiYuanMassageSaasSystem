@@ -5,7 +5,10 @@
         <el-card shadow="hover">
           <div class="metric-label">租户总数</div>
           <div class="metric-value">{{ data?.totalTenants ?? '-' }}</div>
-          <div class="metric-sub">活跃 {{ data?.activeTenants ?? 0 }}</div>
+          <div class="metric-sub">
+            活跃 {{ data?.activeTenants ?? 0 }} ·
+            <span class="trial">试用 {{ data?.trialTenants ?? 0 }}</span>
+          </div>
         </el-card>
       </el-col>
       <el-col :span="6">
@@ -86,4 +89,5 @@ onMounted(load);
 .metric-value { font-size: 28px; font-weight: 600; margin: 6px 0; }
 .metric-value.warn { color: #e6a23c; }
 .metric-sub { color: var(--el-text-color-secondary); font-size: 12px; }
+.trial { color: #409eff; }
 </style>

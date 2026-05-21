@@ -1,12 +1,14 @@
 import { reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Lock, User } from '@element-plus/icons-vue';
 import { authApi } from '@/api/modules';
 import { useAuthStore } from '@/stores/auth';
 const router = useRouter();
+const route = useRoute();
 const auth = useAuthStore();
-const form = reactive({ username: '', password: '' });
+// 从注册页跳过来时携带刚创建的用户名，预填到账号框
+const form = reactive({ username: route.query.u || '', password: '' });
 const formRef = ref();
 const loading = ref(false);
 const rules = {
@@ -38,6 +40,7 @@ const __VLS_ctx = {};
 let __VLS_components;
 let __VLS_directives;
 /** @type {__VLS_StyleScopedClasses['login-card']} */ ;
+/** @type {__VLS_StyleScopedClasses['footer-link']} */ ;
 // CSS variable injection 
 // CSS variable injection end 
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
@@ -175,11 +178,26 @@ const __VLS_41 = {
 };
 __VLS_37.slots.default;
 var __VLS_37;
+__VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
+    ...{ class: "footer-link" },
+});
+const __VLS_42 = {}.RouterLink;
+/** @type {[typeof __VLS_components.RouterLink, typeof __VLS_components.routerLink, typeof __VLS_components.RouterLink, typeof __VLS_components.routerLink, ]} */ ;
+// @ts-ignore
+const __VLS_43 = __VLS_asFunctionalComponent(__VLS_42, new __VLS_42({
+    to: "/register",
+}));
+const __VLS_44 = __VLS_43({
+    to: "/register",
+}, ...__VLS_functionalComponentArgsRest(__VLS_43));
+__VLS_45.slots.default;
+var __VLS_45;
 var __VLS_7;
 var __VLS_3;
 /** @type {__VLS_StyleScopedClasses['login-bg']} */ ;
 /** @type {__VLS_StyleScopedClasses['login-card']} */ ;
 /** @type {__VLS_StyleScopedClasses['subtitle']} */ ;
+/** @type {__VLS_StyleScopedClasses['footer-link']} */ ;
 // @ts-ignore
 var __VLS_13 = __VLS_12;
 var __VLS_dollars;

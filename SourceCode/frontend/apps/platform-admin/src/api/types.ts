@@ -44,7 +44,7 @@ export interface TenantSummary {
   name: string;
   contactPhone: string;
   contactName?: string | null;
-  status: 'Active' | 'Expired' | 'Disabled';
+  status: 'Active' | 'Expired' | 'Disabled' | 'Trial';
   expireAt?: string | null;
   currentPlanId?: number | null;
   currentPlanName?: string | null;
@@ -67,11 +67,13 @@ export interface CreateTenantRequest {
   ownerPassword: string;
   ownerRealName?: string | null;
   headquartersName: string;
+  trialDays?: number | null;
 }
 
 export interface PlatformDashboard {
   totalTenants: number;
   activeTenants: number;
+  trialTenants: number;
   expiredTenants: number;
   disabledTenants: number;
   expiringIn30Days: number;

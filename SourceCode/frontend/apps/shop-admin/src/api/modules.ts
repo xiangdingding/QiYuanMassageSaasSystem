@@ -28,6 +28,28 @@ export const authApi = {
   me: () => http().get('/auth/me').then((r) => r.data)
 };
 
+export interface RegisterTenantRequest {
+  name: string;
+  contactPhone: string;
+  contactName?: string | null;
+  ownerUsername: string;
+  ownerPassword: string;
+  ownerRealName?: string | null;
+}
+
+export interface RegisterTenantResponse {
+  tenantId: number;
+  tenantName: string;
+  ownerUsername: string;
+  expireAt: string;
+  trialDays: number;
+}
+
+export const tenantsApi = {
+  register: (req: RegisterTenantRequest) =>
+    http().post<RegisterTenantResponse>('/tenants/register', req).then((r) => r.data)
+};
+
 export const storesApi = {
   list: () => http().get<Store[]>('/stores').then((r) => r.data),
   create: (body: { name: string; address?: string | null; phone?: string | null; parentStoreId?: number | null }) =>
