@@ -5,6 +5,7 @@ using System.Windows;
 using MassageSaas.Cs.Services;
 using MassageSaas.Cs.Services.Devices;
 using MassageSaas.Cs.Services.Devices.EscPos;
+using MassageSaas.Cs.Services.Devices.Serial;
 using MassageSaas.Cs.ViewModels;
 using MassageSaas.Cs.ViewModels.Pos;
 using MassageSaas.Cs.Views;
@@ -45,14 +46,27 @@ public partial class App : Application
                 services.AddSingleton<ISpeechAnnouncer, SpeechAnnouncer>();
                 services.AddTransient<AuthMessageHandler>();
 
-                // 外设：小票打印机配置了就走真实 ESC/POS 驱动，否则走占位（日志）实现
+                // 外设：四类设备都按"配置 enabled=true → 真实驱动；否则占位"的统一模式注册。
+                // 占位实现不会触发任何 IO，门店没装对应硬件也能跑。
                 if (settings.Printer.Enabled)
                     services.AddSingleton<IReceiptPrinter, EscPosReceiptPrinter>();
                 else
                     services.AddSingleton<IReceiptPrinter, LoggingReceiptPrinter>();
-                services.AddSingleton<ICustomerDisplay, LoggingCustomerDisplay>();
-                services.AddSingleton<ICallerIdMonitor, NullCallerIdMonitor>();
-                services.AddSingleton<ICardReader, NullCardReader>();
+
+                if (settings.CustomerDisplay.Enabled)
+                    services.AddSingleton<ICustomerDisplay, SerialCustomerDisplay>();
+                else
+                    services.AddSingleton<ICustomerDisplay, LoggingCustomerDisplay>();
+
+                if (settings.CallerId.Enabled)
+                    services.AddSingleton<ICallerIdMonitor, SerialCallerIdMonitor>();
+                else
+                    services.AddSingleton<ICallerIdMonitor, NullCallerIdMonitor>();
+
+                if (settings.CardReader.Enabled)
+                    services.AddSingleton<ICardReader, SerialCardReader>();
+                else
+                    services.AddSingleton<ICardReader, NullCardReader>();
 
                 services.AddRefitClient<IApiClient>(refitSettings)
                     .ConfigureHttpClient(c => c.BaseAddress = new Uri(settings.ApiBaseUrl))

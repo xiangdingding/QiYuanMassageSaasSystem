@@ -14,6 +14,15 @@ public class AppSettings
     /// <summary>小票打印机配置。</summary>
     public PrinterSettings Printer { get; set; } = new();
 
+    /// <summary>客显（VFD 小屏）配置。</summary>
+    public CustomerDisplaySettings CustomerDisplay { get; set; } = new();
+
+    /// <summary>来电盒配置。</summary>
+    public CallerIdSettings CallerId { get; set; } = new();
+
+    /// <summary>磁条读卡器配置。</summary>
+    public CardReaderSettings CardReader { get; set; } = new();
+
     /// <summary>
     /// 从 exe 同目录的 appsettings.json 加载配置；文件缺失或损坏时回退到默认值。
     /// 这样接打印机/改后端地址只需改 json，不必重新编译。
