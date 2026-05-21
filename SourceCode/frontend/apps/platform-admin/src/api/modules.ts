@@ -42,7 +42,8 @@ export const tenantsApi = {
   create: (body: CreateTenantRequest) =>
     http().post<TenantDetail>('/tenants', body).then((r) => r.data),
   updateStatus: (id: number, status: string) =>
-    http().patch(`/tenants/${id}/status`, { status })
+    http().patch(`/tenants/${id}/status`, { status }),
+  remove: (id: number) => http().delete(`/tenants/${id}`)
 };
 
 export const dashboardApi = {

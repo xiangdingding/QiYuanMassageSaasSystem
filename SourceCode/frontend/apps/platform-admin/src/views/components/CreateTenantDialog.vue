@@ -28,16 +28,12 @@
       <el-form-item label="店主姓名">
         <el-input v-model="form.ownerRealName" />
       </el-form-item>
-      <el-form-item label="初始套餐">
-        <el-select v-model="form.initialPlanId" placeholder="（可选）激活一年" clearable style="width: 100%">
-          <el-option
-            v-for="p in plans"
-            :key="p.id"
-            :label="`${p.name} - ¥${p.annualPrice}/年`"
-            :value="p.id"
-          />
-        </el-select>
-      </el-form-item>
+      <el-alert
+        type="info"
+        :closable="false"
+        title="租户创建后处于未激活状态，请在租户列表点「激活」录入实收金额开通服务。"
+        style="margin: 0 0 12px 120px; width: calc(100% - 120px)"
+      />
     </el-form>
     <template #footer>
       <el-button @click="emit('update:modelValue', false)">取消</el-button>
@@ -50,9 +46,9 @@
 import { reactive, ref } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { tenantsApi } from '@/api/modules';
-import type { CreateTenantRequest, Plan } from '@/api/types';
+import type { CreateTenantRequest } from '@/api/types';
 
-const props = defineProps<{ modelValue: boolean; plans: Plan[] }>();
+defineProps<{ modelValue: boolean }>();
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void;
   (e: 'created'): void;
@@ -68,8 +64,7 @@ const form = reactive<CreateTenantRequest>({
   ownerUsername: '',
   ownerPassword: '',
   ownerRealName: '',
-  headquartersName: '',
-  initialPlanId: null
+  headquartersName: ''
 });
 
 const rules: FormRules = {
@@ -91,7 +86,6 @@ function reset() {
   form.ownerPassword = '';
   form.ownerRealName = '';
   form.headquartersName = '';
-  form.initialPlanId = null;
 }
 
 async function submit() {
@@ -107,6 +101,4 @@ async function submit() {
     loading.value = false;
   }
 }
-
-void props;
 </script>

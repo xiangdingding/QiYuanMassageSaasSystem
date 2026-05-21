@@ -2,7 +2,7 @@
   <el-dialog
     :model-value="modelValue"
     @update:model-value="(v: boolean) => emit('update:modelValue', v)"
-    :title="`线下续费/激活：${tenant?.name ?? ''}`"
+    :title="`线下${actionLabel}：${tenant?.name ?? ''}`"
     width="480px"
     @close="reset"
   >
@@ -30,22 +30,28 @@
     </el-form>
     <template #footer>
       <el-button @click="emit('update:modelValue', false)">取消</el-button>
-      <el-button type="primary" :loading="loading" @click="submit">确认激活</el-button>
+      <el-button type="primary" :loading="loading" @click="submit">确认{{ actionLabel }}</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { subscriptionsApi } from '@/api/modules';
 import type { Plan, TenantSummary } from '@/api/types';
 
-const props = defineProps<{
-  modelValue: boolean;
-  tenant: TenantSummary | null;
-  plans: Plan[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean;
+    tenant: TenantSummary | null;
+    plans: Plan[];
+    mode?: 'activate' | 'renew';
+  }>(),
+  { mode: 'activate' }
+);
+
+const actionLabel = computed(() => (props.mode === 'renew' ? '续费' : '激活'));
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void;
   (e: 'activated'): void;
@@ -67,13 +73,14 @@ const rules: FormRules = {
   amountReceived: [{ required: true, message: '请填写实收金额', trigger: 'blur' }]
 };
 
+// 套餐或年限变化时实时回填金额：套餐年价 × 年限。
+// 用户仍可手动覆盖；但再次切套餐/年限会按新条件重算（覆盖手填值）。
 watch(
   () => [form.planId, form.years] as const,
   ([pid, years]) => {
-    if (pid != null && form.amountReceived === 0) {
-      const plan = props.plans.find((p) => p.id === pid);
-      if (plan) form.amountReceived = +(plan.annualPrice * years).toFixed(2);
-    }
+    if (pid == null) return;
+    const plan = props.plans.find((p) => p.id === pid);
+    if (plan) form.amountReceived = +(plan.annualPrice * years).toFixed(2);
   }
 );
 
@@ -106,7 +113,7 @@ async function submit() {
       amountReceived: form.amountReceived,
       remark: form.remark || null
     });
-    ElMessage.success('激活成功');
+    ElMessage.success(`${actionLabel.value}成功`);
     emit('activated');
     emit('update:modelValue', false);
   } finally {

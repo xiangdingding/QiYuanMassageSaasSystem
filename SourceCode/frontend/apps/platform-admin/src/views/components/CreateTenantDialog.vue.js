@@ -1,7 +1,7 @@
 import { reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { tenantsApi } from '@/api/modules';
-const props = defineProps();
+const __VLS_props = defineProps();
 const emit = defineEmits();
 const formRef = ref();
 const loading = ref(false);
@@ -12,8 +12,7 @@ const form = reactive({
     ownerUsername: '',
     ownerPassword: '',
     ownerRealName: '',
-    headquartersName: '',
-    initialPlanId: null
+    headquartersName: ''
 });
 const rules = {
     name: [{ required: true, message: '请输入店铺名', trigger: 'blur' }],
@@ -33,7 +32,6 @@ function reset() {
     form.ownerPassword = '';
     form.ownerRealName = '';
     form.headquartersName = '';
-    form.initialPlanId = null;
 }
 async function submit() {
     if (!formRef.value)
@@ -51,7 +49,6 @@ async function submit() {
         loading.value = false;
     }
 }
-void props;
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
 const __VLS_ctx = {};
 let __VLS_components;
@@ -260,92 +257,64 @@ const __VLS_70 = __VLS_69({
     modelValue: (__VLS_ctx.form.ownerRealName),
 }, ...__VLS_functionalComponentArgsRest(__VLS_69));
 var __VLS_67;
-const __VLS_72 = {}.ElFormItem;
-/** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
+const __VLS_72 = {}.ElAlert;
+/** @type {[typeof __VLS_components.ElAlert, typeof __VLS_components.elAlert, ]} */ ;
 // @ts-ignore
 const __VLS_73 = __VLS_asFunctionalComponent(__VLS_72, new __VLS_72({
-    label: "初始套餐",
+    type: "info",
+    closable: (false),
+    title: "租户创建后处于未激活状态，请在租户列表点「激活」录入实收金额开通服务。",
+    ...{ style: {} },
 }));
 const __VLS_74 = __VLS_73({
-    label: "初始套餐",
+    type: "info",
+    closable: (false),
+    title: "租户创建后处于未激活状态，请在租户列表点「激活」录入实收金额开通服务。",
+    ...{ style: {} },
 }, ...__VLS_functionalComponentArgsRest(__VLS_73));
-__VLS_75.slots.default;
-const __VLS_76 = {}.ElSelect;
-/** @type {[typeof __VLS_components.ElSelect, typeof __VLS_components.elSelect, typeof __VLS_components.ElSelect, typeof __VLS_components.elSelect, ]} */ ;
-// @ts-ignore
-const __VLS_77 = __VLS_asFunctionalComponent(__VLS_76, new __VLS_76({
-    modelValue: (__VLS_ctx.form.initialPlanId),
-    placeholder: "（可选）激活一年",
-    clearable: true,
-    ...{ style: {} },
-}));
-const __VLS_78 = __VLS_77({
-    modelValue: (__VLS_ctx.form.initialPlanId),
-    placeholder: "（可选）激活一年",
-    clearable: true,
-    ...{ style: {} },
-}, ...__VLS_functionalComponentArgsRest(__VLS_77));
-__VLS_79.slots.default;
-for (const [p] of __VLS_getVForSourceType((__VLS_ctx.plans))) {
-    const __VLS_80 = {}.ElOption;
-    /** @type {[typeof __VLS_components.ElOption, typeof __VLS_components.elOption, ]} */ ;
-    // @ts-ignore
-    const __VLS_81 = __VLS_asFunctionalComponent(__VLS_80, new __VLS_80({
-        key: (p.id),
-        label: (`${p.name} - ¥${p.annualPrice}/年`),
-        value: (p.id),
-    }));
-    const __VLS_82 = __VLS_81({
-        key: (p.id),
-        label: (`${p.name} - ¥${p.annualPrice}/年`),
-        value: (p.id),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_81));
-}
-var __VLS_79;
-var __VLS_75;
 var __VLS_13;
 {
     const { footer: __VLS_thisSlot } = __VLS_3.slots;
+    const __VLS_76 = {}.ElButton;
+    /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
+    // @ts-ignore
+    const __VLS_77 = __VLS_asFunctionalComponent(__VLS_76, new __VLS_76({
+        ...{ 'onClick': {} },
+    }));
+    const __VLS_78 = __VLS_77({
+        ...{ 'onClick': {} },
+    }, ...__VLS_functionalComponentArgsRest(__VLS_77));
+    let __VLS_80;
+    let __VLS_81;
+    let __VLS_82;
+    const __VLS_83 = {
+        onClick: (...[$event]) => {
+            __VLS_ctx.emit('update:modelValue', false);
+        }
+    };
+    __VLS_79.slots.default;
+    var __VLS_79;
     const __VLS_84 = {}.ElButton;
     /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
     // @ts-ignore
     const __VLS_85 = __VLS_asFunctionalComponent(__VLS_84, new __VLS_84({
         ...{ 'onClick': {} },
+        type: "primary",
+        loading: (__VLS_ctx.loading),
     }));
     const __VLS_86 = __VLS_85({
         ...{ 'onClick': {} },
+        type: "primary",
+        loading: (__VLS_ctx.loading),
     }, ...__VLS_functionalComponentArgsRest(__VLS_85));
     let __VLS_88;
     let __VLS_89;
     let __VLS_90;
     const __VLS_91 = {
-        onClick: (...[$event]) => {
-            __VLS_ctx.emit('update:modelValue', false);
-        }
+        onClick: (__VLS_ctx.submit)
     };
     __VLS_87.slots.default;
     var __VLS_87;
-    const __VLS_92 = {}.ElButton;
-    /** @type {[typeof __VLS_components.ElButton, typeof __VLS_components.elButton, typeof __VLS_components.ElButton, typeof __VLS_components.elButton, ]} */ ;
-    // @ts-ignore
-    const __VLS_93 = __VLS_asFunctionalComponent(__VLS_92, new __VLS_92({
-        ...{ 'onClick': {} },
-        type: "primary",
-        loading: (__VLS_ctx.loading),
-    }));
-    const __VLS_94 = __VLS_93({
-        ...{ 'onClick': {} },
-        type: "primary",
-        loading: (__VLS_ctx.loading),
-    }, ...__VLS_functionalComponentArgsRest(__VLS_93));
-    let __VLS_96;
-    let __VLS_97;
-    let __VLS_98;
-    const __VLS_99 = {
-        onClick: (__VLS_ctx.submit)
-    };
-    __VLS_95.slots.default;
-    var __VLS_95;
 }
 var __VLS_3;
 // @ts-ignore

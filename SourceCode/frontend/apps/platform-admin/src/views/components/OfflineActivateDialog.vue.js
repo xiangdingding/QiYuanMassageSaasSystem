@@ -1,7 +1,8 @@
-import { reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { subscriptionsApi } from '@/api/modules';
-const props = defineProps();
+const props = withDefaults(defineProps(), { mode: 'activate' });
+const actionLabel = computed(() => (props.mode === 'renew' ? '续费' : '激活'));
 const emit = defineEmits();
 const formRef = ref();
 const loading = ref(false);
@@ -16,12 +17,14 @@ const rules = {
     years: [{ required: true, message: '请填写年限', trigger: 'blur' }],
     amountReceived: [{ required: true, message: '请填写实收金额', trigger: 'blur' }]
 };
+// 套餐或年限变化时实时回填金额：套餐年价 × 年限。
+// 用户仍可手动覆盖；但再次切套餐/年限会按新条件重算（覆盖手填值）。
 watch(() => [form.planId, form.years], ([pid, years]) => {
-    if (pid != null && form.amountReceived === 0) {
-        const plan = props.plans.find((p) => p.id === pid);
-        if (plan)
-            form.amountReceived = +(plan.annualPrice * years).toFixed(2);
-    }
+    if (pid == null)
+        return;
+    const plan = props.plans.find((p) => p.id === pid);
+    if (plan)
+        form.amountReceived = +(plan.annualPrice * years).toFixed(2);
 });
 watch(() => props.modelValue, (v) => {
     if (v && props.tenant?.currentPlanId) {
@@ -49,7 +52,7 @@ async function submit() {
             amountReceived: form.amountReceived,
             remark: form.remark || null
         });
-        ElMessage.success('激活成功');
+        ElMessage.success(`${actionLabel.value}成功`);
         emit('activated');
         emit('update:modelValue', false);
     }
@@ -58,6 +61,7 @@ async function submit() {
     }
 }
 debugger; /* PartiallyEnd: #3632/scriptSetup.vue */
+const __VLS_withDefaultsArg = (function (t) { return t; })({ mode: 'activate' });
 const __VLS_ctx = {};
 let __VLS_components;
 let __VLS_directives;
@@ -68,14 +72,14 @@ const __VLS_1 = __VLS_asFunctionalComponent(__VLS_0, new __VLS_0({
     ...{ 'onUpdate:modelValue': {} },
     ...{ 'onClose': {} },
     modelValue: (__VLS_ctx.modelValue),
-    title: (`线下续费/激活：${__VLS_ctx.tenant?.name ?? ''}`),
+    title: (`线下${__VLS_ctx.actionLabel}：${__VLS_ctx.tenant?.name ?? ''}`),
     width: "480px",
 }));
 const __VLS_2 = __VLS_1({
     ...{ 'onUpdate:modelValue': {} },
     ...{ 'onClose': {} },
     modelValue: (__VLS_ctx.modelValue),
-    title: (`线下续费/激活：${__VLS_ctx.tenant?.name ?? ''}`),
+    title: (`线下${__VLS_ctx.actionLabel}：${__VLS_ctx.tenant?.name ?? ''}`),
     width: "480px",
 }, ...__VLS_functionalComponentArgsRest(__VLS_1));
 let __VLS_4;
@@ -277,6 +281,7 @@ var __VLS_13;
         onClick: (__VLS_ctx.submit)
     };
     __VLS_63.slots.default;
+    (__VLS_ctx.actionLabel);
     var __VLS_63;
 }
 var __VLS_3;
@@ -286,6 +291,7 @@ var __VLS_dollars;
 const __VLS_self = (await import('vue')).defineComponent({
     setup() {
         return {
+            actionLabel: actionLabel,
             emit: emit,
             formRef: formRef,
             loading: loading,
@@ -297,6 +303,7 @@ const __VLS_self = (await import('vue')).defineComponent({
     },
     __typeEmits: {},
     __typeProps: {},
+    props: {},
 });
 export default (await import('vue')).defineComponent({
     setup() {
@@ -304,5 +311,6 @@ export default (await import('vue')).defineComponent({
     },
     __typeEmits: {},
     __typeProps: {},
+    props: {},
 });
 ; /* PartiallyEnd: #4569/main.vue */

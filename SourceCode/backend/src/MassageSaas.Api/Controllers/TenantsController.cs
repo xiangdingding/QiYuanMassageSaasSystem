@@ -51,11 +51,46 @@ public class TenantsController : ControllerBase
 
         var total = await query.CountAsync(ct);
         var now = DateTime.UtcNow;
-        var items = await query
+        // 先按 EF 可翻译的字段投影到匿名类型，再在客户端把"到期天数"算出来——
+        // Pomelo 翻译不了 (DateTime - DateTime).TotalDays → int? 的投影
+        var raw = await query
             .OrderByDescending(t => t.CreatedAt)
             .Skip((q.SafePage - 1) * q.SafePageSize)
             .Take(q.SafePageSize)
-            .Select(t => new TenantSummaryDto(
+            .Select(t => new
+            {
+                t.Id,
+                t.Name,
+                t.ContactPhone,
+                t.ContactName,
+                t.Status,
+                t.ExpireAt,
+                t.CurrentPlanId,
+                CurrentPlanName = t.CurrentPlan != null ? t.CurrentPlan.Name : null
+            })
+            .ToListAsync(ct);
+
+        // 当前页租户的最新一笔订阅：开始时间 + 年限（年限按 EndAt-StartAt 天数 / 365 取整，
+        // 所有续费/激活路径都按整年走）
+        var tenantIds = raw.Select(t => t.Id).ToList();
+        var latestSubs = (await _db.Subscriptions.AsNoTracking()
+                .Where(s => s.TenantId != null && tenantIds.Contains(s.TenantId.Value))
+                .Select(s => new { TenantId = s.TenantId!.Value, s.StartAt, s.EndAt, s.CreatedAt })
+                .ToListAsync(ct))
+            .GroupBy(s => s.TenantId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(s => s.CreatedAt).First());
+
+        var items = raw.Select(t =>
+        {
+            DateTime? startAt = null;
+            int? years = null;
+            if (latestSubs.TryGetValue(t.Id, out var sub))
+            {
+                startAt = sub.StartAt;
+                years = (int)Math.Round((sub.EndAt - sub.StartAt).TotalDays / 365.0);
+                if (years < 1) years = 1;
+            }
+            return new TenantSummaryDto(
                 t.Id,
                 t.Name,
                 t.ContactPhone,
@@ -63,9 +98,11 @@ public class TenantsController : ControllerBase
                 t.Status.ToString(),
                 t.ExpireAt,
                 t.CurrentPlanId,
-                t.CurrentPlan != null ? t.CurrentPlan.Name : null,
-                t.ExpireAt.HasValue ? (int?)(t.ExpireAt.Value - now).TotalDays : null))
-            .ToListAsync(ct);
+                t.CurrentPlanName,
+                t.ExpireAt.HasValue ? (int?)(t.ExpireAt.Value - now).TotalDays : null,
+                startAt,
+                years);
+        }).ToList();
 
         return Ok(new PagedResult<TenantSummaryDto>(items, total, q.SafePage, q.SafePageSize));
     }
@@ -156,23 +193,19 @@ public class TenantsController : ControllerBase
         if (req.OwnerPassword.Length < 6)
             return BadRequest(new { code = "WeakPassword", message = "密码至少 6 位" });
 
-        Plan? plan = null;
-        if (req.InitialPlanId.HasValue)
-        {
-            plan = await _db.Plans.FirstOrDefaultAsync(p => p.Id == req.InitialPlanId.Value, ct);
-            if (plan is null) return BadRequest(new { code = "PlanNotFound", message = "套餐不存在" });
-        }
-
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
+        // 新建租户一律未激活：Status=Expired、无 CurrentPlanId、无 ExpireAt。
+        // 走"激活"按钮（SubscriptionsController.ActivateOffline）才会建 PaymentOrder + Subscription，
+        // 大盘和报表里的金额由 PaymentOrder.Amount 求和而来，确保口径一致。
         var tenant = new Tenant
         {
             Name = req.Name.Trim(),
             ContactPhone = req.ContactPhone.Trim(),
             ContactName = req.ContactName?.Trim(),
-            Status = plan != null ? TenantStatus.Active : TenantStatus.Expired,
-            CurrentPlanId = plan?.Id,
-            ExpireAt = plan != null ? DateTime.UtcNow.AddYears(1) : null
+            Status = TenantStatus.Expired,
+            CurrentPlanId = null,
+            ExpireAt = null
         };
         _db.Tenants.Add(tenant);
         await _db.SaveChangesAsync(ct);
@@ -200,28 +233,13 @@ public class TenantsController : ControllerBase
         _db.Users.Add(owner);
         await _db.SaveChangesAsync(ct);
 
-        if (plan != null)
-        {
-            var sub = new Subscription
-            {
-                TenantId = tenant.Id,
-                PlanId = plan.Id,
-                StartAt = DateTime.UtcNow,
-                EndAt = DateTime.UtcNow.AddYears(1),
-                Source = SubscriptionSource.OfflineManual,
-                Remark = "新建租户初始订阅"
-            };
-            _db.Subscriptions.Add(sub);
-            await _db.SaveChangesAsync(ct);
-        }
-
         await tx.CommitAsync(ct);
         _logger.LogInformation("Created tenant {TenantId} ({Name}) with owner {Username}", tenant.Id, tenant.Name, owner.Username);
 
         return CreatedAtAction(nameof(Get), new { id = tenant.Id },
             new TenantDetailDto(tenant.Id, tenant.Name, tenant.ContactPhone, tenant.ContactName,
                 tenant.Status.ToString(), tenant.ExpireAt, tenant.CurrentPlanId,
-                plan?.Name, 1, 1, tenant.CreatedAt));
+                null, 1, 1, tenant.CreatedAt));
     }
 
     [HttpPatch("{id:long}/status")]
@@ -236,6 +254,52 @@ public class TenantsController : ControllerBase
         tenant.Status = newStatus;
         await _db.SaveChangesAsync(ct);
         _logger.LogInformation("Tenant {TenantId} status changed to {Status}", id, newStatus);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// 删除未激活的租户：仅当该租户从未有过任何 Subscription 记录时允许，
+    /// 级联清掉自动建立的总店与店主账号。已激活/已欠费/已停用都不能走这里——
+    /// 那些都有真实业务数据，应走"停用"软删而非物理删除。
+    /// </summary>
+    [HttpDelete("{id:long}")]
+    public async Task<IActionResult> Delete(long id, CancellationToken ct)
+    {
+        var tenant = await _db.Tenants.FirstOrDefaultAsync(t => t.Id == id, ct);
+        if (tenant is null) return NotFound();
+
+        var hasSubscription = await _db.Subscriptions.AnyAsync(s => s.TenantId == id, ct);
+        if (hasSubscription)
+        {
+            return BadRequest(new
+            {
+                code = "TenantAlreadyActivated",
+                message = "该租户已有订阅记录，不可删除；请使用「停用」操作"
+            });
+        }
+
+        var hasPayment = await _db.PaymentOrders.AnyAsync(p => p.TenantId == id, ct);
+        if (hasPayment)
+        {
+            return BadRequest(new
+            {
+                code = "TenantHasPaymentHistory",
+                message = "该租户存在历史支付订单，不可删除"
+            });
+        }
+
+        var stores = await _db.Stores.Where(s => s.TenantId == id).ToListAsync(ct);
+        var users = await _db.Users.Where(u => u.TenantId == id).ToListAsync(ct);
+
+        _db.Stores.RemoveRange(stores);
+        _db.Users.RemoveRange(users);
+        _db.Tenants.Remove(tenant);
+
+        await _db.SaveChangesAsync(ct);
+        _logger.LogInformation(
+            "Deleted unactivated tenant {TenantId} ({Name}); cascaded {StoreCount} stores, {UserCount} users",
+            id, tenant.Name, stores.Count, users.Count);
+
         return NoContent();
     }
 }

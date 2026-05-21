@@ -31,6 +31,18 @@
             <el-tag :type="statusType(row.status)">{{ statusLabel(row.status) }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column label="订阅开始" min-width="120">
+          <template #default="{ row }">
+            <span v-if="!row.subscriptionStartAt">—</span>
+            <span v-else>{{ formatDate(row.subscriptionStartAt) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="订阅年限" width="100" align="center">
+          <template #default="{ row }">
+            <span v-if="row.subscriptionYears == null">—</span>
+            <span v-else>{{ row.subscriptionYears }} 年</span>
+          </template>
+        </el-table-column>
         <el-table-column label="到期时间" min-width="180">
           <template #default="{ row }">
             <span v-if="!row.expireAt">—</span>
@@ -47,12 +59,29 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="320" fixed="right">
+        <el-table-column label="操作" width="380" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openOverview(row)">运营概览</el-button>
-            <el-button link type="primary" @click="openActivate(row)">续费/激活</el-button>
             <el-button
-              v-if="row.status !== 'Disabled'"
+              v-if="!row.subscriptionStartAt"
+              link
+              type="success"
+              @click="openActivate(row, 'activate')"
+            >激活</el-button>
+            <el-button
+              v-else
+              link
+              type="primary"
+              @click="openActivate(row, 'renew')"
+            >续费</el-button>
+            <el-button
+              v-if="!row.subscriptionStartAt"
+              link
+              type="danger"
+              @click="removeTenant(row)"
+            >删除</el-button>
+            <el-button
+              v-else-if="row.status !== 'Disabled'"
               link
               type="danger"
               @click="changeStatus(row, 'Disabled')"
@@ -79,11 +108,12 @@
       />
     </el-card>
 
-    <CreateTenantDialog v-model="createOpen" :plans="plans" @created="onCreated" />
+    <CreateTenantDialog v-model="createOpen" @created="onCreated" />
     <OfflineActivateDialog
       v-model="activateOpen"
       :tenant="activateTarget"
       :plans="plans"
+      :mode="activateMode"
       @activated="reload"
     />
     <TenantOverviewDialog v-model="overviewOpen" :tenant="overviewTarget" />
@@ -114,6 +144,7 @@ const query = reactive<{ page: number; pageSize: number; keyword: string; status
 const createOpen = ref(false);
 const activateOpen = ref(false);
 const activateTarget = ref<TenantSummary | null>(null);
+const activateMode = ref<'activate' | 'renew'>('activate');
 const overviewOpen = ref(false);
 const overviewTarget = ref<TenantSummary | null>(null);
 
@@ -160,9 +191,26 @@ function onCreated() {
   query.page = 1;
   reload();
 }
-function openActivate(row: TenantSummary) {
+function openActivate(row: TenantSummary, mode: 'activate' | 'renew') {
   activateTarget.value = row;
+  activateMode.value = mode;
   activateOpen.value = true;
+}
+
+async function removeTenant(row: TenantSummary) {
+  const ok = await ElMessageBox.confirm(
+    `确认删除未激活的租户「${row.name}」？将同时清除自动创建的总店与店主账号，且不可恢复。`,
+    '请确认',
+    { type: 'warning', confirmButtonText: '删除', confirmButtonClass: 'el-button--danger' }
+  ).catch(() => null);
+  if (!ok) return;
+  try {
+    await tenantsApi.remove(row.id);
+    ElMessage.success('已删除');
+    reload();
+  } catch {
+    /* http interceptor surfaces error */
+  }
 }
 function openOverview(row: TenantSummary) {
   overviewTarget.value = row;

@@ -9,7 +9,9 @@ public record TenantSummaryDto(
     DateTime? ExpireAt,
     long? CurrentPlanId,
     string? CurrentPlanName,
-    int? DaysToExpire);
+    int? DaysToExpire,
+    DateTime? SubscriptionStartAt,
+    int? SubscriptionYears);
 
 public record TenantDetailDto(
     long Id,
@@ -31,7 +33,6 @@ public record CreateTenantRequest(
     string OwnerUsername,
     string OwnerPassword,
     string? OwnerRealName,
-    long? InitialPlanId,
     string HeadquartersName);
 
 public record UpdateTenantStatusRequest(string Status);

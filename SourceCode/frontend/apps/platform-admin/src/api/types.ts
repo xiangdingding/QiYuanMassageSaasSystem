@@ -49,6 +49,8 @@ export interface TenantSummary {
   currentPlanId?: number | null;
   currentPlanName?: string | null;
   daysToExpire?: number | null;
+  subscriptionStartAt?: string | null;
+  subscriptionYears?: number | null;
 }
 
 export interface TenantDetail extends TenantSummary {
@@ -64,7 +66,6 @@ export interface CreateTenantRequest {
   ownerUsername: string;
   ownerPassword: string;
   ownerRealName?: string | null;
-  initialPlanId?: number | null;
   headquartersName: string;
 }
 

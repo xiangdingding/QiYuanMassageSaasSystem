@@ -51,7 +51,11 @@ public static class DependencyInjection
                 serverVersion,
                 mysql =>
                 {
-                    mysql.EnableRetryOnFailure(3);
+                    // 不开 EnableRetryOnFailure：项目里多处控制器（Orders / Members / Tenants /
+                    // Subscriptions / Inventory / Vouchers / Callback）手动 BeginTransactionAsync，
+                    // 与 MySqlRetryingExecutionStrategy 互斥，会抛
+                    // "user-initiated transactions are not supported"。如要恢复重试，得把每个手动事务
+                    // 包进 Database.CreateExecutionStrategy().ExecuteAsync 里。
                     mysql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.GetName().Name);
                 });
         });
