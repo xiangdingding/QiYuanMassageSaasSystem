@@ -74,6 +74,20 @@ export interface Member {
   referredByMemberName?: string | null;
   referralRewardEarned: number;
   createdAt: string;
+  memberTypeId?: number | null;
+  memberTypeName?: string | null;
+  memberTypeKind?: 'StoredValue' | 'CountBased' | null;
+}
+
+export interface MemberPhoneGroup {
+  phone: string;
+  primaryName?: string | null;
+  cardCount: number;
+  totalBalance: number;
+  totalRecharge: number;
+  totalConsumed: number;
+  hasInactive: boolean;
+  cards: Member[];
 }
 
 export interface OrderItem {

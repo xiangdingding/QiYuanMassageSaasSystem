@@ -13,6 +13,7 @@ import type {
   Member,
   Order,
   OrderListItem,
+  MemberPhoneGroup,
   PagedResult,
   QueueRow,
   Room,
@@ -100,14 +101,60 @@ export interface ReferralSummaryDto {
   }[];
 }
 
+export type MemberTypeKind = 'StoredValue' | 'CountBased';
+
+export interface MemberType {
+  id: number;
+  code: string;
+  name: string;
+  sort: number;
+  kind: MemberTypeKind;
+  serviceItemId?: number | null;
+  serviceItemName?: string | null;
+  minRechargeAmount?: number | null;
+  minPurchaseCount?: number | null;
+  discount: number;
+  bonusAmount?: number | null;
+  bonusCount?: number | null;
+  validDays?: number | null;
+  isActive: boolean;
+  remark?: string | null;
+  createdAt: string;
+}
+
+export const memberTypesApi = {
+  list: (includeInactive = false, kind?: MemberTypeKind) =>
+    http().get<MemberType[]>('/member-types', { params: { includeInactive, kind } }).then((r) => r.data),
+  create: (body: Partial<MemberType> & { kind: MemberTypeKind }) =>
+    http().post<MemberType>('/member-types', body).then((r) => r.data),
+  update: (id: number, body: Partial<MemberType>) =>
+    http().put<MemberType>(`/member-types/${id}`, body).then((r) => r.data),
+  remove: (id: number) => http().delete(`/member-types/${id}`)
+};
+
+export interface IssueCardResult {
+  memberId: number;
+  kind: MemberTypeKind;
+  newBalance: number;
+  paid: number;
+  bonusAmount: number;
+  bonusCount: number;
+  memberPackageId?: number | null;
+  expiresAt?: string | null;
+}
+
 export const membersApi = {
   list: (q: MemberQuery & { includeClosed?: boolean }) =>
     http().get<PagedResult<Member>>('/members', { params: q }).then((r) => r.data),
+  grouped: (q: MemberQuery & { includeClosed?: boolean }) =>
+    http().get<PagedResult<MemberPhoneGroup>>('/members/grouped', { params: q }).then((r) => r.data),
   get: (id: number) => http().get<Member>(`/members/${id}`).then((r) => r.data),
   create: (body: any) => http().post<Member>('/members', body).then((r) => r.data),
   update: (id: number, body: any) => http().put<Member>(`/members/${id}`, body).then((r) => r.data),
   recharge: (body: { memberId: number; amount: number; bonusAmount: number; payMethod: string; remark?: string | null }) =>
     http().post('/members/recharge', body).then((r) => r.data),
+  issueCard: (memberId: number, body: { memberTypeId: number; amount: number; count: number; payMethod: string; remark?: string | null }) =>
+    http().post<IssueCardResult>(`/members/${memberId}/issue-card`, body).then((r) => r.data),
   rechargeHistory: (id: number) => http().get(`/members/${id}/recharges`).then((r) => r.data),
   consumptionHistory: (id: number) => http().get(`/members/${id}/orders`).then((r) => r.data),
   refund: (id: number, body: { refundAmount: number; refundMethod: string; reason?: string | null }) =>

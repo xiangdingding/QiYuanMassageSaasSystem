@@ -12,6 +12,7 @@ public interface IApplicationDbContext
     DbSet<Store> Stores { get; }
     DbSet<User> Users { get; }
     DbSet<Member> Members { get; }
+    DbSet<MemberType> MemberTypes { get; }
     DbSet<ServiceItem> ServiceItems { get; }
     DbSet<Order> Orders { get; }
     DbSet<OrderItem> OrderItems { get; }

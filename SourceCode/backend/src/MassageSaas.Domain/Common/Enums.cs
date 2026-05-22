@@ -108,6 +108,15 @@ public enum MemberPackageKind
     Period = 10    // 期限卡（月/季/年）
 }
 
+/// <summary>会员类型（卡模板）的两种规格。</summary>
+public enum MemberTypeKind
+{
+    /// <summary>充值卡：充值进 Member.Balance；可享折扣 + 赠送金额。</summary>
+    StoredValue = 0,
+    /// <summary>计次卡：绑定某项服务，购买若干次；按次扣减。</summary>
+    CountBased = 10
+}
+
 public enum MemberPackageStatus
 {
     Active = 0,

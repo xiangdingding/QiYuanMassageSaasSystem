@@ -51,6 +51,8 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '日结/交班', icon: 'Wallet', menu: true, roles: POS } },
       { path: 'services', component: () => import('@/views/ServicesView.vue'),
         meta: { title: '服务项目', icon: 'Goods', menu: true, roles: LEAD } },
+      { path: 'member-types', component: () => import('@/views/MemberTypesView.vue'),
+        meta: { title: '会员类型', icon: 'Postcard', menu: true, roles: LEAD } },
       { path: 'member-packages', component: () => import('@/views/MemberPackagesView.vue'),
         meta: { title: '会员套餐', icon: 'CreditCard', menu: true, roles: POS } },
       { path: 'vouchers', component: () => import('@/views/VouchersView.vue'),

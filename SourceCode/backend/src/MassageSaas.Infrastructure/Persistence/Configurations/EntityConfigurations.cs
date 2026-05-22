@@ -130,6 +130,28 @@ public class MemberConfiguration : IEntityTypeConfiguration<Member>
         b.HasOne(x => x.Tenant).WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.ReferredByMember).WithMany().HasForeignKey(x => x.ReferredByMemberId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne(x => x.MemberType).WithMany().HasForeignKey(x => x.MemberTypeId).OnDelete(DeleteBehavior.SetNull);
+        b.HasIndex(x => x.MemberTypeId);
+    }
+}
+
+public class MemberTypeConfiguration : IEntityTypeConfiguration<MemberType>
+{
+    public void Configure(EntityTypeBuilder<MemberType> b)
+    {
+        b.ToTable("member_types");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Code).HasMaxLength(32).IsRequired();
+        b.Property(x => x.Name).HasMaxLength(64).IsRequired();
+        b.Property(x => x.MinRechargeAmount).HasPrecision(18, 2);
+        b.Property(x => x.Discount).HasPrecision(5, 4);
+        b.Property(x => x.BonusAmount).HasPrecision(18, 2);
+        b.Property(x => x.Remark).HasMaxLength(200);
+        b.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();
+        b.HasIndex(x => new { x.TenantId, x.Sort });
+        b.HasOne(x => x.Tenant).WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
+        // 计次卡的服务项目外键：服务被删时设 NULL（业务层应该禁止删被绑定的服务，但加 SET NULL 兜底）
+        b.HasOne(x => x.ServiceItem).WithMany().HasForeignKey(x => x.ServiceItemId).OnDelete(DeleteBehavior.SetNull);
     }
 }
 

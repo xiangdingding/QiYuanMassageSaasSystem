@@ -36,6 +36,8 @@ public static class AuthExtensions
         {
             options.AddPolicy("PlatformAdmin", p => p.RequireRole("PlatformAdmin"));
             options.AddPolicy("ShopStaff", p => p.RequireRole("ShopOwner", "StoreManager", "Cashier"));
+            // 店领导层：仅店主与店长，不含收银员。用于卡种 / 提成规则 / 工资等敏感配置。
+            options.AddPolicy("ShopLeadership", p => p.RequireRole("ShopOwner", "StoreManager"));
             options.AddPolicy("Technician", p => p.RequireRole("Technician"));
         });
 

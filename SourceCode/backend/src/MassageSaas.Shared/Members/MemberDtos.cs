@@ -23,7 +23,21 @@ public record MemberDto(
     string? ReferredByMemberName,
     decimal ReferralRewardEarned,
     string? WechatOpenId,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    long? MemberTypeId = null,
+    string? MemberTypeName = null,
+    string? MemberTypeKind = null);
+
+/// <summary>按手机号聚合的会员视图：一个人名下可能有多张卡（充值卡 + 计次卡）。</summary>
+public record MemberPhoneGroupDto(
+    string Phone,
+    string? PrimaryName,
+    int CardCount,
+    decimal TotalBalance,
+    decimal TotalRecharge,
+    decimal TotalConsumed,
+    bool HasInactive,
+    IReadOnlyList<MemberDto> Cards);
 
 public record CreateMemberRequest(
     long StoreId,
@@ -35,7 +49,11 @@ public record CreateMemberRequest(
     decimal Discount = 1.0m,
     decimal InitialBalance = 0m,
     string? Remark = null,
-    long? ReferredByMemberId = null);
+    long? ReferredByMemberId = null,
+    /// <summary>开卡时绑定的会员类型；选了即按模板规则校验最低充值/最低次数并写赠送、折扣、到期日。</summary>
+    long? MemberTypeId = null,
+    /// <summary>仅计次卡：购买次数（必须 ≥ 模板 MinPurchaseCount）。</summary>
+    int Count = 0);
 
 public record UpdateMemberRequest(
     string Phone,

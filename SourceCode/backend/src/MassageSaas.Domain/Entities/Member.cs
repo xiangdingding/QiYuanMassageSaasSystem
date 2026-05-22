@@ -20,8 +20,12 @@ public class Member : BaseEntity, ITenantScoped
     public decimal Discount { get; set; } = 1.0m;
     public string? Remark { get; set; }
 
-    /// <summary>会员等级，按累计消费/充值升级。</summary>
+    /// <summary>会员等级（粗分标签，由店主在编辑时手动指派；不参与定价）。</summary>
     public MemberLevel Level { get; set; } = MemberLevel.Regular;
+
+    /// <summary>开卡时绑定的会员类型（模板）。一个手机号可开多张 Member 卡，每张可走不同类型。</summary>
+    public long? MemberTypeId { get; set; }
+    public MemberType? MemberType { get; set; }
     /// <summary>客户偏好（轻按/重按、习惯部位、忌讳）。盲人技师需要文字读出来。</summary>
     public string? PreferenceNotes { get; set; }
     /// <summary>客户健康档案：高血压/孕妇/精油过敏/旧伤等。盲人技师无法目测，必须文字记录。</summary>

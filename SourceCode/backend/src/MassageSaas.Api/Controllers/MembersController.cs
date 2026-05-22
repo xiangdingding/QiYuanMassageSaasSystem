@@ -41,6 +41,7 @@ public class MembersController : ControllerBase
         var pq = new PageQuery(page, pageSize, keyword);
         var q = _db.Members.AsNoTracking()
             .Include(m => m.ReferredByMember)
+            .Include(m => m.MemberType)
             .AsQueryable();
         if (!string.IsNullOrWhiteSpace(keyword))
         {
@@ -65,17 +66,75 @@ public class MembersController : ControllerBase
     {
         var m = await _db.Members.AsNoTracking()
             .Include(x => x.ReferredByMember)
+            .Include(x => x.MemberType)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
         if (m is null) return NotFound();
         return Ok(MapDto(m));
     }
 
-    /// <summary>按累计充值（开卡 + 后续充值）粗分等级。后期可按租户配置。</summary>
-    internal static MemberLevel ComputeLevel(decimal totalRecharge) =>
-        totalRecharge >= 10000m ? MemberLevel.Diamond :
-        totalRecharge >= 5000m ? MemberLevel.Gold :
-        totalRecharge >= 1000m ? MemberLevel.Silver :
-        MemberLevel.Regular;
+    /// <summary>按手机号分组：返回每人名下所有卡的聚合视图，方便"一人多卡"展开浏览。</summary>
+    [HttpGet("grouped")]
+    public async Task<ActionResult<PagedResult<MemberPhoneGroupDto>>> Grouped(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? keyword = null,
+        [FromQuery] long? storeId = null,
+        [FromQuery] bool includeClosed = false,
+        CancellationToken ct = default)
+    {
+        var pq = new PageQuery(page, pageSize, keyword);
+        var baseQ = _db.Members.AsNoTracking().AsQueryable();
+        if (storeId.HasValue) baseQ = baseQ.Where(m => m.StoreId == storeId.Value);
+        if (!includeClosed) baseQ = baseQ.Where(m => m.IsActive);
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var k = keyword.Trim();
+            baseQ = baseQ.Where(m => m.CardNo.Contains(k) || m.Phone.Contains(k) || (m.Name != null && m.Name.Contains(k)));
+        }
+
+        // 1) 取分页内的手机号集合（先按最近活动倒序）
+        var distinctPhones = baseQ
+            .GroupBy(m => m.Phone)
+            .Select(g => new { Phone = g.Key, LatestAt = g.Max(x => x.CreatedAt) });
+
+        var total = await distinctPhones.CountAsync(ct);
+        var pagedPhones = await distinctPhones
+            .OrderByDescending(x => x.LatestAt)
+            .Skip((pq.SafePage - 1) * pq.SafePageSize)
+            .Take(pq.SafePageSize)
+            .Select(x => x.Phone)
+            .ToListAsync(ct);
+
+        // 2) 拉这些手机号下的所有卡（受 includeClosed 控制，但忽略 keyword——
+        //    keyword 仅决定"哪些手机号出现"，展开后看到这个人的全部卡）
+        var cardsQ = _db.Members.AsNoTracking()
+            .Include(m => m.ReferredByMember)
+            .Include(m => m.MemberType)
+            .Where(m => pagedPhones.Contains(m.Phone));
+        if (storeId.HasValue) cardsQ = cardsQ.Where(m => m.StoreId == storeId.Value);
+        if (!includeClosed) cardsQ = cardsQ.Where(m => m.IsActive);
+
+        var allCards = await cardsQ.OrderByDescending(m => m.CreatedAt).ToListAsync(ct);
+
+        // 3) 按手机号汇总
+        var groups = pagedPhones.Select(phone =>
+        {
+            var cards = allCards.Where(m => m.Phone == phone).ToList();
+            var firstNamed = cards.FirstOrDefault(c => !string.IsNullOrWhiteSpace(c.Name));
+            return new MemberPhoneGroupDto(
+                phone,
+                firstNamed?.Name ?? cards.FirstOrDefault()?.Name,
+                cards.Count,
+                cards.Where(c => c.IsActive).Sum(c => c.Balance),
+                cards.Where(c => c.IsActive).Sum(c => c.TotalRecharge),
+                cards.Where(c => c.IsActive).Sum(c => c.TotalConsumed),
+                cards.Any(c => !c.IsActive),
+                cards.Select(MapDto).ToList()
+            );
+        }).ToList();
+
+        return Ok(new PagedResult<MemberPhoneGroupDto>(groups, total, pq.SafePage, pq.SafePageSize));
+    }
 
     private static MemberDto MapDto(Member m) => new(
         m.Id, m.StoreId, m.CardNo, m.Phone, m.Name, m.Gender, m.Birthday,
@@ -86,7 +145,10 @@ public class MembersController : ControllerBase
         m.ReferredByMember?.Name ?? m.ReferredByMember?.CardNo,
         m.ReferralRewardEarned,
         m.WechatOpenId,
-        m.CreatedAt);
+        m.CreatedAt,
+        m.MemberTypeId,
+        m.MemberType?.Name,
+        m.MemberType?.Kind.ToString());
 
     [HttpPost]
     public async Task<ActionResult<MemberDto>> Create([FromBody] CreateMemberRequest req, CancellationToken ct)
@@ -108,6 +170,50 @@ public class MembersController : ControllerBase
             if (!refOk) return BadRequest(new { code = "InvalidReferrer", message = "引荐人不存在或已停用" });
         }
 
+        // 解析可选的会员类型模板
+        MemberType? template = null;
+        if (req.MemberTypeId is long typeId)
+        {
+            template = await _db.MemberTypes.FirstOrDefaultAsync(t => t.Id == typeId, ct);
+            if (template is null)
+                return BadRequest(new { code = "TypeNotFound", message = "会员类型不存在" });
+            if (!template.IsActive)
+                return BadRequest(new { code = "TypeInactive", message = "该会员类型已停用，请改选其它类型" });
+        }
+
+        // 按 Kind 校验最低门槛 & 计算赠送
+        decimal bonusAmount = 0m;
+        int bonusCount = 0;
+        decimal effectiveDiscount = req.Discount;
+
+        if (template is not null)
+        {
+            // 折扣以模板为准（覆盖前端传入）
+            effectiveDiscount = template.Discount;
+
+            if (template.Kind == MemberTypeKind.StoredValue)
+            {
+                if (template.MinRechargeAmount is decimal min && req.InitialBalance < min)
+                    return BadRequest(new { code = "BelowMinAmount",
+                        message = $"{template.Name} 最低充值 ¥{min:F2}，本次仅 ¥{req.InitialBalance:F2}" });
+                bonusAmount = template.BonusAmount ?? 0m;
+            }
+            else // CountBased
+            {
+                if (template.MinPurchaseCount is int minCnt && req.Count < minCnt)
+                    return BadRequest(new { code = "BelowMinCount",
+                        message = $"{template.Name} 最低购买 {minCnt} 次，本次仅 {req.Count} 次" });
+                bonusCount = template.BonusCount ?? 0;
+            }
+        }
+
+        var now = DateTime.UtcNow;
+        DateTime? cardExpiresAt = template?.ValidDays is int d && d > 0 ? now.AddDays(d) : null;
+
+        var isStoredValue = template?.Kind == MemberTypeKind.StoredValue;
+        var initialPaid = isStoredValue ? req.InitialBalance : 0m;
+        var initialBalance = initialPaid + bonusAmount;
+
         var m = new Member
         {
             StoreId = req.StoreId,
@@ -116,41 +222,65 @@ public class MembersController : ControllerBase
             Name = req.Name?.Trim(),
             Gender = req.Gender,
             Birthday = req.Birthday,
-            Discount = req.Discount,
+            Discount = effectiveDiscount,
             Remark = req.Remark,
-            Balance = req.InitialBalance,
-            TotalRecharge = req.InitialBalance,
+            Balance = initialBalance,
+            TotalRecharge = initialPaid,
             TotalConsumed = 0,
-            Level = ComputeLevel(req.InitialBalance),
+            Level = MemberLevel.Regular,
+            MemberTypeId = template?.Id,
             ReferredByMemberId = req.ReferredByMemberId
         };
         _db.Members.Add(m);
+        await _db.SaveChangesAsync(ct);
 
-        if (req.InitialBalance > 0)
+        // 充值卡或无模板的旧路径：写一条充值流水
+        if (initialPaid > 0)
         {
-            await _db.SaveChangesAsync(ct);
             _db.MemberRechargeRecords.Add(new MemberRechargeRecord
             {
                 MemberId = m.Id,
                 StoreId = req.StoreId,
-                Amount = req.InitialBalance,
-                BonusAmount = 0,
-                BalanceAfter = req.InitialBalance,
+                Amount = initialPaid,
+                BonusAmount = bonusAmount,
+                BalanceAfter = initialBalance,
                 PayMethod = PayMethod.Cash,
                 Kind = MemberRechargeKind.Recharge,
                 OperatorUserId = _tenantContext.UserId,
-                Remark = "开卡初始充值"
+                Remark = template != null ? $"开卡：{template.Name}" : "开卡初始充值"
             });
         }
+
+        // 计次卡：建一张 MemberPackage 实例
+        if (template is { Kind: MemberTypeKind.CountBased } && req.Count > 0)
+        {
+            var total = req.Count + bonusCount;
+            _db.MemberPackages.Add(new MemberPackage
+            {
+                MemberId = m.Id,
+                StoreId = req.StoreId,
+                Kind = MemberPackageKind.Counter,
+                ServiceId = template.ServiceItemId,
+                Title = template.Name,
+                PaidAmount = req.InitialBalance, // 实收金额（前端填的现金价）
+                TotalCount = total,
+                RemainCount = total,
+                ValidFrom = now,
+                ExpiresAt = cardExpiresAt,
+                Status = MemberPackageStatus.Active,
+                Remark = $"开卡：{template.Name}"
+            });
+        }
+
         await _db.SaveChangesAsync(ct);
 
-        // 开卡的 InitialBalance 也算充值，按规则给引荐人返佣
-        if (req.InitialBalance > 0 && m.ReferredByMemberId.HasValue)
+        if (initialPaid > 0 && m.ReferredByMemberId.HasValue)
         {
-            await TryGrantReferralAsync(m, req.InitialBalance, ct);
+            await TryGrantReferralAsync(m, initialPaid, ct);
         }
 
         await _db.Entry(m).Reference(x => x.ReferredByMember).LoadAsync(ct);
+        await _db.Entry(m).Reference(x => x.MemberType).LoadAsync(ct);
         return CreatedAtAction(nameof(Get), new { id = m.Id }, MapDto(m));
     }
 
@@ -186,6 +316,7 @@ public class MembersController : ControllerBase
         await _db.SaveChangesAsync(ct);
 
         await _db.Entry(m).Reference(x => x.ReferredByMember).LoadAsync(ct);
+        await _db.Entry(m).Reference(x => x.MemberType).LoadAsync(ct);
         return Ok(MapDto(m));
     }
 
@@ -207,7 +338,6 @@ public class MembersController : ControllerBase
 
         m.Balance += req.Amount + req.BonusAmount;
         m.TotalRecharge += req.Amount;
-        m.Level = ComputeLevel(m.TotalRecharge);
 
         var record = new MemberRechargeRecord
         {
@@ -238,6 +368,121 @@ public class MembersController : ControllerBase
             record.Id, m.Id, record.Amount, record.BonusAmount, record.BalanceAfter,
             method.ToString(), record.Kind.ToString(),
             null, null, null, record.Remark, record.CreatedAt));
+    }
+
+    /// <summary>
+    /// 给会员开一张某种类型的卡。
+    /// - 充值卡：累加 Member.Balance（+赠送金额），写 MemberRechargeRecord；不创建 MemberPackage。
+    /// - 计次卡：创建 MemberPackage（Kind=Counter，绑定模板的 ServiceItemId，TotalCount=次数+赠送次数）。
+    /// 折扣会被复制到 Member.Discount（覆盖），ValidDays 决定 MemberPackage.ExpiresAt。
+    /// </summary>
+    [HttpPost("{id:long}/issue-card")]
+    public async Task<ActionResult<IssueCardResultDto>> IssueCard(
+        long id, [FromBody] IssueCardRequest req, CancellationToken ct)
+    {
+        if (!Enum.TryParse<PayMethod>(req.PayMethod, true, out var method))
+            return BadRequest(new { code = "InvalidPayMethod", message = "支付方式不合法" });
+
+        var member = await _db.Members.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (member is null) return NotFound(new { code = "MemberNotFound", message = "会员不存在" });
+        if (!member.IsActive) return Conflict(new { code = "MemberClosed", message = "会员卡已关闭，不能办卡" });
+
+        var template = await _db.MemberTypes
+            .Include(t => t.ServiceItem)
+            .FirstOrDefaultAsync(t => t.Id == req.MemberTypeId, ct);
+        if (template is null)
+            return BadRequest(new { code = "TypeNotFound", message = "会员类型不存在" });
+        if (!template.IsActive)
+            return BadRequest(new { code = "TypeInactive", message = "该会员类型已停用，无法开卡" });
+
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+
+        var now = DateTime.UtcNow;
+        DateTime? expiresAt = template.ValidDays is int days && days > 0 ? now.AddDays(days) : null;
+
+        if (template.Kind == MemberTypeKind.StoredValue)
+        {
+            // ---- 充值卡：加钱进余额 ----
+            if (method == PayMethod.MemberCard)
+                return BadRequest(new { code = "InvalidPayMethod", message = "不能用会员卡余额给自己充值" });
+            if (req.Amount <= 0)
+                return BadRequest(new { code = "InvalidAmount", message = "充值金额必须 > 0" });
+            if (template.MinRechargeAmount is decimal min && req.Amount < min)
+                return BadRequest(new { code = "BelowMinAmount", message = $"{template.Name} 最低充值 ¥{min:F2}" });
+
+            var bonus = template.BonusAmount ?? 0m;
+            member.Balance += req.Amount + bonus;
+            member.TotalRecharge += req.Amount;
+            member.Discount = template.Discount;
+
+            _db.MemberRechargeRecords.Add(new MemberRechargeRecord
+            {
+                MemberId = member.Id,
+                StoreId = member.StoreId,
+                Amount = req.Amount,
+                BonusAmount = bonus,
+                BalanceAfter = member.Balance,
+                PayMethod = method,
+                Kind = MemberRechargeKind.Recharge,
+                OperatorUserId = _tenantContext.UserId,
+                Remark = string.IsNullOrWhiteSpace(req.Remark) ? $"办卡：{template.Name}" : req.Remark
+            });
+
+            EnqueueRechargeArrivedNotification(member, req.Amount, bonus);
+
+            await _db.SaveChangesAsync(ct);
+            if (member.ReferredByMemberId.HasValue)
+                await TryGrantReferralAsync(member, req.Amount, ct);
+            await tx.CommitAsync(ct);
+
+            _logger.LogInformation("Issued StoredValue card type={TypeId} member={MemberId} amount={Amount} bonus={Bonus}",
+                template.Id, member.Id, req.Amount, bonus);
+
+            return Ok(new IssueCardResultDto(
+                member.Id, template.Kind.ToString(), member.Balance,
+                req.Amount, bonus, 0, null, expiresAt));
+        }
+        else
+        {
+            // ---- 计次卡：创建 MemberPackage ----
+            if (template.ServiceItemId is null)
+                return BadRequest(new { code = "ServiceMissing", message = "计次卡模板未绑定服务项目" });
+            if (req.Count <= 0)
+                return BadRequest(new { code = "InvalidCount", message = "购买次数必须 > 0" });
+            if (template.MinPurchaseCount is int minCnt && req.Count < minCnt)
+                return BadRequest(new { code = "BelowMinCount", message = $"{template.Name} 最低购买 {minCnt} 次" });
+
+            var bonusCount = template.BonusCount ?? 0;
+            var total = req.Count + bonusCount;
+
+            var pkg = new MemberPackage
+            {
+                MemberId = member.Id,
+                StoreId = member.StoreId,
+                Kind = MemberPackageKind.Counter,
+                ServiceId = template.ServiceItemId.Value,
+                Title = template.Name,
+                PaidAmount = req.Amount, // 收银侧填的现金价；不强制等于服务标准价
+                TotalCount = total,
+                RemainCount = total,
+                ValidFrom = now,
+                ExpiresAt = expiresAt,
+                Status = MemberPackageStatus.Active,
+                Remark = req.Remark
+            };
+            _db.MemberPackages.Add(pkg);
+            member.Discount = template.Discount;
+
+            await _db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+
+            _logger.LogInformation("Issued CountBased card type={TypeId} member={MemberId} count={Count} bonus={Bonus} pkg={PkgId}",
+                template.Id, member.Id, req.Count, bonusCount, pkg.Id);
+
+            return Ok(new IssueCardResultDto(
+                member.Id, template.Kind.ToString(), member.Balance,
+                req.Amount, 0m, bonusCount, pkg.Id, expiresAt));
+        }
     }
 
     [HttpPost("{id:long}/refund")]

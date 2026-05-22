@@ -19,46 +19,85 @@
         <el-checkbox v-model="query.includeClosed" @change="reload">显示已关闭会员</el-checkbox>
       </div>
 
-      <el-table :data="rows" v-loading="loading" stripe style="margin-top: 12px">
-        <el-table-column prop="cardNo" label="卡号" width="120">
+      <el-table :data="groups" v-loading="loading" stripe style="margin-top: 12px" row-key="phone">
+        <el-table-column type="expand">
           <template #default="{ row }">
-            <span :class="{ closed: !row.isActive }">{{ row.cardNo }}</span>
-            <el-tag v-if="!row.isActive" size="small" type="info" style="margin-left:6px">已关闭</el-tag>
+            <el-table :data="row.cards" size="small" class="card-table" :show-header="true">
+              <el-table-column label="卡号" width="120">
+                <template #default="{ row: c }">
+                  <span :class="{ closed: !c.isActive }">{{ c.cardNo }}</span>
+                  <el-tag v-if="!c.isActive" size="small" type="info" style="margin-left:6px">已关闭</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="姓名" width="100" prop="name" />
+              <el-table-column label="余额" width="110">
+                <template #default="{ row: c }">
+                  <strong style="color: #d9534f">¥{{ c.balance.toFixed(2) }}</strong>
+                </template>
+              </el-table-column>
+              <el-table-column label="充值金额" width="110">
+                <template #default="{ row: c }">¥{{ c.totalRecharge.toFixed(2) }}</template>
+              </el-table-column>
+              <el-table-column label="消费金额" width="110">
+                <template #default="{ row: c }">¥{{ c.totalConsumed.toFixed(2) }}</template>
+              </el-table-column>
+              <el-table-column label="折扣" width="80">
+                <template #default="{ row: c }">
+                  <el-tag v-if="c.discount < 1" size="small" type="warning">{{ (c.discount * 10).toFixed(1) }}折</el-tag>
+                  <span v-else class="muted">原价</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="会员卡类型" min-width="140">
+                <template #default="{ row: c }">
+                  <el-tag v-if="c.memberTypeName" size="small" :type="c.memberTypeKind === 'StoredValue' ? 'warning' : 'success'">
+                    {{ c.memberTypeName }}
+                  </el-tag>
+                  <span v-else class="muted">—</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="360" fixed="right">
+                <template #default="{ row: c }">
+                  <el-button link type="primary" :disabled="!c.isActive" @click="openRecharge(c)">充值</el-button>
+                  <el-button link type="primary" @click="openHistory(c)">流水</el-button>
+                  <el-button link type="primary" @click="openEdit(c)">编辑</el-button>
+                  <el-button link type="warning" :disabled="!c.isActive || c.balance <= 0" @click="openRefund(c)">退卡</el-button>
+                  <el-button link type="warning" :disabled="!c.isActive || c.balance <= 0" @click="openTransfer(c)">转赠</el-button>
+                  <el-button link type="info" @click="openReferrals(c)">引荐</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
           </template>
         </el-table-column>
-        <el-table-column prop="name" label="姓名" width="100" />
-        <el-table-column prop="phone" label="手机号" width="130" />
-        <el-table-column label="余额" width="120">
+
+        <el-table-column label="手机号" width="160" prop="phone">
           <template #default="{ row }">
-            <strong style="color: #d9534f">¥{{ row.balance.toFixed(2) }}</strong>
+            <strong>{{ row.phone }}</strong>
+            <el-tag v-if="row.hasInactive" size="small" type="info" style="margin-left:6px">含关闭</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="累计充值" width="120">
+        <el-table-column label="姓名" width="120">
+          <template #default="{ row }">
+            <span v-if="row.primaryName">{{ row.primaryName }}</span>
+            <span v-else class="muted">未填</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="持卡数" width="90">
+          <template #default="{ row }">{{ row.cardCount }} 张</template>
+        </el-table-column>
+        <el-table-column label="总余额" width="140">
+          <template #default="{ row }">
+            <strong style="color:#d9534f">¥{{ row.totalBalance.toFixed(2) }}</strong>
+          </template>
+        </el-table-column>
+        <el-table-column label="累计充值" width="130">
           <template #default="{ row }">¥{{ row.totalRecharge.toFixed(2) }}</template>
         </el-table-column>
-        <el-table-column label="累计消费" width="120">
+        <el-table-column label="累计消费" width="130">
           <template #default="{ row }">¥{{ row.totalConsumed.toFixed(2) }}</template>
         </el-table-column>
-        <el-table-column label="折扣" width="80">
+        <el-table-column label="操作" min-width="160" fixed="right">
           <template #default="{ row }">
-            <el-tag v-if="row.discount < 1" size="small" type="warning">{{ (row.discount * 10).toFixed(1) }}折</el-tag>
-            <span v-else>—</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="引荐人" width="120">
-          <template #default="{ row }">
-            <span v-if="row.referredByMemberName">{{ row.referredByMemberName }}</span>
-            <span v-else class="muted">—</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="380" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" :disabled="!row.isActive" :aria-label="`给 ${row.name || row.cardNo} 充值`" @click="openRecharge(row)">充值</el-button>
-            <el-button link type="primary" :aria-label="`查看 ${row.name || row.cardNo} 的流水`" @click="openHistory(row)">流水</el-button>
-            <el-button link type="primary" :aria-label="`编辑 ${row.name || row.cardNo}`" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="warning" :disabled="!row.isActive || row.balance <= 0" :aria-label="`给 ${row.name || row.cardNo} 退卡`" @click="openRefund(row)">退卡</el-button>
-            <el-button link type="warning" :disabled="!row.isActive || row.balance <= 0" :aria-label="`把 ${row.name || row.cardNo} 余额转赠`" @click="openTransfer(row)">转赠</el-button>
-            <el-button link type="info" :aria-label="`查看 ${row.name || row.cardNo} 的引荐返佣`" @click="openReferrals(row)">引荐</el-button>
+            <el-button link type="success" @click="openCreateForPhone(row.phone)">加办一张卡</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -75,13 +114,14 @@
       />
     </el-card>
 
-    <el-dialog v-model="formOpen" :title="formMode === 'create' ? '开卡' : '编辑会员'" width="480px">
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
+    <el-dialog v-model="formOpen" :title="formMode === 'create' ? '开卡' : '编辑会员'" width="520px">
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="110px">
         <el-form-item label="卡号" prop="cardNo">
           <el-input v-model="form.cardNo" :disabled="formMode === 'edit'" />
         </el-form-item>
         <el-form-item label="手机号" prop="phone">
-          <el-input v-model="form.phone" />
+          <el-input v-model="form.phone" :disabled="formMode === 'create' && phoneLocked" />
+          <span v-if="phoneLocked" class="muted" style="margin-left:8px">为该客户加办新卡，手机号已锁定</span>
         </el-form-item>
         <el-form-item label="姓名">
           <el-input v-model="form.name" />
@@ -95,13 +135,139 @@
         <el-form-item label="生日">
           <el-date-picker v-model="form.birthday" type="date" placeholder="可选" value-format="YYYY-MM-DD" />
         </el-form-item>
+
+        <el-form-item v-if="formMode === 'create'" label="会员类型" prop="memberTypeId" required>
+          <el-select
+            v-model="form.memberTypeId"
+            placeholder="开卡必选一个会员类型"
+            style="width: 100%"
+            :loading="typesLoading"
+            @change="onCreateTypePicked"
+          >
+            <el-option
+              v-for="t in activeMemberTypes"
+              :key="t.id"
+              :value="t.id"
+              :label="t.name"
+            >
+              <span>{{ t.name }}</span>
+              <span class="opt-meta">
+                {{ t.kind === 'StoredValue' ? `充值卡 · 最低¥${t.minRechargeAmount?.toFixed(0)}` : `计次卡 · ${t.serviceItemName ?? ''} · 最少${t.minPurchaseCount}次` }}
+                {{ t.discount < 1 ? ' · ' + (t.discount * 10).toFixed(1) + '折' : '' }}
+              </span>
+            </el-option>
+          </el-select>
+        </el-form-item>
+
+        <el-form-item v-if="formMode === 'create' && selectedCreateType" label="类型规则">
+          <el-descriptions :column="2" size="small" border class="type-summary">
+            <el-descriptions-item label="类型">
+              <el-tag size="small" :type="selectedCreateType.kind === 'StoredValue' ? 'warning' : 'success'">
+                {{ selectedCreateType.kind === 'StoredValue' ? '充值卡' : '计次卡' }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="折扣">
+              <span v-if="selectedCreateType.discount < 1">{{ (selectedCreateType.discount * 10).toFixed(1) }} 折</span>
+              <span v-else>原价</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="最低门槛">
+              <span v-if="selectedCreateType.kind === 'StoredValue'">¥{{ selectedCreateType.minRechargeAmount?.toFixed(2) }}</span>
+              <span v-else>{{ selectedCreateType.minPurchaseCount }} 次</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="赠送">
+              <span v-if="selectedCreateType.kind === 'StoredValue' && (selectedCreateType.bonusAmount ?? 0) > 0">
+                ¥{{ selectedCreateType.bonusAmount?.toFixed(2) }}
+              </span>
+              <span v-else-if="selectedCreateType.kind === 'CountBased' && (selectedCreateType.bonusCount ?? 0) > 0">
+                {{ selectedCreateType.bonusCount }} 次
+              </span>
+              <span v-else class="muted">无</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="到期日" :span="2">
+              <strong v-if="createCardExpireText" :class="{ permanent: createCardExpireText === '永久' }">
+                {{ createCardExpireText }}
+              </strong>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="selectedCreateType.kind === 'CountBased' && selectedCreateType.serviceItemName" label="绑定服务" :span="2">
+              {{ selectedCreateType.serviceItemName }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </el-form-item>
+
+        <el-form-item v-if="formMode === 'create' && selectedCreateType?.kind === 'StoredValue'" label="充值金额" prop="initialBalance" required>
+          <el-input-number
+            v-model="form.initialBalance"
+            :min="selectedCreateType.minRechargeAmount ?? 0.01"
+            :precision="2"
+            :step="100"
+          />
+          <span class="muted" style="margin-left: 8px">
+            卡面金额，最低 ¥{{ selectedCreateType.minRechargeAmount?.toFixed(2) }}
+          </span>
+        </el-form-item>
+
+        <el-form-item v-if="formMode === 'create' && selectedCreateType?.kind === 'StoredValue'" label="实收金额">
+          <strong style="color: #e6a23c; font-size: 16px">¥{{ chargeAmount.toFixed(2) }}</strong>
+          <span class="muted" style="margin-left: 10px">
+            充值金额 × {{ (form.discount * 10).toFixed(1) }} 折 = 客户实付
+          </span>
+        </el-form-item>
+
+        <el-form-item v-if="formMode === 'create' && selectedCreateType?.kind === 'StoredValue'" label="实充金额">
+          <strong style="color: #67c23a; font-size: 16px">¥{{ creditAmount.toFixed(2) }}</strong>
+          <span class="muted" style="margin-left: 10px">
+            充值金额 + 赠送 ¥{{ (selectedCreateType.bonusAmount ?? 0).toFixed(2) }} = 卡内余额
+          </span>
+        </el-form-item>
+
+        <template v-if="formMode === 'create' && selectedCreateType?.kind === 'CountBased'">
+          <el-form-item label="购买次数" prop="count" required>
+            <el-input-number
+              v-model="form.count"
+              :min="selectedCreateType.minPurchaseCount ?? 1"
+              :step="1"
+            />
+            <span class="muted" style="margin-left: 8px">
+              最低 {{ selectedCreateType.minPurchaseCount }} 次
+              <span v-if="(selectedCreateType.bonusCount ?? 0) > 0"> · 赠送 {{ selectedCreateType.bonusCount }} 次</span>
+            </span>
+          </el-form-item>
+
+          <el-form-item label="充值金额">
+            <strong style="font-size: 16px">¥{{ countFaceAmount.toFixed(2) }}</strong>
+            <span class="muted" style="margin-left: 10px">
+              <template v-if="boundService">
+                {{ form.count }} 次 × 会员价 ¥{{ boundUnitPrice.toFixed(2) }}（{{ boundService.name }}）
+              </template>
+              <template v-else>
+                绑定服务未配置会员价
+              </template>
+            </span>
+          </el-form-item>
+
+          <el-form-item label="实收金额">
+            <strong style="color: #e6a23c; font-size: 16px">¥{{ countChargeAmount.toFixed(2) }}</strong>
+            <span class="muted" style="margin-left: 10px">
+              充值金额 × {{ (form.discount * 10).toFixed(1) }} 折 = 客户实付
+            </span>
+          </el-form-item>
+        </template>
+
         <el-form-item label="折扣" prop="discount">
-          <el-input-number v-model="form.discount" :min="0.1" :max="1" :step="0.05" :precision="2" />
-          <span class="muted" style="margin-left: 8px">如 0.85 = 8.5 折</span>
+          <el-input-number
+            v-model="form.discount"
+            :min="0.1"
+            :max="1"
+            :step="0.05"
+            :precision="2"
+            :disabled="formMode === 'create' && !!selectedCreateType"
+          />
+          <span class="muted" style="margin-left: 8px">
+            <template v-if="formMode === 'create' && selectedCreateType">由会员类型决定</template>
+            <template v-else>如 0.85 = 8.5 折</template>
+          </span>
         </el-form-item>
-        <el-form-item v-if="formMode === 'create'" label="初始充值">
-          <el-input-number v-model="form.initialBalance" :min="0" :precision="2" :step="100" />
-        </el-form-item>
+
         <el-form-item label="引荐人">
           <el-input v-model="form.referrerKeyword" placeholder="卡号 / 手机号 搜索后选择" @keyup.enter="searchReferrer" />
           <el-button link size="small" @click="searchReferrer">查找</el-button>
@@ -146,6 +312,78 @@
       <template #footer>
         <el-button @click="rechargeOpen = false">取消</el-button>
         <el-button type="primary" :loading="saving" @click="doRecharge">确认充值</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="issueOpen" :title="`办卡：${issueTarget?.cardNo}`" width="480px">
+      <el-form :model="issueForm" label-width="100px" v-loading="typesLoading">
+        <el-form-item label="选择类型">
+          <el-select v-model="issueForm.memberTypeId" placeholder="选一个会员类型" style="width:100%" @change="onIssueTypeChange">
+            <el-option
+              v-for="t in activeMemberTypes"
+              :key="t.id"
+              :value="t.id"
+              :label="t.name"
+            >
+              <span>{{ t.name }}</span>
+              <span class="opt-meta">
+                {{ t.kind === 'StoredValue' ? `充值卡 · 最低¥${t.minRechargeAmount?.toFixed(0)}` : `计次卡 · ${t.serviceItemName ?? ''} · 最少${t.minPurchaseCount}次` }}
+                {{ t.discount < 1 ? ' · ' + (t.discount * 10).toFixed(1) + '折' : '' }}
+              </span>
+            </el-option>
+          </el-select>
+        </el-form-item>
+        <template v-if="selectedIssueType">
+          <el-alert type="info" :closable="false" show-icon style="margin-bottom:12px">
+            <template #title>
+              <div>{{ selectedIssueType.name }}</div>
+              <div style="font-size:12px; margin-top:4px">
+                <span v-if="selectedIssueType.kind === 'StoredValue'">最低充值 ¥{{ selectedIssueType.minRechargeAmount?.toFixed(2) }}</span>
+                <span v-else>最少 {{ selectedIssueType.minPurchaseCount }} 次（绑定：{{ selectedIssueType.serviceItemName }}）</span>
+                <span v-if="selectedIssueType.discount < 1"> · 折扣 {{ (selectedIssueType.discount * 10).toFixed(1) }} 折</span>
+                <span v-if="selectedIssueType.kind === 'StoredValue' && (selectedIssueType.bonusAmount ?? 0) > 0"> · 送 ¥{{ selectedIssueType.bonusAmount?.toFixed(2) }}</span>
+                <span v-if="selectedIssueType.kind === 'CountBased' && (selectedIssueType.bonusCount ?? 0) > 0"> · 送 {{ selectedIssueType.bonusCount }} 次</span>
+                <span v-if="selectedIssueType.validDays"> · 有效 {{ selectedIssueType.validDays }} 天</span>
+                <span v-else> · 永久有效</span>
+              </div>
+            </template>
+          </el-alert>
+          <el-form-item v-if="selectedIssueType.kind === 'StoredValue'" label="充值金额">
+            <el-input-number
+              v-model="issueForm.amount"
+              :min="selectedIssueType.minRechargeAmount ?? 1"
+              :precision="2" :step="100"
+            />
+          </el-form-item>
+          <el-form-item v-else label="购买次数">
+            <el-input-number
+              v-model="issueForm.count"
+              :min="selectedIssueType.minPurchaseCount ?? 1"
+              :step="1"
+            />
+            <el-input-number
+              v-model="issueForm.amount"
+              :min="0" :precision="2" :step="100"
+              style="margin-left:12px"
+            />
+            <span class="muted" style="margin-left:6px">实收金额</span>
+          </el-form-item>
+        </template>
+        <el-form-item label="支付方式">
+          <el-radio-group v-model="issueForm.payMethod">
+            <el-radio-button value="Cash">现金</el-radio-button>
+            <el-radio-button value="Wechat">微信</el-radio-button>
+            <el-radio-button value="Alipay">支付宝</el-radio-button>
+            <el-radio-button value="BankCard">银行卡</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="issueForm.remark" type="textarea" :rows="2" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="issueOpen = false">取消</el-button>
+        <el-button type="primary" :loading="saving" :disabled="!selectedIssueType" @click="doIssueCard">确认办卡</el-button>
       </template>
     </el-dialog>
 
@@ -288,16 +526,16 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import dayjs from 'dayjs';
-import { membersApi, type ReferralSummaryDto } from '@/api/modules';
+import { memberTypesApi, membersApi, servicesApi, type MemberType, type ReferralSummaryDto } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
-import type { Member } from '@/api/types';
+import type { Member, MemberPhoneGroup, ServiceItem } from '@/api/types';
 
 const appStore = useAppStore();
 
-const rows = ref<Member[]>([]);
+const groups = ref<MemberPhoneGroup[]>([]);
 const total = ref(0);
 const loading = ref(false);
 const saving = ref(false);
@@ -318,9 +556,163 @@ const form = reactive({
   initialBalance: 0,
   remark: '',
   referrerKeyword: '',
-  referredByMemberId: null as number | null
+  referredByMemberId: null as number | null,
+  memberTypeId: null as number | null,
+  count: 0
 });
 const referrerCandidates = ref<Member[]>([]);
+
+// ---- 会员类型相关（共享给 创建对话框 + 办卡对话框）----
+const memberTypes = ref<MemberType[]>([]);
+const typesLoading = ref(false);
+const services = ref<ServiceItem[]>([]);
+const activeMemberTypes = computed(() => memberTypes.value.filter((t) => t.isActive));
+
+async function ensureMemberTypesLoaded() {
+  if (memberTypes.value.length > 0) return;
+  typesLoading.value = true;
+  try {
+    const [ts, svc] = await Promise.all([
+      memberTypesApi.list(false).catch(() => [] as MemberType[]),
+      services.value.length ? Promise.resolve(services.value) : servicesApi.list(false).catch(() => [] as ServiceItem[])
+    ]);
+    memberTypes.value = ts;
+    services.value = svc;
+  } finally {
+    typesLoading.value = false;
+  }
+}
+
+/// 计次卡绑定的服务项目（含会员价）
+const boundService = computed<ServiceItem | null>(() => {
+  const t = selectedCreateType.value;
+  if (!t || t.kind !== 'CountBased' || !t.serviceItemId) return null;
+  return services.value.find((s) => s.id === t.serviceItemId) ?? null;
+});
+
+/// 服务单价：优先取会员价；若为 0 则回退到标准价以便看到合理数值
+const boundUnitPrice = computed(() => {
+  const s = boundService.value;
+  if (!s) return 0;
+  return s.memberPrice > 0 ? s.memberPrice : s.price;
+});
+
+/// 计次卡：充值金额 = 次数 × 绑定服务会员价
+const countFaceAmount = computed(() =>
+  Math.round(form.count * boundUnitPrice.value * 100) / 100
+);
+
+/// 计次卡：实收金额 = 充值金额 × 折扣
+const countChargeAmount = computed(() =>
+  Math.round(countFaceAmount.value * form.discount * 100) / 100
+);
+
+const selectedCreateType = computed<MemberType | null>(() =>
+  memberTypes.value.find((t) => t.id === form.memberTypeId) ?? null);
+
+/// 到期日展示：ValidDays 空 / ≤0 → 永久；否则今天 + N 天
+const createCardExpireText = computed(() => {
+  const t = selectedCreateType.value;
+  if (!t) return '';
+  if (!t.validDays || t.validDays <= 0) return '永久';
+  return dayjs().add(t.validDays, 'day').format('YYYY-MM-DD') + `（${t.validDays} 天后）`;
+});
+
+/// 充值卡：实收金额 = 充值金额 × 折扣（客户实际刷卡/现金）
+const chargeAmount = computed(() =>
+  Math.round(form.initialBalance * form.discount * 100) / 100
+);
+
+/// 充值卡：实充金额 = 充值金额 + 赠送（卡内余额）
+const creditAmount = computed(() => {
+  const bonus = selectedCreateType.value?.bonusAmount ?? 0;
+  return Math.round((form.initialBalance + bonus) * 100) / 100;
+});
+
+function onCreateTypePicked(id: number | null) {
+  const t = memberTypes.value.find((x) => x.id === id);
+  if (!t) return;
+  // 折扣以类型为准
+  form.discount = t.discount;
+  if (t.kind === 'StoredValue') {
+    form.initialBalance = t.minRechargeAmount ?? 0;
+    form.count = 0;
+  } else {
+    form.count = t.minPurchaseCount ?? 1;
+    form.initialBalance = 0; // 计次卡的"实收金额"由收银员根据现金价填，默认 0
+  }
+}
+
+// ---- 办卡相关（针对已有会员追加一张卡）----
+const issueOpen = ref(false);
+const issueTarget = ref<Member | null>(null);
+const issueForm = reactive({
+  memberTypeId: null as number | null,
+  amount: 0,
+  count: 1,
+  payMethod: 'Cash',
+  remark: ''
+});
+const selectedIssueType = computed<MemberType | null>(() =>
+  memberTypes.value.find((t) => t.id === issueForm.memberTypeId) ?? null);
+
+async function openIssueCard(row: Member) {
+  issueTarget.value = row;
+  issueForm.memberTypeId = null;
+  issueForm.amount = 0;
+  issueForm.count = 1;
+  issueForm.payMethod = 'Cash';
+  issueForm.remark = '';
+  issueOpen.value = true;
+  await ensureMemberTypesLoaded();
+}
+
+function onIssueTypeChange(id: number | null) {
+  const t = memberTypes.value.find((x) => x.id === id);
+  if (!t) return;
+  if (t.kind === 'StoredValue') {
+    issueForm.amount = t.minRechargeAmount ?? 0;
+    issueForm.count = 0;
+  } else {
+    issueForm.count = t.minPurchaseCount ?? 1;
+    issueForm.amount = 0;
+  }
+}
+
+async function doIssueCard() {
+  if (!issueTarget.value || !selectedIssueType.value) return;
+  const t = selectedIssueType.value;
+  if (t.kind === 'StoredValue') {
+    if (issueForm.amount < (t.minRechargeAmount ?? 0)) {
+      ElMessage.warning(`充值金额不能低于 ¥${(t.minRechargeAmount ?? 0).toFixed(2)}`);
+      return;
+    }
+  } else {
+    if (issueForm.count < (t.minPurchaseCount ?? 1)) {
+      ElMessage.warning(`购买次数不能低于 ${t.minPurchaseCount ?? 1}`);
+      return;
+    }
+  }
+  saving.value = true;
+  try {
+    const r = await membersApi.issueCard(issueTarget.value.id, {
+      memberTypeId: t.id,
+      amount: issueForm.amount,
+      count: issueForm.count,
+      payMethod: issueForm.payMethod,
+      remark: issueForm.remark || null
+    });
+    if (t.kind === 'StoredValue') {
+      ElMessage.success(`办卡成功，余额到账 ¥${r.newBalance.toFixed(2)}（含赠送 ¥${r.bonusAmount.toFixed(2)}）`);
+    } else {
+      ElMessage.success(`办卡成功，已发放 ${issueForm.count + r.bonusCount} 次「${t.serviceItemName ?? ''}」（含赠送 ${r.bonusCount} 次）`);
+    }
+    issueOpen.value = false;
+    reload();
+  } finally {
+    saving.value = false;
+  }
+}
 
 async function searchReferrer() {
   if (!form.referrerKeyword.trim()) return;
@@ -351,14 +743,14 @@ const orderList = ref<any[]>([]);
 async function reload() {
   loading.value = true;
   try {
-    const data = await membersApi.list({
+    const data = await membersApi.grouped({
       page: query.page,
       pageSize: query.pageSize,
       keyword: query.keyword || undefined,
       storeId: appStore.activeStoreId ?? undefined,
       includeClosed: query.includeClosed
     });
-    rows.value = data.items;
+    groups.value = data.items;
     total.value = data.total;
   } finally {
     loading.value = false;
@@ -380,16 +772,31 @@ function resetQuery() {
   reload();
 }
 
-function openCreate() {
+const phoneLocked = ref(false);
+
+async function openCreate() {
   formMode.value = 'create';
   editingId.value = null;
+  phoneLocked.value = false;
   Object.assign(form, {
     cardNo: '', phone: '', name: '', gender: '', birthday: '',
     discount: 1, initialBalance: 0, remark: '',
-    referrerKeyword: '', referredByMemberId: null
+    referrerKeyword: '', referredByMemberId: null,
+    memberTypeId: null, count: 0
   });
   referrerCandidates.value = [];
   formOpen.value = true;
+  // 异步加载会员类型不阻塞打开对话框
+  await ensureMemberTypesLoaded();
+}
+
+/// 在已有手机号下加办一张卡：预填手机号并锁定，姓名也带过来
+async function openCreateForPhone(phone: string) {
+  await openCreate();
+  const group = groups.value.find((g) => g.phone === phone);
+  form.phone = phone;
+  if (group?.primaryName) form.name = group.primaryName;
+  phoneLocked.value = true;
 }
 
 function openEdit(row: Member) {
@@ -405,7 +812,9 @@ function openEdit(row: Member) {
     initialBalance: 0,
     remark: row.remark ?? '',
     referrerKeyword: '',
-    referredByMemberId: row.referredByMemberId ?? null
+    referredByMemberId: row.referredByMemberId ?? null,
+    memberTypeId: null,
+    count: 0
   });
   referrerCandidates.value = [];
   formOpen.value = true;
@@ -422,6 +831,24 @@ async function saveForm() {
   saving.value = true;
   try {
     if (formMode.value === 'create') {
+      // 开卡必选会员类型
+      if (!form.memberTypeId) {
+        ElMessage.warning('请选择会员类型');
+        return;
+      }
+      const t = selectedCreateType.value;
+      if (t) {
+        if (t.kind === 'StoredValue' && form.initialBalance < (t.minRechargeAmount ?? 0)) {
+          ElMessage.warning(`充值金额不能低于 ¥${(t.minRechargeAmount ?? 0).toFixed(2)}`);
+          return;
+        }
+        if (t.kind === 'CountBased' && form.count < (t.minPurchaseCount ?? 1)) {
+          ElMessage.warning(`购买次数不能低于 ${t.minPurchaseCount ?? 1}`);
+          return;
+        }
+      }
+      // 计次卡的 initialBalance 走"实收金额"（次数 × 会员价 × 折扣）记账
+      const paidAmount = t?.kind === 'CountBased' ? countChargeAmount.value : form.initialBalance;
       await membersApi.create({
         storeId: appStore.activeStoreId,
         cardNo: form.cardNo,
@@ -430,9 +857,11 @@ async function saveForm() {
         gender: form.gender || null,
         birthday: form.birthday || null,
         discount: form.discount,
-        initialBalance: form.initialBalance,
+        initialBalance: paidAmount,
         remark: form.remark || null,
-        referredByMemberId: form.referredByMemberId
+        referredByMemberId: form.referredByMemberId,
+        memberTypeId: form.memberTypeId,
+        count: form.count
       });
     } else if (editingId.value != null) {
       await membersApi.update(editingId.value, {
@@ -617,4 +1046,13 @@ onMounted(async () => {
 .muted { color: var(--el-text-color-secondary); font-size: 12px; }
 .closed { color: #999; text-decoration: line-through; }
 .metric-row { display: flex; gap: 32px; align-items: center; font-size: 14px; }
+.opt-meta {
+  float: right;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  margin-left: 24px;
+}
+:deep(.el-alert__content) { padding-right: 0; }
+.type-summary { width: 100%; }
+.permanent { color: var(--el-color-success); }
 </style>

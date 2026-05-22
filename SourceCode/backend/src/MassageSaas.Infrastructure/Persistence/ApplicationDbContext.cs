@@ -24,6 +24,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Store> Stores => Set<Store>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Member> Members => Set<Member>();
+    public DbSet<MemberType> MemberTypes => Set<MemberType>();
     public DbSet<ServiceItem> ServiceItems => Set<ServiceItem>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();

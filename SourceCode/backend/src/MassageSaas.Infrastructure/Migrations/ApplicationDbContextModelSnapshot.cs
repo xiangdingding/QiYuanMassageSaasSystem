@@ -466,6 +466,9 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Property<int>("Level")
                         .HasColumnType("int");
 
+                    b.Property<long?>("MemberTypeId")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("Name")
                         .HasMaxLength(64)
                         .HasColumnType("varchar(64)");
@@ -512,6 +515,8 @@ namespace MassageSaas.Infrastructure.Migrations
                         .HasColumnType("varchar(64)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MemberTypeId");
 
                     b.HasIndex("ReferredByMemberId");
 
@@ -669,6 +674,85 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.HasIndex("TenantId", "MemberId", "CreatedAt");
 
                     b.ToTable("member_recharge_records", (string)null);
+                });
+
+            modelBuilder.Entity("MassageSaas.Domain.Entities.MemberType", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal?>("BonusAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("BonusCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<decimal>("Discount")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MinPurchaseCount")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("MinRechargeAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<long?>("ServiceItemId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Sort")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("TenantId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("ValidDays")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServiceItemId");
+
+                    b.HasIndex("TenantId", "Code")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "Sort");
+
+                    b.ToTable("member_types", (string)null);
                 });
 
             modelBuilder.Entity("MassageSaas.Domain.Entities.NotificationOutbox", b =>
@@ -2363,6 +2447,11 @@ namespace MassageSaas.Infrastructure.Migrations
 
             modelBuilder.Entity("MassageSaas.Domain.Entities.Member", b =>
                 {
+                    b.HasOne("MassageSaas.Domain.Entities.MemberType", "MemberType")
+                        .WithMany()
+                        .HasForeignKey("MemberTypeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("MassageSaas.Domain.Entities.Member", "ReferredByMember")
                         .WithMany()
                         .HasForeignKey("ReferredByMemberId")
@@ -2378,6 +2467,8 @@ namespace MassageSaas.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("MemberType");
 
                     b.Navigation("ReferredByMember");
 
@@ -2443,6 +2534,23 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Navigation("OperatorUser");
 
                     b.Navigation("Store");
+                });
+
+            modelBuilder.Entity("MassageSaas.Domain.Entities.MemberType", b =>
+                {
+                    b.HasOne("MassageSaas.Domain.Entities.ServiceItem", "ServiceItem")
+                        .WithMany()
+                        .HasForeignKey("ServiceItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MassageSaas.Domain.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("ServiceItem");
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("MassageSaas.Domain.Entities.NotificationOutbox", b =>
