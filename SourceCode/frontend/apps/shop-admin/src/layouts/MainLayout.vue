@@ -57,7 +57,8 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+                <el-dropdown-item command="profile">个人设置</el-dropdown-item>
+                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -67,11 +68,12 @@
         <router-view />
       </el-main>
     </el-container>
+    <ProfileDialog v-model="profileVisible" />
   </el-container>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   AlarmClock,
@@ -98,6 +100,9 @@ import { canSee, useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
 import { subscriptionsApi } from '@/api/modules';
 import type { UserRole } from '@/api/types';
+import ProfileDialog from '@/views/components/ProfileDialog.vue';
+
+const profileVisible = ref(false);
 
 const route = useRoute();
 const router = useRouter();
@@ -157,7 +162,10 @@ const expireWarn = computed(
 function onCommand(cmd: string) {
   if (cmd === 'logout') {
     auth.logout();
+    appStore.reset();
     router.replace('/login');
+  } else if (cmd === 'profile') {
+    profileVisible.value = true;
   }
 }
 

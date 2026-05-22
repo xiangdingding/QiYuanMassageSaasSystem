@@ -202,10 +202,15 @@ public class TenantsController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(req.Name) || string.IsNullOrWhiteSpace(req.ContactPhone))
             return BadRequest(new { code = "InvalidInput", message = "店铺名与联系电话必填" });
-        if (string.IsNullOrWhiteSpace(req.OwnerUsername) || string.IsNullOrWhiteSpace(req.OwnerPassword))
-            return BadRequest(new { code = "InvalidInput", message = "店主账号与密码必填" });
+        if (string.IsNullOrWhiteSpace(req.OwnerPhone) || string.IsNullOrWhiteSpace(req.OwnerPassword))
+            return BadRequest(new { code = "InvalidInput", message = "店主手机号与密码必填" });
         if (req.OwnerPassword.Length < 6)
             return BadRequest(new { code = "WeakPassword", message = "密码至少 6 位" });
+
+        var ownerPhone = req.OwnerPhone.Trim();
+        var phoneTaken = await _db.Users.AnyAsync(u => u.Phone == ownerPhone, ct);
+        if (phoneTaken)
+            return Conflict(new { code = "PhoneTaken", message = "该手机号已被注册，请换一个" });
 
         var trialDays = ResolveTrialDays(req.TrialDays);
         var now = DateTime.UtcNow;
@@ -237,11 +242,13 @@ public class TenantsController : ControllerBase
         _db.Stores.Add(headquarters);
         await _db.SaveChangesAsync(ct);
 
+        // 店主登录标识 = 手机号：Username 也用手机号填，使 AuthController 的双匹配逻辑都能命中
         var owner = new User
         {
             TenantId = tenant.Id,
             StoreId = headquarters.Id,
-            Username = req.OwnerUsername.Trim(),
+            Username = ownerPhone,
+            Phone = ownerPhone,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.OwnerPassword),
             RealName = req.OwnerRealName?.Trim(),
             Role = UserRole.ShopOwner,
@@ -252,8 +259,8 @@ public class TenantsController : ControllerBase
 
         await tx.CommitAsync(ct);
         _logger.LogInformation(
-            "Created tenant {TenantId} ({Name}) trial={TrialDays}d owner={Username}",
-            tenant.Id, tenant.Name, trialDays, owner.Username);
+            "Created tenant {TenantId} ({Name}) trial={TrialDays}d ownerPhone={Phone}",
+            tenant.Id, tenant.Name, trialDays, ownerPhone);
 
         return CreatedAtAction(nameof(Get), new { id = tenant.Id },
             new TenantDetailDto(tenant.Id, tenant.Name, tenant.ContactPhone, tenant.ContactName,
@@ -334,16 +341,16 @@ public class TenantsController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(req.Name) || string.IsNullOrWhiteSpace(req.ContactPhone))
             return BadRequest(new { code = "InvalidInput", message = "店铺名与联系电话必填" });
-        if (string.IsNullOrWhiteSpace(req.OwnerUsername) || string.IsNullOrWhiteSpace(req.OwnerPassword))
-            return BadRequest(new { code = "InvalidInput", message = "登录账号与密码必填" });
+        if (string.IsNullOrWhiteSpace(req.OwnerPhone) || string.IsNullOrWhiteSpace(req.OwnerPassword))
+            return BadRequest(new { code = "InvalidInput", message = "登录手机号与密码必填" });
         if (req.OwnerPassword.Length < 6)
             return BadRequest(new { code = "WeakPassword", message = "密码至少 6 位" });
 
-        var username = req.OwnerUsername.Trim();
-        // 用户名全局唯一（用户表）—— 提前查重给清晰错误，避免 DB 约束抛 500
-        var usernameTaken = await _db.Users.AnyAsync(u => u.Username == username, ct);
-        if (usernameTaken)
-            return Conflict(new { code = "UsernameTaken", message = "该登录账号已被占用，请换一个" });
+        var ownerPhone = req.OwnerPhone.Trim();
+        // 手机号即登录标识：全局唯一，提前查重给清晰错误（同时也命中 Username 列因为我们存的一样）
+        var phoneTaken = await _db.Users.AnyAsync(u => u.Phone == ownerPhone || u.Username == ownerPhone, ct);
+        if (phoneTaken)
+            return Conflict(new { code = "PhoneTaken", message = "该手机号已被注册，请直接登录或换一个" });
 
         var trialDays = ResolveTrialDays(null);
         var now = DateTime.UtcNow;
@@ -377,7 +384,8 @@ public class TenantsController : ControllerBase
         {
             TenantId = tenant.Id,
             StoreId = headquarters.Id,
-            Username = username,
+            Username = ownerPhone,
+            Phone = ownerPhone,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.OwnerPassword),
             RealName = req.OwnerRealName?.Trim(),
             Role = UserRole.ShopOwner,
@@ -388,9 +396,9 @@ public class TenantsController : ControllerBase
 
         await tx.CommitAsync(ct);
         _logger.LogInformation(
-            "Self-registered tenant {TenantId} ({Name}) trial={TrialDays}d owner={Username}",
-            tenant.Id, tenant.Name, trialDays, owner.Username);
+            "Self-registered tenant {TenantId} ({Name}) trial={TrialDays}d ownerPhone={Phone}",
+            tenant.Id, tenant.Name, trialDays, ownerPhone);
 
-        return Ok(new RegisterTenantResponse(tenant.Id, tenant.Name, owner.Username, expireAt, trialDays));
+        return Ok(new RegisterTenantResponse(tenant.Id, tenant.Name, ownerPhone, expireAt, trialDays));
     }
 }

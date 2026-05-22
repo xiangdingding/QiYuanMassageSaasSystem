@@ -94,7 +94,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         b.Property(x => x.BlindCertNo).HasMaxLength(64);
         b.Property(x => x.Specialties).HasMaxLength(200);
         b.HasIndex(x => new { x.TenantId, x.Username }).IsUnique();
-        b.HasIndex(x => x.Phone);
+        // Phone 全局唯一：作为店长/店员/技师的登录标识；admin 用户 Phone=null，
+        // MySQL 唯一索引允许多行 NULL 共存，与 admin 用户名登录兼容。
+        b.HasIndex(x => x.Phone).IsUnique();
         b.HasOne(x => x.Tenant).WithMany(t => t.Users).HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Store).WithMany(s => s.Users).HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.SetNull);
     }

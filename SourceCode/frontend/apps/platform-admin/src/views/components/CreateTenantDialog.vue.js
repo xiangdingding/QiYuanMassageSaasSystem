@@ -9,7 +9,7 @@ const form = reactive({
     name: '',
     contactPhone: '',
     contactName: '',
-    ownerUsername: '',
+    ownerPhone: '',
     ownerPassword: '',
     ownerRealName: '',
     headquartersName: '',
@@ -19,7 +19,10 @@ const rules = {
     name: [{ required: true, message: '请输入店铺名', trigger: 'blur' }],
     contactPhone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }],
     headquartersName: [{ required: true, message: '请输入总店名称', trigger: 'blur' }],
-    ownerUsername: [{ required: true, message: '请输入店主账号', trigger: 'blur' }],
+    ownerPhone: [
+        { required: true, message: '请输入店主手机号', trigger: 'blur' },
+        { pattern: /^\d{11}$/, message: '请输入 11 位手机号', trigger: 'blur' }
+    ],
     ownerPassword: [
         { required: true, message: '请输入密码', trigger: 'blur' },
         { min: 6, message: '密码至少 6 位', trigger: 'blur' }
@@ -29,7 +32,7 @@ function reset() {
     form.name = '';
     form.contactPhone = '';
     form.contactName = '';
-    form.ownerUsername = '';
+    form.ownerPhone = '';
     form.ownerPassword = '';
     form.ownerRealName = '';
     form.headquartersName = '';
@@ -195,22 +198,24 @@ const __VLS_48 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_49 = __VLS_asFunctionalComponent(__VLS_48, new __VLS_48({
-    label: "店主账号",
-    prop: "ownerUsername",
+    label: "店主手机号",
+    prop: "ownerPhone",
 }));
 const __VLS_50 = __VLS_49({
-    label: "店主账号",
-    prop: "ownerUsername",
+    label: "店主手机号",
+    prop: "ownerPhone",
 }, ...__VLS_functionalComponentArgsRest(__VLS_49));
 __VLS_51.slots.default;
 const __VLS_52 = {}.ElInput;
 /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
 // @ts-ignore
 const __VLS_53 = __VLS_asFunctionalComponent(__VLS_52, new __VLS_52({
-    modelValue: (__VLS_ctx.form.ownerUsername),
+    modelValue: (__VLS_ctx.form.ownerPhone),
+    placeholder: "店长/店员都用手机号登录",
 }));
 const __VLS_54 = __VLS_53({
-    modelValue: (__VLS_ctx.form.ownerUsername),
+    modelValue: (__VLS_ctx.form.ownerPhone),
+    placeholder: "店长/店员都用手机号登录",
 }, ...__VLS_functionalComponentArgsRest(__VLS_53));
 var __VLS_51;
 const __VLS_56 = {}.ElFormItem;

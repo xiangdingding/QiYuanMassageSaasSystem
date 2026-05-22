@@ -23,16 +23,31 @@ import type {
   TechnicianPerformance
 } from './types';
 
+export interface UserProfile {
+  id: number;
+  username: string;
+  realName?: string | null;
+  phone?: string | null;
+  role: string;
+  tenantId?: number | null;
+  storeId?: number | null;
+}
+
 export const authApi = {
   login: (req: LoginRequest) => http().post<LoginResponse>('/auth/login', req).then((r) => r.data),
-  me: () => http().get('/auth/me').then((r) => r.data)
+  me: () => http().get('/auth/me').then((r) => r.data),
+  profile: () => http().get<UserProfile>('/auth/profile').then((r) => r.data),
+  updateProfile: (body: { realName?: string | null; phone?: string | null }) =>
+    http().put<UserProfile>('/auth/profile', body).then((r) => r.data),
+  changePassword: (body: { oldPassword: string; newPassword: string }) =>
+    http().post('/auth/change-password', body)
 };
 
 export interface RegisterTenantRequest {
   name: string;
   contactPhone: string;
   contactName?: string | null;
-  ownerUsername: string;
+  ownerPhone: string;
   ownerPassword: string;
   ownerRealName?: string | null;
 }
@@ -40,7 +55,7 @@ export interface RegisterTenantRequest {
 export interface RegisterTenantResponse {
   tenantId: number;
   tenantName: string;
-  ownerUsername: string;
+  ownerPhone: string;
   expireAt: string;
   trialDays: number;
 }
@@ -209,8 +224,34 @@ export const reportsApi = {
     http().get<TechnicianQuality[]>('/reports/technician-quality', { params: { storeId, from, to } }).then((r) => r.data)
 };
 
+export interface SubscriptionPlan {
+  id: number;
+  code: string;
+  name: string;
+  maxStores: number;
+  maxStaff: number;
+  annualPrice: number;
+  featureJson?: string | null;
+  isActive: boolean;
+}
+
+export interface SubscriptionPaymentResp {
+  paymentOrderId: number;
+  orderNo: string;
+  amount: number;
+  channel: string;
+  status: string;
+  payUrl?: string | null;
+  createdAt: string;
+}
+
 export const subscriptionsApi = {
-  me: () => http().get<SubscriptionStatus>('/subscriptions/me').then((r) => r.data)
+  me: () => http().get<SubscriptionStatus>('/subscriptions/me').then((r) => r.data),
+  plans: () => http().get<SubscriptionPlan[]>('/plans').then((r) => r.data),
+  pay: (body: { tenantId: number; planId: number; years: number; channel: 'Wechat' | 'Alipay' }) =>
+    http().post<SubscriptionPaymentResp>('/subscriptions/pay', body).then((r) => r.data),
+  payStatus: (orderNo: string) =>
+    http().get<SubscriptionPaymentResp>(`/subscriptions/pay/${orderNo}`).then((r) => r.data)
 };
 
 export const appointmentsApi = {

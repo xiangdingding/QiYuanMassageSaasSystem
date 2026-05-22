@@ -4,15 +4,17 @@ import { ElMessage } from 'element-plus';
 import { Lock, User } from '@element-plus/icons-vue';
 import { authApi } from '@/api/modules';
 import { useAuthStore } from '@/stores/auth';
+import { useAppStore } from '@/stores/app';
 const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
+const appStore = useAppStore();
 // 从注册页跳过来时携带刚创建的用户名，预填到账号框
 const form = reactive({ username: route.query.u || '', password: '' });
 const formRef = ref();
 const loading = ref(false);
 const rules = {
-    username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
+    username: [{ required: true, message: '请输入手机号', trigger: 'blur' }],
     password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 };
 async function submit() {
@@ -28,6 +30,7 @@ async function submit() {
             ElMessage.error('该账号是平台管理员，请使用运营平台登录');
             return;
         }
+        appStore.reset();
         auth.setSession(data.accessToken, data.user, data.expiresAt);
         router.replace('/');
     }
@@ -101,14 +104,14 @@ const __VLS_18 = {}.ElInput;
 // @ts-ignore
 const __VLS_19 = __VLS_asFunctionalComponent(__VLS_18, new __VLS_18({
     modelValue: (__VLS_ctx.form.username),
-    placeholder: "账号",
+    placeholder: "手机号",
     size: "large",
     prefixIcon: (__VLS_ctx.User),
     autofocus: true,
 }));
 const __VLS_20 = __VLS_19({
     modelValue: (__VLS_ctx.form.username),
-    placeholder: "账号",
+    placeholder: "手机号",
     size: "large",
     prefixIcon: (__VLS_ctx.User),
     autofocus: true,

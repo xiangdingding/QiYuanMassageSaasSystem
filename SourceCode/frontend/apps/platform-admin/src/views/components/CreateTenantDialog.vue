@@ -19,8 +19,8 @@
       <el-form-item label="总店名称" prop="headquartersName">
         <el-input v-model="form.headquartersName" placeholder="将自动建立的总店" />
       </el-form-item>
-      <el-form-item label="店主账号" prop="ownerUsername">
-        <el-input v-model="form.ownerUsername" />
+      <el-form-item label="店主手机号" prop="ownerPhone">
+        <el-input v-model="form.ownerPhone" placeholder="店长/店员都用手机号登录" />
       </el-form-item>
       <el-form-item label="店主初始密码" prop="ownerPassword">
         <el-input v-model="form.ownerPassword" type="password" show-password />
@@ -65,7 +65,7 @@ const form = reactive<CreateTenantRequest>({
   name: '',
   contactPhone: '',
   contactName: '',
-  ownerUsername: '',
+  ownerPhone: '',
   ownerPassword: '',
   ownerRealName: '',
   headquartersName: '',
@@ -76,7 +76,10 @@ const rules: FormRules = {
   name: [{ required: true, message: '请输入店铺名', trigger: 'blur' }],
   contactPhone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }],
   headquartersName: [{ required: true, message: '请输入总店名称', trigger: 'blur' }],
-  ownerUsername: [{ required: true, message: '请输入店主账号', trigger: 'blur' }],
+  ownerPhone: [
+    { required: true, message: '请输入店主手机号', trigger: 'blur' },
+    { pattern: /^\d{11}$/, message: '请输入 11 位手机号', trigger: 'blur' }
+  ],
   ownerPassword: [
     { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, message: '密码至少 6 位', trigger: 'blur' }
@@ -87,7 +90,7 @@ function reset() {
   form.name = '';
   form.contactPhone = '';
   form.contactName = '';
-  form.ownerUsername = '';
+  form.ownerPhone = '';
   form.ownerPassword = '';
   form.ownerRealName = '';
   form.headquartersName = '';

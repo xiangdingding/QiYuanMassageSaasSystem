@@ -2151,7 +2151,8 @@ namespace MassageSaas.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Phone");
+                    b.HasIndex("Phone")
+                        .IsUnique();
 
                     b.HasIndex("StoreId");
 

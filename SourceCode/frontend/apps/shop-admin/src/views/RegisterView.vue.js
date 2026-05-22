@@ -7,7 +7,7 @@ const form = reactive({
     name: '',
     contactPhone: '',
     contactName: '',
-    ownerUsername: '',
+    ownerPhone: '',
     ownerPassword: '',
     confirmPassword: '',
     ownerRealName: ''
@@ -20,9 +20,9 @@ const rules = {
         { required: true, message: '请输入联系电话', trigger: 'blur' },
         { pattern: /^\d{11}$/, message: '请输入 11 位手机号', trigger: 'blur' }
     ],
-    ownerUsername: [
-        { required: true, message: '请设置登录账号', trigger: 'blur' },
-        { min: 4, max: 32, message: '4-32 位', trigger: 'blur' }
+    ownerPhone: [
+        { required: true, message: '请输入登录手机号', trigger: 'blur' },
+        { pattern: /^\d{11}$/, message: '请输入 11 位手机号', trigger: 'blur' }
     ],
     ownerPassword: [
         { required: true, message: '请设置密码', trigger: 'blur' },
@@ -53,13 +53,13 @@ async function submit() {
             name: form.name,
             contactPhone: form.contactPhone,
             contactName: form.contactName || null,
-            ownerUsername: form.ownerUsername,
+            ownerPhone: form.ownerPhone,
             ownerPassword: form.ownerPassword,
             ownerRealName: form.ownerRealName || null
         });
         ElMessage.success('注册成功');
-        await ElMessageBox.alert(`账号「${resp.ownerUsername}」已开通 ${resp.trialDays} 天试用，试用至 ${new Date(resp.expireAt).toLocaleDateString('zh-CN')}。即将跳转到登录页。`, '欢迎使用', { confirmButtonText: '去登录', type: 'success' }).catch(() => null);
-        router.replace({ path: '/login', query: { u: resp.ownerUsername } });
+        await ElMessageBox.alert(`手机号「${resp.ownerPhone}」已开通 ${resp.trialDays} 天试用，试用至 ${new Date(resp.expireAt).toLocaleDateString('zh-CN')}。即将跳转到登录页，请使用手机号 + 密码登录。`, '欢迎使用', { confirmButtonText: '去登录', type: 'success' }).catch(() => null);
+        router.replace({ path: '/login', query: { u: resp.ownerPhone } });
     }
     finally {
         loading.value = false;
@@ -144,11 +144,11 @@ const __VLS_22 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_23 = __VLS_asFunctionalComponent(__VLS_22, new __VLS_22({
-    label: "联系电话",
+    label: "店铺电话",
     prop: "contactPhone",
 }));
 const __VLS_24 = __VLS_23({
-    label: "联系电话",
+    label: "店铺电话",
     prop: "contactPhone",
 }, ...__VLS_functionalComponentArgsRest(__VLS_23));
 __VLS_25.slots.default;
@@ -190,24 +190,24 @@ const __VLS_38 = {}.ElFormItem;
 /** @type {[typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, typeof __VLS_components.ElFormItem, typeof __VLS_components.elFormItem, ]} */ ;
 // @ts-ignore
 const __VLS_39 = __VLS_asFunctionalComponent(__VLS_38, new __VLS_38({
-    label: "登录账号",
-    prop: "ownerUsername",
+    label: "登录手机号",
+    prop: "ownerPhone",
 }));
 const __VLS_40 = __VLS_39({
-    label: "登录账号",
-    prop: "ownerUsername",
+    label: "登录手机号",
+    prop: "ownerPhone",
 }, ...__VLS_functionalComponentArgsRest(__VLS_39));
 __VLS_41.slots.default;
 const __VLS_42 = {}.ElInput;
 /** @type {[typeof __VLS_components.ElInput, typeof __VLS_components.elInput, ]} */ ;
 // @ts-ignore
 const __VLS_43 = __VLS_asFunctionalComponent(__VLS_42, new __VLS_42({
-    modelValue: (__VLS_ctx.form.ownerUsername),
-    placeholder: "6-20 位字母数字",
+    modelValue: (__VLS_ctx.form.ownerPhone),
+    placeholder: "店长/店员都用手机号登录",
 }));
 const __VLS_44 = __VLS_43({
-    modelValue: (__VLS_ctx.form.ownerUsername),
-    placeholder: "6-20 位字母数字",
+    modelValue: (__VLS_ctx.form.ownerPhone),
+    placeholder: "店长/店员都用手机号登录",
 }, ...__VLS_functionalComponentArgsRest(__VLS_43));
 var __VLS_41;
 const __VLS_46 = {}.ElFormItem;

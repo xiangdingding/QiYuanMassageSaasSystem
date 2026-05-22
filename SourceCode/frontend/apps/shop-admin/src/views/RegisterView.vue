@@ -7,14 +7,14 @@
         <el-form-item label="店铺名" prop="name">
           <el-input v-model="form.name" placeholder="如：齐源按摩中心" />
         </el-form-item>
-        <el-form-item label="联系电话" prop="contactPhone">
+        <el-form-item label="店铺电话" prop="contactPhone">
           <el-input v-model="form.contactPhone" placeholder="11 位手机号" />
         </el-form-item>
         <el-form-item label="联系人">
           <el-input v-model="form.contactName" placeholder="选填" />
         </el-form-item>
-        <el-form-item label="登录账号" prop="ownerUsername">
-          <el-input v-model="form.ownerUsername" placeholder="6-20 位字母数字" />
+        <el-form-item label="登录手机号" prop="ownerPhone">
+          <el-input v-model="form.ownerPhone" placeholder="店长/店员都用手机号登录" />
         </el-form-item>
         <el-form-item label="登录密码" prop="ownerPassword">
           <el-input
@@ -65,7 +65,7 @@ const form = reactive({
   name: '',
   contactPhone: '',
   contactName: '',
-  ownerUsername: '',
+  ownerPhone: '',
   ownerPassword: '',
   confirmPassword: '',
   ownerRealName: ''
@@ -79,9 +79,9 @@ const rules: FormRules = {
     { required: true, message: '请输入联系电话', trigger: 'blur' },
     { pattern: /^\d{11}$/, message: '请输入 11 位手机号', trigger: 'blur' }
   ],
-  ownerUsername: [
-    { required: true, message: '请设置登录账号', trigger: 'blur' },
-    { min: 4, max: 32, message: '4-32 位', trigger: 'blur' }
+  ownerPhone: [
+    { required: true, message: '请输入登录手机号', trigger: 'blur' },
+    { pattern: /^\d{11}$/, message: '请输入 11 位手机号', trigger: 'blur' }
   ],
   ownerPassword: [
     { required: true, message: '请设置密码', trigger: 'blur' },
@@ -109,17 +109,17 @@ async function submit() {
       name: form.name,
       contactPhone: form.contactPhone,
       contactName: form.contactName || null,
-      ownerUsername: form.ownerUsername,
+      ownerPhone: form.ownerPhone,
       ownerPassword: form.ownerPassword,
       ownerRealName: form.ownerRealName || null
     });
     ElMessage.success('注册成功');
     await ElMessageBox.alert(
-      `账号「${resp.ownerUsername}」已开通 ${resp.trialDays} 天试用，试用至 ${new Date(resp.expireAt).toLocaleDateString('zh-CN')}。即将跳转到登录页。`,
+      `手机号「${resp.ownerPhone}」已开通 ${resp.trialDays} 天试用，试用至 ${new Date(resp.expireAt).toLocaleDateString('zh-CN')}。即将跳转到登录页，请使用手机号 + 密码登录。`,
       '欢迎使用',
       { confirmButtonText: '去登录', type: 'success' }
     ).catch(() => null);
-    router.replace({ path: '/login', query: { u: resp.ownerUsername } });
+    router.replace({ path: '/login', query: { u: resp.ownerPhone } });
   } finally {
     loading.value = false;
   }

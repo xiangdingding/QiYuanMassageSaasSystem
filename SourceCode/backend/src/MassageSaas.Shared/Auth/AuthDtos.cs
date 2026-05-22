@@ -18,3 +18,16 @@ public record UserInfo(
     bool IsBlind);
 
 public record RefreshRequest(string RefreshToken);
+
+public record UserProfileDto(
+    long Id,
+    string Username,
+    string? RealName,
+    string? Phone,
+    string Role,
+    long? TenantId,
+    long? StoreId);
+
+public record UpdateProfileRequest(string? RealName, string? Phone);
+
+public record ChangePasswordRequest(string OldPassword, string NewPassword);

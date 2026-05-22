@@ -160,6 +160,29 @@ public class SubscriptionsController : ControllerBase
             tenant.CurrentPlanId, tenant.CurrentPlan?.Name));
     }
 
+    /// <summary>
+    /// 查询支付单状态，供前端在拉起支付后轮询。
+    /// 当前租户只能查自己；平台管理员可任意查。
+    /// </summary>
+    [HttpGet("pay/{orderNo}")]
+    [Authorize]
+    public async Task<ActionResult<SubscriptionPaymentDto>> GetPaymentStatus(
+        string orderNo,
+        CancellationToken ct)
+    {
+        _tenantContext.BypassTenantFilter();
+        var order = await _db.PaymentOrders.AsNoTracking()
+            .FirstOrDefaultAsync(o => o.OrderNo == orderNo, ct);
+        if (order is null) return NotFound();
+
+        if (!_tenantContext.IsPlatformAdmin && order.TenantId != _tenantContext.TenantId)
+            return Forbid();
+
+        return Ok(new SubscriptionPaymentDto(
+            order.Id, order.OrderNo, order.Amount, order.Channel.ToString(),
+            order.Status.ToString(), null, order.CreatedAt));
+    }
+
     [HttpGet("history")]
     [Authorize]
     public async Task<ActionResult<IReadOnlyList<SubscriptionDto>>> History(

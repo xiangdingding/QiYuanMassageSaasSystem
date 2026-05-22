@@ -30,7 +30,7 @@ public record CreateTenantRequest(
     string Name,
     string ContactPhone,
     string? ContactName,
-    string OwnerUsername,
+    string OwnerPhone,
     string OwnerPassword,
     string? OwnerRealName,
     string HeadquartersName,
@@ -41,15 +41,15 @@ public record RegisterTenantRequest(
     string Name,
     string ContactPhone,
     string? ContactName,
-    string OwnerUsername,
+    string OwnerPhone,
     string OwnerPassword,
     string? OwnerRealName);
 
-/// <summary>注册成功响应。</summary>
+/// <summary>注册成功响应。OwnerPhone 即店主的登录手机号。</summary>
 public record RegisterTenantResponse(
     long TenantId,
     string TenantName,
-    string OwnerUsername,
+    string OwnerPhone,
     DateTime ExpireAt,
     int TrialDays);
 

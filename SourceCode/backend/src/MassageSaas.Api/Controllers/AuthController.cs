@@ -37,7 +37,10 @@ public class AuthController : ControllerBase
     {
         _tenantContext.BypassTenantFilter();
 
-        var query = _db.Users.Where(u => u.Username == req.Username && u.IsActive);
+        // 用户名或手机号都可登录：店长/店员/技师都用手机号，平台 admin 还能用 username
+        var key = (req.Username ?? string.Empty).Trim();
+        var query = _db.Users.Where(u =>
+            (u.Username == key || (u.Phone != null && u.Phone == key)) && u.IsActive);
         if (!string.IsNullOrWhiteSpace(req.TenantCode))
         {
             query = query.Where(u => u.Tenant != null && u.Tenant.Name == req.TenantCode);
@@ -83,5 +86,86 @@ public class AuthController : ControllerBase
             tenantId = _tenantContext.TenantId,
             isPlatformAdmin = _tenantContext.IsPlatformAdmin
         });
+    }
+
+    [HttpGet("profile")]
+    [Authorize]
+    public async Task<ActionResult<UserProfileDto>> GetProfile(CancellationToken ct)
+    {
+        if (_tenantContext.UserId is not long userId)
+            return Unauthorized();
+
+        _tenantContext.BypassTenantFilter();
+        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return NotFound();
+
+        return Ok(new UserProfileDto(user.Id, user.Username, user.RealName, user.Phone,
+            user.Role.ToString(), user.TenantId, user.StoreId));
+    }
+
+    [HttpPut("profile")]
+    [Authorize]
+    public async Task<ActionResult<UserProfileDto>> UpdateProfile(
+        [FromBody] UpdateProfileRequest req,
+        CancellationToken ct)
+    {
+        if (_tenantContext.UserId is not long userId)
+            return Unauthorized();
+
+        _tenantContext.BypassTenantFilter();
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return NotFound();
+
+        var newPhone = req.Phone?.Trim();
+        if (!string.IsNullOrEmpty(newPhone))
+        {
+            if (newPhone.Length != 11 || !newPhone.All(char.IsDigit))
+                return BadRequest(new { code = "InvalidPhone", message = "请输入 11 位手机号" });
+
+            if (newPhone != user.Phone)
+            {
+                var taken = await _db.Users.AnyAsync(u => u.Id != userId && u.Phone == newPhone, ct);
+                if (taken)
+                    return Conflict(new { code = "PhoneTaken", message = "该手机号已被使用" });
+            }
+        }
+
+        user.RealName = string.IsNullOrWhiteSpace(req.RealName) ? null : req.RealName.Trim();
+        if (!string.IsNullOrEmpty(newPhone)) user.Phone = newPhone;
+
+        await _db.SaveChangesAsync(ct);
+        _logger.LogInformation("User {UserId} updated profile (realName/phone)", user.Id);
+
+        return Ok(new UserProfileDto(user.Id, user.Username, user.RealName, user.Phone,
+            user.Role.ToString(), user.TenantId, user.StoreId));
+    }
+
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword(
+        [FromBody] ChangePasswordRequest req,
+        CancellationToken ct)
+    {
+        if (_tenantContext.UserId is not long userId)
+            return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(req.OldPassword) || string.IsNullOrWhiteSpace(req.NewPassword))
+            return BadRequest(new { code = "InvalidInput", message = "旧密码与新密码必填" });
+        if (req.NewPassword.Length < 6)
+            return BadRequest(new { code = "WeakPassword", message = "新密码至少 6 位" });
+        if (req.OldPassword == req.NewPassword)
+            return BadRequest(new { code = "SamePassword", message = "新密码不能与旧密码相同" });
+
+        _tenantContext.BypassTenantFilter();
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return NotFound();
+
+        if (!BCrypt.Net.BCrypt.Verify(req.OldPassword, user.PasswordHash))
+            return BadRequest(new { code = "WrongPassword", message = "旧密码错误" });
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.NewPassword);
+        await _db.SaveChangesAsync(ct);
+        _logger.LogInformation("User {UserId} changed password", user.Id);
+        return NoContent();
     }
 }

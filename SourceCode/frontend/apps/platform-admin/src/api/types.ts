@@ -63,7 +63,7 @@ export interface CreateTenantRequest {
   name: string;
   contactPhone: string;
   contactName?: string | null;
-  ownerUsername: string;
+  ownerPhone: string;
   ownerPassword: string;
   ownerRealName?: string | null;
   headquartersName: string;
