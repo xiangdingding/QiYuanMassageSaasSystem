@@ -2,14 +2,17 @@
   <el-container class="layout">
     <a href="#main-content" class="skip-link" aria-label="跳到主要内容">跳到主要内容</a>
     <el-aside width="220px" class="aside" role="navigation" aria-label="主导航">
-      <div class="brand">{{ activeStoreName || '按摩店' }}</div>
+      <div class="brand">
+        <el-icon class="brand-icon"><OfficeBuilding /></el-icon>
+        <span class="brand-text">{{ activeStoreName || '按摩店' }}</span>
+      </div>
       <el-menu
         :default-active="route.path"
         router
         class="menu"
-        background-color="#1f2d3d"
-        text-color="#bfcbd9"
-        active-text-color="#ffd04b"
+        background-color="#1d2b3a"
+        text-color="#c7d0d9"
+        active-text-color="#ffffff"
       >
         <template v-for="item in visibleMenu" :key="item.path">
           <el-menu-item :index="item.path" :aria-label="item.title">
@@ -211,44 +214,104 @@ onMounted(async () => {
 }
 
 .aside {
-  background: #1f2d3d;
-  color: #bfcbd9;
+  background: #1d2b3a;
+  color: #c7d0d9;
   height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-shadow: 1px 0 0 rgba(0, 0, 0, 0.04);
 }
 .brand {
   flex: 0 0 60px;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   font-weight: 600;
-  font-size: 16px;
-  letter-spacing: 1px;
-  border-bottom: 1px solid #2c3e50;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  color: #ffffff;
   padding: 0 12px;
-  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.brand-icon {
+  font-size: 20px;
+  color: #5fbf8a;
+}
+.brand-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .menu {
   border-right: none;
   flex: 1 1 auto;
   overflow-y: auto;
   overflow-x: hidden;
+  padding: 8px 0;
 }
+.menu :deep(.el-menu-item) {
+  height: 44px;
+  line-height: 44px;
+  border-radius: 6px;
+  margin: 2px 10px;
+  padding-left: 14px !important;
+  transition: background-color .15s, color .15s;
+}
+.menu :deep(.el-menu-item:hover) {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  color: #ffffff !important;
+}
+.menu :deep(.el-menu-item.is-active) {
+  background-color: rgba(45, 106, 79, 0.85) !important;
+  color: #ffffff !important;
+  font-weight: 500;
+}
+.menu :deep(.el-menu-item .el-icon) {
+  font-size: 16px;
+  margin-right: 10px;
+}
+/* 自定义滚动条更克制 */
+.menu::-webkit-scrollbar { width: 6px; }
+.menu::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 3px; }
+.menu::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.16); }
+
 .header {
-  flex: 0 0 60px;
+  flex: 0 0 56px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fff;
-  border-bottom: 1px solid var(--el-border-color-light);
+  padding: 0 20px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  position: relative;
+  z-index: 2;
 }
-.header-left { display: flex; align-items: center; gap: 12px; }
-.page-title { font-weight: 500; font-size: 16px; }
-.header-right { display: flex; align-items: center; }
-.user { cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.header-left { display: flex; align-items: center; gap: 10px; }
+.page-title {
+  font-weight: 600;
+  font-size: 16px;
+  margin: 0;
+  color: #1f2937;
+}
+.header-right { display: flex; align-items: center; gap: 4px; }
+.user {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background-color .15s;
+  color: #374151;
+}
+.user:hover { background: var(--el-color-primary-light-9); }
+.user .el-icon { color: var(--el-color-primary); font-size: 18px; }
+
 .main {
+  --el-main-padding: 16px;
   background: #f5f7fa;
   flex: 1 1 auto;
   overflow: auto;
