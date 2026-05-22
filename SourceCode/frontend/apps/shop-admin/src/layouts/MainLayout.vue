@@ -186,7 +186,12 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.layout { min-height: 100vh; }
+/* 视口锁定：左侧导航 + 顶部头条都固定，只有内容区域 .main 自己滚动；
+   最外层不允许出现滚动条。 */
+.layout {
+  height: 100vh;
+  overflow: hidden;
+}
 
 /* 跳转链接：默认隐藏，键盘聚焦时显示，方便读屏与键盘用户跳过侧边栏 */
 .skip-link {
@@ -205,9 +210,16 @@ onMounted(async () => {
   outline: 2px solid #ffd04b;
 }
 
-.aside { background: #1f2d3d; color: #bfcbd9; }
+.aside {
+  background: #1f2d3d;
+  color: #bfcbd9;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 .brand {
-  height: 60px;
+  flex: 0 0 60px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -218,8 +230,14 @@ onMounted(async () => {
   padding: 0 12px;
   text-align: center;
 }
-.menu { border-right: none; }
+.menu {
+  border-right: none;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
 .header {
+  flex: 0 0 60px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -230,5 +248,9 @@ onMounted(async () => {
 .page-title { font-weight: 500; font-size: 16px; }
 .header-right { display: flex; align-items: center; }
 .user { cursor: pointer; display: flex; align-items: center; gap: 6px; }
-.main { background: #f5f7fa; }
+.main {
+  background: #f5f7fa;
+  flex: 1 1 auto;
+  overflow: auto;
+}
 </style>
