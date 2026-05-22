@@ -44,23 +44,53 @@
         @submit.prevent
       >
         <el-form-item label="套餐">
-          <el-radio-group v-model="payForm.planId" aria-label="选择订阅套餐">
-            <el-radio
+          <div
+            class="plan-grid"
+            role="radiogroup"
+            aria-label="选择订阅套餐"
+          >
+            <div
               v-for="p in plans"
               :key="p.id"
-              :value="p.id"
-              border
-              style="margin: 6px 12px 6px 0; min-width: 280px"
+              class="plan-card"
+              :class="{
+                active: payForm.planId === p.id,
+                current: status?.currentPlanId === p.id
+              }"
+              role="radio"
+              tabindex="0"
+              :aria-checked="payForm.planId === p.id"
+              :aria-label="`${p.name}，每年 ${p.annualPrice} 元，包含 ${p.maxStores} 个门店和 ${p.maxStaff} 名员工`"
+              @click="payForm.planId = p.id"
+              @keydown.enter.prevent="payForm.planId = p.id"
+              @keydown.space.prevent="payForm.planId = p.id"
             >
-              <div class="plan-radio">
-                <div class="plan-name">{{ p.name }}</div>
-                <div class="plan-meta">
-                  ￥{{ p.annualPrice.toFixed(0) }} / 年 ·
-                  门店 {{ p.maxStores }} · 员工 {{ p.maxStaff }}
-                </div>
+              <div v-if="status?.currentPlanId === p.id" class="plan-badge current-badge">当前套餐</div>
+              <el-icon v-if="payForm.planId === p.id" class="plan-check"><CircleCheckFilled /></el-icon>
+
+              <div class="plan-card-name">{{ p.name }}</div>
+              <div class="plan-card-price">
+                <span class="plan-price-symbol">￥</span>
+                <span class="plan-price-num">{{ Math.round(p.annualPrice) }}</span>
+                <span class="plan-price-unit">/ 年</span>
               </div>
-            </el-radio>
-          </el-radio-group>
+
+              <ul class="plan-card-specs">
+                <li>
+                  <el-icon class="spec-icon"><OfficeBuilding /></el-icon>
+                  <span>最多 <strong>{{ p.maxStores }}</strong> 个门店</span>
+                </li>
+                <li>
+                  <el-icon class="spec-icon"><UserFilled /></el-icon>
+                  <span>最多 <strong>{{ p.maxStaff }}</strong> 名员工</span>
+                </li>
+                <li>
+                  <el-icon class="spec-icon"><Tickets /></el-icon>
+                  <span>套餐编码：{{ p.code }}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
           <el-empty v-if="!plansLoading && plans.length === 0" description="暂无可购套餐，请联系平台方" :image-size="60" />
         </el-form-item>
 
@@ -172,6 +202,12 @@
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import dayjs from 'dayjs';
 import { ElMessage } from 'element-plus';
+import {
+  CircleCheckFilled,
+  OfficeBuilding,
+  Tickets,
+  UserFilled
+} from '@element-plus/icons-vue';
 import { subscriptionsApi, type SubscriptionPaymentResp, type SubscriptionPlan } from '@/api/modules';
 import type { SubscriptionStatus } from '@/api/types';
 
@@ -318,9 +354,104 @@ onUnmounted(stopPolling);
 
 <style scoped>
 .page { padding-bottom: 24px; }
-.plan-radio { display: flex; flex-direction: column; line-height: 1.4; }
-.plan-name { font-weight: 600; font-size: 14px; }
-.plan-meta { font-size: 12px; color: var(--el-text-color-secondary); }
 .pay-body { padding: 4px 0; }
 .pay-line { margin: 6px 0; }
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  width: 100%;
+}
+.plan-card {
+  position: relative;
+  padding: 18px 18px 14px;
+  border: 1.5px solid var(--el-border-color);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+  outline: none;
+}
+.plan-card:hover {
+  border-color: var(--el-color-primary-light-5);
+  box-shadow: 0 2px 12px rgba(45, 106, 79, 0.08);
+}
+.plan-card:focus-visible {
+  border-color: var(--el-color-primary);
+  box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.18);
+}
+.plan-card.active {
+  border-color: var(--el-color-primary);
+  background: linear-gradient(180deg, #f3faf6 0%, #ffffff 100%);
+  box-shadow: 0 4px 16px rgba(45, 106, 79, 0.12);
+}
+.plan-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 2px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+.current-badge {
+  background: var(--el-color-info-light-8);
+  color: var(--el-color-info);
+  border: 1px solid var(--el-color-info-light-5);
+}
+.plan-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 22px;
+  color: var(--el-color-primary);
+}
+.plan-card.current .plan-check { right: 92px; }
+.plan-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin-bottom: 10px;
+}
+.plan-card-price {
+  display: flex;
+  align-items: baseline;
+  color: var(--el-color-primary);
+  margin-bottom: 14px;
+}
+.plan-price-symbol { font-size: 16px; font-weight: 600; margin-right: 2px; }
+.plan-price-num {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+.plan-price-unit {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  margin-left: 6px;
+}
+.plan-card-specs {
+  list-style: none;
+  margin: 0;
+  padding: 12px 0 0;
+  border-top: 1px dashed var(--el-border-color-lighter);
+}
+.plan-card-specs li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+  line-height: 1.9;
+}
+.plan-card-specs strong {
+  color: var(--el-text-color-primary);
+  font-weight: 600;
+}
+.spec-icon {
+  color: var(--el-color-primary);
+  font-size: 14px;
+}
 </style>

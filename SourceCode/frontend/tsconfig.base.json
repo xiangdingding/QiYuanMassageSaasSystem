@@ -10,6 +10,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": []
+    "types": [],
+    // 真正的打包由 Vite 完成；vue-tsc 只做类型检查，不要把 .js 编译到 src/，
+    // 否则 src/ 下会出现陈旧的 .js 残留盖掉 .ts 源。
+    "noEmit": true
   }
 }
