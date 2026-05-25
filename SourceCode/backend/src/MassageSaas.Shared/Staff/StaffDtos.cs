@@ -15,7 +15,13 @@ public record StaffDto(
     string TechnicianLevel,
     string? BlindCertNo,
     int MaxRoundsPerDay,
-    string? Specialties);
+    string? Specialties,
+    string? IdCardNo = null,
+    DateTime? BirthDate = null,
+    string? EmergencyContactName = null,
+    string? EmergencyContactPhone = null,
+    DateTime? HireDate = null,
+    DateTime? TerminationDate = null);
 
 public record CreateStaffRequest(
     long StoreId,
@@ -29,7 +35,13 @@ public record CreateStaffRequest(
     string? TechnicianLevel = null,
     string? BlindCertNo = null,
     int MaxRoundsPerDay = 0,
-    string? Specialties = null);
+    string? Specialties = null,
+    string? IdCardNo = null,
+    DateTime? BirthDate = null,
+    string? EmergencyContactName = null,
+    string? EmergencyContactPhone = null,
+    DateTime? HireDate = null,
+    DateTime? TerminationDate = null);
 
 public record UpdateStaffRequest(
     long StoreId,
@@ -42,7 +54,13 @@ public record UpdateStaffRequest(
     string? TechnicianLevel = null,
     string? BlindCertNo = null,
     int MaxRoundsPerDay = 0,
-    string? Specialties = null);
+    string? Specialties = null,
+    string? IdCardNo = null,
+    DateTime? BirthDate = null,
+    string? EmergencyContactName = null,
+    string? EmergencyContactPhone = null,
+    DateTime? HireDate = null,
+    DateTime? TerminationDate = null);
 
 public record ResetPasswordRequest(string NewPassword);
 

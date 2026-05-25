@@ -49,6 +49,7 @@ export interface ServiceItem {
   memberPrice: number;
   description?: string | null;
   isActive: boolean;
+  sort?: number;
 }
 
 export interface Member {
@@ -172,6 +173,13 @@ export interface Staff {
   isActive: boolean;
   lastLoginAt?: string | null;
   createdAt: string;
+  idCardNo?: string | null;
+  birthDate?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
+  hireDate?: string | null;
+  terminationDate?: string | null;
+  specialties?: string | null;
 }
 
 export interface QueueRow {

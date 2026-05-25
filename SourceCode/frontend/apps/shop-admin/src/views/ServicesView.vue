@@ -6,8 +6,9 @@
         <el-button type="primary" @click="openCreate">新建项目</el-button>
       </div>
       <el-table :data="rows" v-loading="loading" stripe style="margin-top: 12px">
-        <el-table-column prop="code" label="编码" width="100" />
-        <el-table-column prop="name" label="名称" min-width="180" />
+        <el-table-column prop="sort" label="排序" width="80" sortable />
+        <el-table-column prop="code" label="编码" width="100" sortable />
+        <el-table-column prop="name" label="名称" min-width="180" sortable />
         <el-table-column prop="durationMinutes" label="时长(分)" width="90" />
         <el-table-column label="原价" width="100">
           <template #default="{ row }">¥{{ row.price.toFixed(2) }}</template>
@@ -36,7 +37,7 @@
     <el-dialog v-model="formOpen" :title="formMode === 'create' ? '新建服务项目' : '编辑服务项目'" width="480px">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
         <el-form-item label="编码" prop="code">
-          <el-input v-model="form.code" :disabled="formMode === 'edit'" />
+          <el-input v-model="form.code" />
         </el-form-item>
         <el-form-item label="名称" prop="name">
           <el-input v-model="form.name" />
@@ -45,16 +46,20 @@
           <el-input-number v-model="form.durationMinutes" :min="1" :max="600" />
         </el-form-item>
         <el-form-item label="原价" prop="price">
-          <el-input-number v-model="form.price" :min="0" :precision="2" :step="10" />
+          <el-input-number v-model="form.price" :min="0" :precision="2" :step="10" :value-on-clear="null" placeholder="请输入" />
         </el-form-item>
         <el-form-item label="会员价" prop="memberPrice">
-          <el-input-number v-model="form.memberPrice" :min="0" :precision="2" :step="10" />
+          <el-input-number v-model="form.memberPrice" :min="0" :precision="2" :step="10" :value-on-clear="null" placeholder="请输入" />
         </el-form-item>
         <el-form-item label="说明">
           <el-input v-model="form.description" type="textarea" :rows="2" />
         </el-form-item>
         <el-form-item label="启用">
           <el-switch v-model="form.isActive" />
+        </el-form-item>
+        <el-form-item label="排序" prop="sort">
+          <el-input-number v-model="form.sort" :min="0" :precision="0" :step="1" />
+          <span class="muted" style="margin-left:8px">值越小越靠前</span>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -85,15 +90,18 @@ const form = reactive({
   code: '',
   name: '',
   durationMinutes: 60,
-  price: 0,
-  memberPrice: 0,
+  price: null as number | null,
+  memberPrice: null as number | null,
   description: '',
-  isActive: true
+  isActive: true,
+  sort: 0
 });
 const rules: FormRules = {
   code: [{ required: true, message: '请输入编码', trigger: 'blur' }],
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
-  durationMinutes: [{ required: true, message: '请输入时长', trigger: 'blur' }]
+  durationMinutes: [{ required: true, message: '请输入时长', trigger: 'blur' }],
+  price: [{ required: true, type: 'number', message: '请输入原价', trigger: 'blur' }],
+  memberPrice: [{ required: true, type: 'number', message: '请输入会员价', trigger: 'blur' }]
 };
 
 async function reload() {
@@ -108,7 +116,9 @@ async function reload() {
 function openCreate() {
   formMode.value = 'create';
   editingId.value = null;
-  Object.assign(form, { code: '', name: '', durationMinutes: 60, price: 0, memberPrice: 0, description: '', isActive: true });
+  // 默认排序号 = 当前列表中最大排序号 + 1（含已停用项），保证新建项排到最后
+  const maxSort = rows.value.reduce((m, r) => Math.max(m, r.sort ?? 0), 0);
+  Object.assign(form, { code: '', name: '', durationMinutes: 60, price: null, memberPrice: null, description: '', isActive: true, sort: maxSort + 1 });
   formOpen.value = true;
 }
 
@@ -122,7 +132,8 @@ function openEdit(row: ServiceItem) {
     price: row.price,
     memberPrice: row.memberPrice,
     description: row.description ?? '',
-    isActive: row.isActive
+    isActive: row.isActive,
+    sort: row.sort ?? 0
   });
   formOpen.value = true;
 }
@@ -136,8 +147,7 @@ async function save() {
     if (formMode.value === 'create') {
       await servicesApi.create({ ...form });
     } else if (editingId.value != null) {
-      const { code: _code, ...rest } = form;
-      await servicesApi.update(editingId.value, rest);
+      await servicesApi.update(editingId.value, { ...form });
     }
     ElMessage.success('已保存');
     formOpen.value = false;
@@ -160,4 +170,5 @@ onMounted(reload);
 <style scoped>
 .page { padding-bottom: 24px; }
 .toolbar { display: flex; gap: 12px; align-items: center; }
+.muted { color: var(--el-text-color-secondary); font-size: 12px; }
 </style>

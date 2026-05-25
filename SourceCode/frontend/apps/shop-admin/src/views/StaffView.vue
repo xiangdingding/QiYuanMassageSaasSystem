@@ -66,42 +66,111 @@
       />
     </el-card>
 
-    <el-dialog v-model="formOpen" :title="formMode === 'create' ? '添加员工' : '编辑员工'" width="480px">
+    <el-dialog v-model="formOpen" :title="formMode === 'create' ? '添加员工' : '编辑员工'" width="820px" top="6vh">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
-        <el-form-item label="账号" prop="username">
-          <el-input v-model="form.username" :disabled="formMode === 'edit'" />
-        </el-form-item>
-        <el-form-item v-if="formMode === 'create'" label="初始密码" prop="password">
-          <el-input v-model="form.password" type="password" show-password />
-        </el-form-item>
-        <el-form-item label="姓名">
-          <el-input v-model="form.realName" />
-        </el-form-item>
-        <el-form-item label="手机号">
-          <el-input v-model="form.phone" />
-        </el-form-item>
-        <el-form-item label="工号">
-          <el-input-number v-model="form.employeeNo" :min="0" :precision="0" />
-        </el-form-item>
-        <el-form-item label="角色" prop="role">
-          <el-select v-model="form.role" style="width: 100%">
-            <el-option label="店主" value="ShopOwner" />
-            <el-option label="店长" value="StoreManager" />
-            <el-option label="收银员" value="Cashier" />
-            <el-option label="技师" value="Technician" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="所属门店" prop="storeId">
-          <el-select v-model="form.storeId" style="width: 100%">
-            <el-option v-for="s in appStore.stores" :key="s.id" :label="s.name" :value="s.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="盲人技师">
-          <el-switch v-model="form.isBlind" />
-        </el-form-item>
-        <el-form-item v-if="formMode === 'edit'" label="状态">
-          <el-switch v-model="form.isActive" active-text="在职" inactive-text="停用" />
-        </el-form-item>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="工号">
+              <el-input-number v-model="form.employeeNo" :min="0" :precision="0" style="width:100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="手机号" prop="phone">
+              <el-input v-model="form.phone" placeholder="11 位手机号，用作登录账号" />
+            </el-form-item>
+          </el-col>
+
+          <el-col v-if="formMode === 'create'" :span="12">
+            <el-form-item label="初始密码" prop="password">
+              <el-input v-model="form.password" type="password" show-password placeholder="至少 6 位" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="姓名" prop="realName">
+              <el-input v-model="form.realName" />
+            </el-form-item>
+          </el-col>
+
+          <el-col :span="12">
+            <el-form-item label="身份证号" prop="idCardNo" required>
+              <el-input v-model="form.idCardNo" placeholder="18 位身份证号" maxlength="18" @input="onIdCardChange" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="出生日期">
+              <el-date-picker v-model="form.birthDate" type="date" value-format="YYYY-MM-DD" placeholder="可由身份证号自动带出" style="width:100%" />
+            </el-form-item>
+          </el-col>
+
+          <el-col :span="12">
+            <el-form-item label="紧急联系人">
+              <el-input v-model="form.emergencyContactName" placeholder="姓名" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="联系人电话">
+              <el-input v-model="form.emergencyContactPhone" placeholder="紧急联系电话" />
+            </el-form-item>
+          </el-col>
+
+          <el-col :span="12">
+            <el-form-item label="入职日期">
+              <el-date-picker v-model="form.hireDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="离职日期">
+              <el-date-picker v-model="form.terminationDate" type="date" value-format="YYYY-MM-DD" placeholder="在职留空" style="width:100%" />
+            </el-form-item>
+          </el-col>
+
+          <el-col :span="12">
+            <el-form-item label="角色" prop="role">
+              <el-select v-model="form.role" style="width:100%">
+                <el-option label="店主" value="ShopOwner" />
+                <el-option label="店长" value="StoreManager" />
+                <el-option label="收银员" value="Cashier" />
+                <el-option label="技师" value="Technician" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="所属门店" prop="storeId">
+              <el-select v-model="form.storeId" style="width:100%">
+                <el-option v-for="s in appStore.stores" :key="s.id" :label="s.name" :value="s.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+
+          <el-col :span="12">
+            <el-form-item label="盲人技师">
+              <el-switch v-model="form.isBlind" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="状态">
+              <el-switch v-model="form.isActive" active-text="在职" inactive-text="停用" />
+            </el-form-item>
+          </el-col>
+
+          <el-col :span="24">
+            <el-form-item label="专长">
+              <div class="spec-tags" role="group" aria-label="选择专长（可多选）">
+                <el-check-tag
+                  v-for="opt in SPECIALTY_OPTIONS"
+                  :key="opt"
+                  :checked="selectedSpecialties.includes(opt)"
+                  class="spec-tag"
+                  :aria-label="`专长 ${opt}${selectedSpecialties.includes(opt) ? '，已选中' : ''}`"
+                  @change="toggleSpecialty(opt)"
+                >
+                  {{ opt }}
+                </el-check-tag>
+              </div>
+              <span class="muted" style="margin-left:4px">可多选，便于排班和派单</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
       <template #footer>
         <el-button @click="formOpen = false">取消</el-button>
@@ -212,7 +281,6 @@ const formMode = ref<'create' | 'edit'>('create');
 const editingId = ref<number | null>(null);
 const formRef = ref<FormInstance>();
 const form = reactive({
-  username: '',
   password: '',
   realName: '',
   phone: '',
@@ -220,14 +288,68 @@ const form = reactive({
   role: 'Technician' as 'ShopOwner' | 'StoreManager' | 'Cashier' | 'Technician',
   storeId: null as number | null,
   isBlind: false,
-  isActive: true
+  isActive: true,
+  idCardNo: '',
+  birthDate: '' as string | null,
+  emergencyContactName: '',
+  emergencyContactPhone: '',
+  hireDate: '' as string | null,
+  terminationDate: '' as string | null,
+  specialties: ''
 });
+
+/// 可选专长清单。后续若需要按租户自定义，可改成接口拉取。
+const SPECIALTY_OPTIONS = [
+  '肩颈', '足疗', '头疗', '推拿', '按摩', '艾灸', '拔罐', '刮痧',
+  '中医理疗', '泰式按摩', '精油 SPA', '产后修复', '小儿推拿', '盲人按摩'
+];
+
+const selectedSpecialties = computed(() =>
+  form.specialties ? form.specialties.split(',').map((s) => s.trim()).filter(Boolean) : []
+);
+
+function toggleSpecialty(opt: string) {
+  const set = new Set(selectedSpecialties.value);
+  if (set.has(opt)) set.delete(opt); else set.add(opt);
+  form.specialties = Array.from(set).join(',');
+}
 const rules: FormRules = {
-  username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
+  phone: [
+    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { pattern: /^\d{11}$/, message: '请输入 11 位手机号', trigger: 'blur' }
+  ],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }, { min: 6, message: '至少 6 位', trigger: 'blur' }],
+  realName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+  idCardNo: [
+    { required: true, message: '请输入身份证号', trigger: 'blur' },
+    {
+      validator: (_r, val: string, cb) => {
+        if (!val) return cb();
+        if (!/^\d{17}[\dXx]$/.test(val)) return cb(new Error('身份证号格式不正确（18 位）'));
+        cb();
+      },
+      trigger: 'blur'
+    }
+  ],
   role: [{ required: true, message: '请选择角色', trigger: 'change' }],
   storeId: [{ required: true, message: '请选择门店', trigger: 'change' }]
 };
+
+/// 身份证 6..13 位 = YYYYMMDD → 自动写入出生日期
+function onIdCardChange(v: string) {
+  if (!v || v.length < 14) return;
+  if (!/^\d{17}[\dXx]$|^\d{14,}/.test(v)) return;
+  const y = v.slice(6, 10);
+  const m = v.slice(10, 12);
+  const d = v.slice(12, 14);
+  if (/^\d{4}$/.test(y) && /^\d{2}$/.test(m) && /^\d{2}$/.test(d)) {
+    const mm = parseInt(m, 10);
+    const dd = parseInt(d, 10);
+    if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+      form.birthDate = `${y}-${m}-${d}`;
+    }
+  }
+}
 
 const pwdOpen = ref(false);
 const pwdTarget = ref<Staff | null>(null);
@@ -271,10 +393,14 @@ function openCreate() {
   formMode.value = 'create';
   editingId.value = null;
   Object.assign(form, {
-    username: '', password: '', realName: '', phone: '',
+    password: '', realName: '', phone: '',
     employeeNo: null, role: 'Technician',
     storeId: appStore.activeStoreId,
-    isBlind: false, isActive: true
+    isBlind: false, isActive: true,
+    idCardNo: '', birthDate: '',
+    emergencyContactName: '', emergencyContactPhone: '',
+    hireDate: '', terminationDate: '',
+    specialties: ''
   });
   formOpen.value = true;
 }
@@ -283,7 +409,6 @@ function openEdit(row: Staff) {
   formMode.value = 'edit';
   editingId.value = row.id;
   Object.assign(form, {
-    username: row.username,
     password: '',
     realName: row.realName ?? '',
     phone: row.phone ?? '',
@@ -291,7 +416,14 @@ function openEdit(row: Staff) {
     role: row.role as any,
     storeId: row.storeId ?? null,
     isBlind: row.isBlind,
-    isActive: row.isActive
+    isActive: row.isActive,
+    idCardNo: row.idCardNo ?? '',
+    birthDate: row.birthDate ?? '',
+    emergencyContactName: row.emergencyContactName ?? '',
+    emergencyContactPhone: row.emergencyContactPhone ?? '',
+    hireDate: row.hireDate ?? '',
+    terminationDate: row.terminationDate ?? '',
+    specialties: row.specialties ?? ''
   });
   formOpen.value = true;
 }
@@ -304,14 +436,21 @@ async function save() {
   try {
     if (formMode.value === 'create') {
       await staffApi.create({
-        username: form.username,
+        username: form.phone, // 用手机号当登录账号
         password: form.password,
         realName: form.realName || null,
         phone: form.phone || null,
         employeeNo: form.employeeNo,
         role: form.role,
         storeId: form.storeId,
-        isBlind: form.isBlind
+        isBlind: form.isBlind,
+        idCardNo: form.idCardNo || null,
+        birthDate: form.birthDate || null,
+        emergencyContactName: form.emergencyContactName || null,
+        emergencyContactPhone: form.emergencyContactPhone || null,
+        hireDate: form.hireDate || null,
+        terminationDate: form.terminationDate || null,
+        specialties: form.specialties || null
       });
     } else if (editingId.value != null) {
       await staffApi.update(editingId.value, {
@@ -321,7 +460,14 @@ async function save() {
         role: form.role,
         storeId: form.storeId,
         isBlind: form.isBlind,
-        isActive: form.isActive
+        isActive: form.isActive,
+        idCardNo: form.idCardNo || null,
+        birthDate: form.birthDate || null,
+        emergencyContactName: form.emergencyContactName || null,
+        emergencyContactPhone: form.emergencyContactPhone || null,
+        hireDate: form.hireDate || null,
+        terminationDate: form.terminationDate || null,
+        specialties: form.specialties || null
       });
     }
     ElMessage.success('已保存');
@@ -422,4 +568,12 @@ onMounted(async () => {
 .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .history { margin-top: 16px; }
 .history h4 { margin: 8px 0; }
+.muted { color: var(--el-text-color-secondary); font-size: 12px; }
+.spec-tags { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+.spec-tag {
+  font-size: 14px;
+  padding: 6px 14px;
+  cursor: pointer;
+  user-select: none;
+}
 </style>

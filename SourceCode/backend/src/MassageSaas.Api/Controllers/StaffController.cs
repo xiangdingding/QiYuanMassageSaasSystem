@@ -55,7 +55,9 @@ public class StaffController : ControllerBase
                 u.Id, u.StoreId, u.Username, u.RealName, u.Phone,
                 u.Role.ToString(), u.EmployeeNo, u.IsBlind, u.IsActive,
                 u.LastLoginAt, u.CreatedAt,
-                u.TechnicianLevel.ToString(), u.BlindCertNo, u.MaxRoundsPerDay, u.Specialties))
+                u.TechnicianLevel.ToString(), u.BlindCertNo, u.MaxRoundsPerDay, u.Specialties,
+                u.IdCardNo, u.BirthDate, u.EmergencyContactName, u.EmergencyContactPhone,
+                u.HireDate, u.TerminationDate))
             .ToListAsync(ct);
 
         return Ok(new PagedResult<StaffDto>(items, total, pq.SafePage, pq.SafePageSize));
@@ -98,7 +100,13 @@ public class StaffController : ControllerBase
             TechnicianLevel = ParseTechLevel(req.TechnicianLevel),
             BlindCertNo = req.BlindCertNo,
             MaxRoundsPerDay = req.MaxRoundsPerDay,
-            Specialties = req.Specialties
+            Specialties = req.Specialties,
+            IdCardNo = req.IdCardNo?.Trim(),
+            BirthDate = req.BirthDate,
+            EmergencyContactName = req.EmergencyContactName?.Trim(),
+            EmergencyContactPhone = req.EmergencyContactPhone?.Trim(),
+            HireDate = req.HireDate,
+            TerminationDate = req.TerminationDate
         };
         _db.Users.Add(user);
         await _db.SaveChangesAsync(ct);
@@ -113,7 +121,9 @@ public class StaffController : ControllerBase
         u.Id, u.StoreId, u.Username, u.RealName, u.Phone,
         u.Role.ToString(), u.EmployeeNo, u.IsBlind, u.IsActive,
         u.LastLoginAt, u.CreatedAt,
-        u.TechnicianLevel.ToString(), u.BlindCertNo, u.MaxRoundsPerDay, u.Specialties);
+        u.TechnicianLevel.ToString(), u.BlindCertNo, u.MaxRoundsPerDay, u.Specialties,
+        u.IdCardNo, u.BirthDate, u.EmergencyContactName, u.EmergencyContactPhone,
+        u.HireDate, u.TerminationDate);
 
     [HttpPut("{id:long}")]
     public async Task<ActionResult<StaffDto>> Update(long id, [FromBody] UpdateStaffRequest req, CancellationToken ct)
@@ -134,6 +144,12 @@ public class StaffController : ControllerBase
         user.BlindCertNo = req.BlindCertNo;
         user.MaxRoundsPerDay = req.MaxRoundsPerDay;
         user.Specialties = req.Specialties;
+        user.IdCardNo = req.IdCardNo?.Trim();
+        user.BirthDate = req.BirthDate;
+        user.EmergencyContactName = req.EmergencyContactName?.Trim();
+        user.EmergencyContactPhone = req.EmergencyContactPhone?.Trim();
+        user.HireDate = req.HireDate;
+        user.TerminationDate = req.TerminationDate;
         await _db.SaveChangesAsync(ct);
 
         return Ok(MapDto(user));

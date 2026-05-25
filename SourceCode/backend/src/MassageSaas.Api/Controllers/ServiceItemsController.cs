@@ -30,8 +30,8 @@ public class ServiceItemsController : ControllerBase
         var q = _db.ServiceItems.AsNoTracking();
         if (!includeInactive) q = q.Where(s => s.IsActive);
 
-        var data = await q.OrderBy(s => s.Code)
-            .Select(s => new ServiceItemDto(s.Id, s.Code, s.Name, s.DurationMinutes, s.Price, s.MemberPrice, s.PriceJunior, s.PriceMaster, s.Description, s.IsActive))
+        var data = await q.OrderBy(s => s.Sort).ThenBy(s => s.Code)
+            .Select(s => new ServiceItemDto(s.Id, s.Code, s.Name, s.DurationMinutes, s.Price, s.MemberPrice, s.PriceJunior, s.PriceMaster, s.Description, s.IsActive, s.Sort))
             .ToListAsync(ct);
         return Ok(data);
     }
@@ -41,7 +41,7 @@ public class ServiceItemsController : ControllerBase
     {
         var s = await _db.ServiceItems.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (s is null) return NotFound();
-        return Ok(new ServiceItemDto(s.Id, s.Code, s.Name, s.DurationMinutes, s.Price, s.MemberPrice, s.PriceJunior, s.PriceMaster, s.Description, s.IsActive));
+        return Ok(new ServiceItemDto(s.Id, s.Code, s.Name, s.DurationMinutes, s.Price, s.MemberPrice, s.PriceJunior, s.PriceMaster, s.Description, s.IsActive, s.Sort));
     }
 
     [HttpPost]
@@ -66,12 +66,13 @@ public class ServiceItemsController : ControllerBase
             PriceJunior = req.PriceJunior,
             PriceMaster = req.PriceMaster,
             Description = req.Description,
-            IsActive = req.IsActive
+            IsActive = req.IsActive,
+            Sort = req.Sort
         };
         _db.ServiceItems.Add(entity);
         await _db.SaveChangesAsync(ct);
         return CreatedAtAction(nameof(Get), new { id = entity.Id },
-            new ServiceItemDto(entity.Id, entity.Code, entity.Name, entity.DurationMinutes, entity.Price, entity.MemberPrice, entity.PriceJunior, entity.PriceMaster, entity.Description, entity.IsActive));
+            new ServiceItemDto(entity.Id, entity.Code, entity.Name, entity.DurationMinutes, entity.Price, entity.MemberPrice, entity.PriceJunior, entity.PriceMaster, entity.Description, entity.IsActive, entity.Sort));
     }
 
     [HttpPut("{id:long}")]
@@ -81,6 +82,18 @@ public class ServiceItemsController : ControllerBase
         var s = await _db.ServiceItems.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (s is null) return NotFound();
 
+        // 编码可改：传入非空时校验租户内唯一
+        if (!string.IsNullOrWhiteSpace(req.Code))
+        {
+            var newCode = req.Code.Trim();
+            if (newCode != s.Code)
+            {
+                var dup = await _db.ServiceItems.AnyAsync(x => x.Id != id && x.Code == newCode, ct);
+                if (dup) return Conflict(new { code = "DuplicateCode", message = $"编码已存在：{newCode}" });
+                s.Code = newCode;
+            }
+        }
+
         s.Name = req.Name.Trim();
         s.DurationMinutes = req.DurationMinutes;
         s.Price = req.Price;
@@ -89,8 +102,9 @@ public class ServiceItemsController : ControllerBase
         s.PriceMaster = req.PriceMaster;
         s.Description = req.Description;
         s.IsActive = req.IsActive;
+        s.Sort = req.Sort;
         await _db.SaveChangesAsync(ct);
-        return Ok(new ServiceItemDto(s.Id, s.Code, s.Name, s.DurationMinutes, s.Price, s.MemberPrice, s.PriceJunior, s.PriceMaster, s.Description, s.IsActive));
+        return Ok(new ServiceItemDto(s.Id, s.Code, s.Name, s.DurationMinutes, s.Price, s.MemberPrice, s.PriceJunior, s.PriceMaster, s.Description, s.IsActive, s.Sort));
     }
 
     [HttpDelete("{id:long}")]

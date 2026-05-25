@@ -64,8 +64,8 @@
         </template>
 
         <el-radio-group v-model="mode" class="mode-switch" aria-label="收银模式" @change="onModeChange">
-          <el-radio-button value="walkin">散客收银</el-radio-button>
           <el-radio-button value="member">会员收银</el-radio-button>
+          <el-radio-button value="walkin">散客收银</el-radio-button>
         </el-radio-group>
 
         <template v-if="mode === 'member'">
@@ -280,7 +280,7 @@ const memberCards = ref<Member[]>([]);
 const selectedCardIds = ref<number[]>([]);
 const memberKeyword = ref('');
 /// 收银模式：散客 = 用标准价；会员 = 用会员价（折扣已在充值/开卡时兑现，结账不再打折）
-const mode = ref<'walkin' | 'member'>('walkin');
+const mode = ref<'walkin' | 'member'>('member');
 
 /// 主卡：勾选列表中的第一张；用作 order.memberId
 const primaryMember = computed<Member | null>(() => {
@@ -506,7 +506,7 @@ async function resetAll() {
   }
   cart.splice(0, cart.length);
   clearMember();
-  mode.value = 'walkin';
+  mode.value = 'member';
   lastOrder.value = null;
 }
 

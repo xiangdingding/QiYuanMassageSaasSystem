@@ -28,4 +28,17 @@ public class User : BaseEntity, ITenantScoped
     public int MaxRoundsPerDay { get; set; }
     /// <summary>专长，逗号分隔（如 "肩颈,足疗,头疗"），便于派单。</summary>
     public string? Specialties { get; set; }
+
+    /// <summary>身份证号（18 位中国大陆居民身份证）。</summary>
+    public string? IdCardNo { get; set; }
+    /// <summary>出生日期，可由身份证号 6..13 位自动推导。</summary>
+    public DateTime? BirthDate { get; set; }
+    /// <summary>紧急联系人姓名。</summary>
+    public string? EmergencyContactName { get; set; }
+    /// <summary>紧急联系人电话。</summary>
+    public string? EmergencyContactPhone { get; set; }
+    /// <summary>入职日期。</summary>
+    public DateTime? HireDate { get; set; }
+    /// <summary>离职日期；null 表示在职。</summary>
+    public DateTime? TerminationDate { get; set; }
 }

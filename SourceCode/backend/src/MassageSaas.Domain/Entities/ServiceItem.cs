@@ -15,6 +15,9 @@ public class ServiceItem : BaseEntity, ITenantScoped
     public string? Description { get; set; }
     public bool IsActive { get; set; } = true;
 
+    /// <summary>显示排序：值越小越靠前；并列时按 Code 字母序。</summary>
+    public int Sort { get; set; }
+
     /// <summary>初级技师做该服务的价格；null 表示一价通吃（取 Price）。</summary>
     public decimal? PriceJunior { get; set; }
     /// <summary>高级（老师傅）做该服务的价格；null 表示一价通吃。</summary>

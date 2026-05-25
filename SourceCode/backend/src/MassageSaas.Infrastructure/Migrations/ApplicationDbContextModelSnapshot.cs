@@ -1601,6 +1601,9 @@ namespace MassageSaas.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("Sort")
+                        .HasColumnType("int");
+
                     b.Property<long?>("TenantId")
                         .HasColumnType("bigint");
 
@@ -2171,6 +2174,9 @@ namespace MassageSaas.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<DateTime?>("BirthDate")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("BlindCertNo")
                         .HasMaxLength(64)
                         .HasColumnType("varchar(64)");
@@ -2178,8 +2184,20 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<string>("EmergencyContactName")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("EmergencyContactPhone")
+                        .HasColumnType("longtext");
+
                     b.Property<int?>("EmployeeNo")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("HireDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("IdCardNo")
+                        .HasColumnType("longtext");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
@@ -2224,6 +2242,9 @@ namespace MassageSaas.Infrastructure.Migrations
 
                     b.Property<long?>("TenantId")
                         .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("TerminationDate")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
