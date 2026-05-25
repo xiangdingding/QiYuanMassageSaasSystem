@@ -77,6 +77,10 @@ export interface Member {
   memberTypeId?: number | null;
   memberTypeName?: string | null;
   memberTypeKind?: 'StoredValue' | 'CountBased' | null;
+  /** 次卡专属：累计购买次数（含赠送），非次卡为 null */
+  totalCount?: number | null;
+  /** 次卡专属：剩余次数，非次卡为 null */
+  remainCount?: number | null;
 }
 
 export interface MemberPhoneGroup {

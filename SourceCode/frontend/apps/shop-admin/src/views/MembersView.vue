@@ -41,6 +41,15 @@
               <el-table-column label="消费金额" width="110">
                 <template #default="{ row: c }">¥{{ c.totalConsumed.toFixed(2) }}</template>
               </el-table-column>
+              <el-table-column label="充值次数" width="140">
+                <template #default="{ row: c }">
+                  <template v-if="c.memberTypeKind === 'CountBased'">
+                    <strong>{{ c.totalCount ?? 0 }}</strong> 次
+                    <span class="muted" style="margin-left:4px">剩 {{ c.remainCount ?? 0 }} 次</span>
+                  </template>
+                  <span v-else class="muted">—</span>
+                </template>
+              </el-table-column>
               <el-table-column label="折扣" width="80">
                 <template #default="{ row: c }">
                   <el-tag v-if="c.discount < 1" size="small" type="warning">{{ (c.discount * 10).toFixed(1) }}折</el-tag>
@@ -260,6 +269,16 @@
           </el-form-item>
         </template>
 
+        <el-form-item v-if="formMode === 'create'" label="支付来源" prop="payMethod" required>
+          <el-radio-group v-model="form.payMethod">
+            <el-radio-button value="Wechat">微信</el-radio-button>
+            <el-radio-button value="Alipay">支付宝</el-radio-button>
+            <el-radio-button value="BankCard">银行卡</el-radio-button>
+            <el-radio-button value="Cash">现金</el-radio-button>
+            <el-radio-button value="Other">其它</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+
         <el-form-item label="折扣" prop="discount">
           <el-input-number
             v-model="form.discount"
@@ -267,10 +286,10 @@
             :max="1"
             :step="0.05"
             :precision="2"
-            :disabled="formMode === 'create' && !!selectedCreateType"
+            :disabled="formMode === 'create'"
           />
           <span class="muted" style="margin-left: 8px">
-            <template v-if="formMode === 'create' && selectedCreateType">由会员类型决定</template>
+            <template v-if="formMode === 'create'">由会员类型决定，不可手改</template>
             <template v-else>如 0.85 = 8.5 折</template>
           </span>
         </el-form-item>
@@ -295,21 +314,101 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="rechargeOpen" :title="`充值：${rechargeTarget?.cardNo}`" width="420px">
-      <el-form :model="rcForm" label-width="100px">
+    <el-dialog v-model="rechargeOpen" :title="`充值：${rechargeTarget?.cardNo}`" width="460px">
+      <el-form :model="rcForm" label-width="100px" v-loading="typesLoading">
         <el-form-item label="当前余额">¥ {{ rechargeTarget?.balance.toFixed(2) ?? '0.00' }}</el-form-item>
-        <el-form-item label="充值金额">
-          <el-input-number v-model="rcForm.amount" :min="0" :precision="2" :step="100" />
-        </el-form-item>
-        <el-form-item label="赠送金额">
-          <el-input-number v-model="rcForm.bonusAmount" :min="0" :precision="2" :step="50" />
-        </el-form-item>
+
+        <el-alert v-if="rechargeType" type="info" :closable="false" show-icon style="margin-bottom:12px">
+          <template #title>
+            <div>{{ rechargeType.name }}（{{ rechargeType.kind === 'StoredValue' ? '充值卡' : '计次卡' }}）</div>
+            <div style="font-size:12px; margin-top:4px">
+              <span v-if="rechargeType.kind === 'StoredValue'">最低充值 ¥{{ rechargeType.minRechargeAmount?.toFixed(2) }}</span>
+              <span v-else>最少 {{ rechargeType.minPurchaseCount }} 次（绑定：{{ rechargeType.serviceItemName }}）</span>
+              <span v-if="rechargeType.discount < 1"> · 折扣 {{ (rechargeType.discount * 10).toFixed(1) }} 折</span>
+              <span v-if="rechargeType.kind === 'StoredValue' && (rechargeType.bonusAmount ?? 0) > 0"> · 送 ¥{{ rechargeType.bonusAmount?.toFixed(2) }}</span>
+              <span v-if="rechargeType.kind === 'CountBased' && (rechargeType.bonusCount ?? 0) > 0"> · 送 {{ rechargeType.bonusCount }} 次</span>
+            </div>
+          </template>
+        </el-alert>
+
+        <template v-if="rechargeType?.kind === 'CountBased'">
+          <el-form-item label="充值次数">
+            <el-input-number
+              v-model="rcForm.count"
+              :min="rechargeType.minPurchaseCount ?? 1"
+              :step="1"
+            />
+            <span class="muted" style="margin-left:8px">
+              最低 {{ rechargeType.minPurchaseCount }} 次
+              <span v-if="(rechargeType.bonusCount ?? 0) > 0"> · 赠送 {{ rechargeType.bonusCount }} 次</span>
+            </span>
+          </el-form-item>
+          <el-form-item label="实充次数">
+            <strong style="color: #67c23a; font-size:16px">{{ rechargeCreditCount }} 次</strong>
+            <span class="muted" style="margin-left:8px">充值次数 + 赠送 {{ rechargeType.bonusCount ?? 0 }} 次 = 卡内可用次数</span>
+          </el-form-item>
+          <el-form-item label="充值金额">
+            <strong style="font-size:16px">¥{{ rechargeCountFaceAmount.toFixed(2) }}</strong>
+            <span class="muted" style="margin-left:8px">
+              <template v-if="rechargeBoundService">
+                {{ rcForm.count }} 次 × 会员价 ¥{{ rechargeBoundUnitPrice.toFixed(2) }}（{{ rechargeBoundService.name }}）
+              </template>
+              <template v-else>绑定服务未配置会员价</template>
+            </span>
+          </el-form-item>
+          <el-form-item label="实收金额">
+            <strong style="color:#e6a23c; font-size:16px">¥{{ rechargeCountChargeAmount.toFixed(2) }}</strong>
+            <span class="muted" style="margin-left:8px">
+              充值金额 × {{ ((rechargeType.discount ?? 1) * 10).toFixed(1) }} 折 = 客户实付
+            </span>
+          </el-form-item>
+        </template>
+
+        <template v-else>
+          <el-form-item label="充值金额">
+            <el-input-number
+              v-model="rcForm.amount"
+              :min="rechargeType?.minRechargeAmount ?? 0"
+              :precision="2"
+              :step="100"
+            />
+            <span v-if="rechargeType" class="muted" style="margin-left:8px">
+              最低 ¥{{ rechargeType.minRechargeAmount?.toFixed(2) }}
+            </span>
+          </el-form-item>
+          <el-form-item label="赠送金额">
+            <el-input-number
+              v-model="rcForm.bonusAmount"
+              :min="0"
+              :precision="2"
+              :step="50"
+              :disabled="!!rechargeType"
+            />
+            <span v-if="rechargeType" class="muted" style="margin-left:8px">由会员类型决定</span>
+          </el-form-item>
+          <template v-if="rechargeType">
+            <el-form-item label="实收金额">
+              <strong style="color:#e6a23c; font-size:16px">¥{{ rechargeChargeAmount.toFixed(2) }}</strong>
+              <span class="muted" style="margin-left:8px">
+                充值金额 × {{ ((rechargeType.discount ?? 1) * 10).toFixed(1) }} 折 = 客户实付
+              </span>
+            </el-form-item>
+            <el-form-item label="实充金额">
+              <strong style="color:#67c23a; font-size:16px">¥{{ rechargeCreditAmount.toFixed(2) }}</strong>
+              <span class="muted" style="margin-left:8px">
+                充值金额 + 赠送 ¥{{ (rechargeType.bonusAmount ?? 0).toFixed(2) }} = 卡内余额
+              </span>
+            </el-form-item>
+          </template>
+        </template>
+
         <el-form-item label="支付方式">
           <el-radio-group v-model="rcForm.payMethod">
-            <el-radio-button value="Cash">现金</el-radio-button>
             <el-radio-button value="Wechat">微信</el-radio-button>
             <el-radio-button value="Alipay">支付宝</el-radio-button>
             <el-radio-button value="BankCard">银行卡</el-radio-button>
+            <el-radio-button value="Cash">现金</el-radio-button>
+            <el-radio-button value="Other">其它</el-radio-button>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="备注">
@@ -378,10 +477,11 @@
         </template>
         <el-form-item label="支付方式">
           <el-radio-group v-model="issueForm.payMethod">
-            <el-radio-button value="Cash">现金</el-radio-button>
             <el-radio-button value="Wechat">微信</el-radio-button>
             <el-radio-button value="Alipay">支付宝</el-radio-button>
             <el-radio-button value="BankCard">银行卡</el-radio-button>
+            <el-radio-button value="Cash">现金</el-radio-button>
+            <el-radio-button value="Other">其它</el-radio-button>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="备注">
@@ -447,10 +547,11 @@
         </el-form-item>
         <el-form-item label="退款方式" required>
           <el-radio-group v-model="rfForm.refundMethod">
-            <el-radio-button value="Cash">现金</el-radio-button>
             <el-radio-button value="Wechat">微信</el-radio-button>
             <el-radio-button value="Alipay">支付宝</el-radio-button>
             <el-radio-button value="BankCard">银行卡</el-radio-button>
+            <el-radio-button value="Cash">现金</el-radio-button>
+            <el-radio-button value="Other">其它</el-radio-button>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="原因">
@@ -565,7 +666,8 @@ const form = reactive({
   referrerKeyword: '',
   referredByMemberId: null as number | null,
   memberTypeId: null as number | null,
-  count: 0
+  count: 0,
+  payMethod: 'Wechat'
 });
 const referrerCandidates = ref<Member[]>([]);
 
@@ -663,7 +765,7 @@ const issueForm = reactive({
   memberTypeId: null as number | null,
   amount: 0,
   count: 1,
-  payMethod: 'Cash',
+  payMethod: 'Wechat',
   remark: ''
 });
 const selectedIssueType = computed<MemberType | null>(() =>
@@ -674,7 +776,7 @@ async function openIssueCard(row: Member) {
   issueForm.memberTypeId = null;
   issueForm.amount = 0;
   issueForm.count = 1;
-  issueForm.payMethod = 'Cash';
+  issueForm.payMethod = 'Wechat';
   issueForm.remark = '';
   issueOpen.value = true;
   await ensureMemberTypesLoaded();
@@ -740,12 +842,63 @@ async function searchReferrer() {
 const rules: FormRules = {
   cardNo: [{ required: true, message: '请输入卡号', trigger: 'blur' }],
   phone: [{ required: true, message: '请输入手机号', trigger: 'blur' }],
-  discount: [{ required: true, message: '请输入折扣', trigger: 'blur' }]
+  discount: [{ required: true, message: '请输入折扣', trigger: 'blur' }],
+  memberTypeId: [{ required: true, message: '请选择会员类型', trigger: 'change' }]
 };
 
 const rechargeOpen = ref(false);
 const rechargeTarget = ref<Member | null>(null);
-const rcForm = reactive({ amount: 100, bonusAmount: 0, payMethod: 'Cash', remark: '' });
+const rcForm = reactive({ amount: 100, bonusAmount: 0, count: 1, payMethod: 'Wechat', remark: '' });
+
+/// 当前充值目标会员所属的会员类型；卡上没有 memberTypeId 则为 null（走旧逻辑）
+const rechargeType = computed<MemberType | null>(() => {
+  const t = rechargeTarget.value;
+  if (!t?.memberTypeId) return null;
+  return memberTypes.value.find((x) => x.id === t.memberTypeId) ?? null;
+});
+
+/// 充值次卡时的实充次数 = 充值次数 + 赠送次数
+const rechargeCreditCount = computed(() => {
+  const bonus = rechargeType.value?.bonusCount ?? 0;
+  return rcForm.count + bonus;
+});
+
+/// 充值次卡：绑定的服务（含会员价），用来推算金额
+const rechargeBoundService = computed<ServiceItem | null>(() => {
+  const t = rechargeType.value;
+  if (!t || t.kind !== 'CountBased' || !t.serviceItemId) return null;
+  return services.value.find((s) => s.id === t.serviceItemId) ?? null;
+});
+
+/// 充值次卡：服务单价（优先会员价，否则标准价）
+const rechargeBoundUnitPrice = computed(() => {
+  const s = rechargeBoundService.value;
+  if (!s) return 0;
+  return s.memberPrice > 0 ? s.memberPrice : s.price;
+});
+
+/// 充值次卡：充值金额（面值）= 充值次数 × 会员价
+const rechargeCountFaceAmount = computed(() =>
+  Math.round(rcForm.count * rechargeBoundUnitPrice.value * 100) / 100
+);
+
+/// 充值次卡：实收金额 = 充值金额 × 折扣（折扣以类型为准）
+const rechargeCountChargeAmount = computed(() => {
+  const d = rechargeType.value?.discount ?? 1;
+  return Math.round(rechargeCountFaceAmount.value * d * 100) / 100;
+});
+
+/// 充值卡：实收金额 = 充值金额 × 折扣
+const rechargeChargeAmount = computed(() => {
+  const d = rechargeType.value?.discount ?? 1;
+  return Math.round(rcForm.amount * d * 100) / 100;
+});
+
+/// 充值卡：实充金额 = 充值金额 + 赠送（卡内余额）
+const rechargeCreditAmount = computed(() => {
+  const bonus = rechargeType.value?.bonusAmount ?? 0;
+  return Math.round((rcForm.amount + bonus) * 100) / 100;
+});
 
 const historyOpen = ref(false);
 const historyTarget = ref<Member | null>(null);
@@ -795,7 +948,7 @@ async function openCreate() {
     cardNo: '', phone: '', name: '', gender: '', birthday: '',
     discount: 1, initialBalance: 0, remark: '',
     referrerKeyword: '', referredByMemberId: null,
-    memberTypeId: null, count: 0
+    memberTypeId: null, count: 0, payMethod: 'Wechat'
   });
   referrerCandidates.value = [];
   formOpen.value = true;
@@ -827,7 +980,8 @@ function openEdit(row: Member) {
     referrerKeyword: '',
     referredByMemberId: row.referredByMemberId ?? null,
     memberTypeId: null,
-    count: 0
+    count: 0,
+    payMethod: 'Wechat'
   });
   referrerCandidates.value = [];
   formOpen.value = true;
@@ -874,7 +1028,8 @@ async function saveForm() {
         remark: form.remark || null,
         referredByMemberId: form.referredByMemberId,
         memberTypeId: form.memberTypeId,
-        count: form.count
+        count: form.count,
+        payMethod: form.payMethod
       });
     } else if (editingId.value != null) {
       await membersApi.update(editingId.value, {
@@ -895,14 +1050,65 @@ async function saveForm() {
   }
 }
 
-function openRecharge(row: Member) {
+async function openRecharge(row: Member) {
   rechargeTarget.value = row;
-  Object.assign(rcForm, { amount: 100, bonusAmount: 0, payMethod: 'Cash', remark: '' });
+  Object.assign(rcForm, { amount: 0, bonusAmount: 0, count: 1, payMethod: 'Wechat', remark: '' });
   rechargeOpen.value = true;
+  await ensureMemberTypesLoaded();
+  // 拿到模板后回填默认值
+  const t = rechargeType.value;
+  if (t?.kind === 'StoredValue') {
+    rcForm.amount = t.minRechargeAmount ?? 100;
+    rcForm.bonusAmount = t.bonusAmount ?? 0;
+  } else if (t?.kind === 'CountBased') {
+    rcForm.count = t.minPurchaseCount ?? 1;
+    rcForm.amount = 0; // 实收金额由收银员输入
+  } else {
+    rcForm.amount = 100;
+  }
 }
 
 async function doRecharge() {
   if (!rechargeTarget.value) return;
+  const t = rechargeType.value;
+
+  // 有模板：走 issueCard（按会员类型规则校验 + 自动赠送）
+  if (t) {
+    if (t.kind === 'StoredValue') {
+      if (rcForm.amount < (t.minRechargeAmount ?? 0)) {
+        ElMessage.warning(`充值金额不能低于 ¥${(t.minRechargeAmount ?? 0).toFixed(2)}`);
+        return;
+      }
+    } else {
+      if (rcForm.count < (t.minPurchaseCount ?? 1)) {
+        ElMessage.warning(`充值次数不能低于 ${t.minPurchaseCount ?? 1}`);
+        return;
+      }
+    }
+    saving.value = true;
+    try {
+      const cashAmount = t.kind === 'CountBased' ? rechargeCountChargeAmount.value : rcForm.amount;
+      const r = await membersApi.issueCard(rechargeTarget.value.id, {
+        memberTypeId: t.id,
+        amount: cashAmount,
+        count: t.kind === 'CountBased' ? rcForm.count : 0,
+        payMethod: rcForm.payMethod,
+        remark: rcForm.remark || null
+      });
+      if (t.kind === 'StoredValue') {
+        ElMessage.success(`充值成功，余额到账 ¥${r.newBalance.toFixed(2)}（含赠送 ¥${r.bonusAmount.toFixed(2)}）`);
+      } else {
+        ElMessage.success(`充值成功，已发放 ${rcForm.count + r.bonusCount} 次「${t.serviceItemName ?? ''}」（含赠送 ${r.bonusCount} 次）`);
+      }
+      rechargeOpen.value = false;
+      reload();
+    } finally {
+      saving.value = false;
+    }
+    return;
+  }
+
+  // 无模板：走旧的 recharge
   if (rcForm.amount <= 0) {
     ElMessage.warning('充值金额必须 > 0');
     return;
@@ -938,12 +1144,12 @@ async function openHistory(row: Member) {
 // ---- 退卡 ----
 const refundOpen = ref(false);
 const refundTarget = ref<Member | null>(null);
-const rfForm = reactive({ refundAmount: 0, refundMethod: 'Cash', reason: '' });
+const rfForm = reactive({ refundAmount: 0, refundMethod: 'Wechat', reason: '' });
 
 function openRefund(row: Member) {
   refundTarget.value = row;
   rfForm.refundAmount = row.balance;
-  rfForm.refundMethod = 'Cash';
+  rfForm.refundMethod = 'Wechat';
   rfForm.reason = '';
   refundOpen.value = true;
 }

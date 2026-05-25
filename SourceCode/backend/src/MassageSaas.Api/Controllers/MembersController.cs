@@ -58,7 +58,8 @@ public class MembersController : ControllerBase
             .Take(pq.SafePageSize)
             .ToListAsync(ct);
 
-        return Ok(new PagedResult<MemberDto>(rows.Select(MapDto).ToList(), total, pq.SafePage, pq.SafePageSize));
+        var counts = await LoadCountCardSumsAsync(rows.Select(r => r.Id), ct);
+        return Ok(new PagedResult<MemberDto>(rows.Select(m => MapDto(m, counts)).ToList(), total, pq.SafePage, pq.SafePageSize));
     }
 
     [HttpGet("{id:long}")]
@@ -69,7 +70,8 @@ public class MembersController : ControllerBase
             .Include(x => x.MemberType)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
         if (m is null) return NotFound();
-        return Ok(MapDto(m));
+        var counts = await LoadCountCardSumsAsync(new[] { m.Id }, ct);
+        return Ok(MapDto(m, counts));
     }
 
     /// <summary>按手机号分组：返回每人名下所有卡的聚合视图，方便"一人多卡"展开浏览。</summary>
@@ -115,6 +117,7 @@ public class MembersController : ControllerBase
         if (!includeClosed) cardsQ = cardsQ.Where(m => m.IsActive);
 
         var allCards = await cardsQ.OrderByDescending(m => m.CreatedAt).ToListAsync(ct);
+        var counts = await LoadCountCardSumsAsync(allCards.Select(c => c.Id), ct);
 
         // 3) 按手机号汇总
         var groups = pagedPhones.Select(phone =>
@@ -129,26 +132,65 @@ public class MembersController : ControllerBase
                 cards.Where(c => c.IsActive).Sum(c => c.TotalRecharge),
                 cards.Where(c => c.IsActive).Sum(c => c.TotalConsumed),
                 cards.Any(c => !c.IsActive),
-                cards.Select(MapDto).ToList()
+                cards.Select(c => MapDto(c, counts)).ToList()
             );
         }).ToList();
 
         return Ok(new PagedResult<MemberPhoneGroupDto>(groups, total, pq.SafePage, pq.SafePageSize));
     }
 
-    private static MemberDto MapDto(Member m) => new(
-        m.Id, m.StoreId, m.CardNo, m.Phone, m.Name, m.Gender, m.Birthday,
-        m.Balance, m.TotalRecharge, m.TotalConsumed, m.Discount, m.Remark,
-        m.Level.ToString(), m.PreferenceNotes, m.HealthNotes,
-        m.IsActive, m.ClosedAt, m.CloseReason,
-        m.ReferredByMemberId,
-        m.ReferredByMember?.Name ?? m.ReferredByMember?.CardNo,
-        m.ReferralRewardEarned,
-        m.WechatOpenId,
-        m.CreatedAt,
-        m.MemberTypeId,
-        m.MemberType?.Name,
-        m.MemberType?.Kind.ToString());
+    private static MemberDto MapDto(Member m, IReadOnlyDictionary<long, (int Total, int Remain)>? counts = null)
+    {
+        int? totalCount = null;
+        int? remainCount = null;
+        if (m.MemberType?.Kind == MemberTypeKind.CountBased && counts != null && counts.TryGetValue(m.Id, out var c))
+        {
+            totalCount = c.Total;
+            remainCount = c.Remain;
+        }
+
+        return new MemberDto(
+            m.Id, m.StoreId, m.CardNo, m.Phone, m.Name, m.Gender, m.Birthday,
+            m.Balance, m.TotalRecharge, m.TotalConsumed, m.Discount, m.Remark,
+            m.Level.ToString(), m.PreferenceNotes, m.HealthNotes,
+            m.IsActive, m.ClosedAt, m.CloseReason,
+            m.ReferredByMemberId,
+            m.ReferredByMember?.Name ?? m.ReferredByMember?.CardNo,
+            m.ReferralRewardEarned,
+            m.WechatOpenId,
+            m.CreatedAt,
+            m.MemberTypeId,
+            m.MemberType?.Name,
+            m.MemberType?.Kind.ToString(),
+            totalCount,
+            remainCount);
+    }
+
+    /// <summary>
+    /// 聚合一批会员的活动计次套餐：返回 memberId → (累计购买次数, 剩余次数)。
+    /// 仅统计 Kind == Counter 且 Status == Active 的套餐。
+    /// </summary>
+    private async Task<Dictionary<long, (int Total, int Remain)>> LoadCountCardSumsAsync(
+        IEnumerable<long> memberIds, CancellationToken ct)
+    {
+        var ids = memberIds.Distinct().ToList();
+        if (ids.Count == 0) return new Dictionary<long, (int, int)>();
+
+        var rows = await _db.MemberPackages.AsNoTracking()
+            .Where(p => ids.Contains(p.MemberId)
+                        && p.Kind == MemberPackageKind.Counter
+                        && p.Status == MemberPackageStatus.Active)
+            .GroupBy(p => p.MemberId)
+            .Select(g => new
+            {
+                MemberId = g.Key,
+                Total = g.Sum(x => x.TotalCount),
+                Remain = g.Sum(x => x.RemainCount)
+            })
+            .ToListAsync(ct);
+
+        return rows.ToDictionary(x => x.MemberId, x => (x.Total, x.Remain));
+    }
 
     [HttpPost]
     public async Task<ActionResult<MemberDto>> Create([FromBody] CreateMemberRequest req, CancellationToken ct)
@@ -210,8 +252,9 @@ public class MembersController : ControllerBase
         var now = DateTime.UtcNow;
         DateTime? cardExpiresAt = template?.ValidDays is int d && d > 0 ? now.AddDays(d) : null;
 
-        var isStoredValue = template?.Kind == MemberTypeKind.StoredValue;
-        var initialPaid = isStoredValue ? req.InitialBalance : 0m;
+        // 充值卡：req.InitialBalance 是「充值金额」(面值)；次卡：req.InitialBalance 是「实收金额」(现金价 × 折扣)
+        // 两种情况都把现金额写进 TotalRecharge / Balance，列表才能展示金额信息
+        var initialPaid = req.InitialBalance;
         var initialBalance = initialPaid + bonusAmount;
 
         var m = new Member
@@ -234,6 +277,15 @@ public class MembersController : ControllerBase
         _db.Members.Add(m);
         await _db.SaveChangesAsync(ct);
 
+        // 解析支付来源：未传或不合法均回退 Cash；禁止用 MemberCard 给自己开卡充值
+        var payMethod = PayMethod.Cash;
+        if (!string.IsNullOrWhiteSpace(req.PayMethod)
+            && Enum.TryParse<PayMethod>(req.PayMethod, true, out var parsed)
+            && parsed != PayMethod.MemberCard)
+        {
+            payMethod = parsed;
+        }
+
         // 充值卡或无模板的旧路径：写一条充值流水
         if (initialPaid > 0)
         {
@@ -244,7 +296,7 @@ public class MembersController : ControllerBase
                 Amount = initialPaid,
                 BonusAmount = bonusAmount,
                 BalanceAfter = initialBalance,
-                PayMethod = PayMethod.Cash,
+                PayMethod = payMethod,
                 Kind = MemberRechargeKind.Recharge,
                 OperatorUserId = _tenantContext.UserId,
                 Remark = template != null ? $"开卡：{template.Name}" : "开卡初始充值"
@@ -281,7 +333,8 @@ public class MembersController : ControllerBase
 
         await _db.Entry(m).Reference(x => x.ReferredByMember).LoadAsync(ct);
         await _db.Entry(m).Reference(x => x.MemberType).LoadAsync(ct);
-        return CreatedAtAction(nameof(Get), new { id = m.Id }, MapDto(m));
+        var createdCounts = await LoadCountCardSumsAsync(new[] { m.Id }, ct);
+        return CreatedAtAction(nameof(Get), new { id = m.Id }, MapDto(m, createdCounts));
     }
 
     [HttpPut("{id:long}")]
@@ -317,7 +370,8 @@ public class MembersController : ControllerBase
 
         await _db.Entry(m).Reference(x => x.ReferredByMember).LoadAsync(ct);
         await _db.Entry(m).Reference(x => x.MemberType).LoadAsync(ct);
-        return Ok(MapDto(m));
+        var updatedCounts = await LoadCountCardSumsAsync(new[] { m.Id }, ct);
+        return Ok(MapDto(m, updatedCounts));
     }
 
     [HttpPost("recharge")]
@@ -618,7 +672,9 @@ public class MembersController : ControllerBase
             src.Id, target.Id, amount);
 
         await _db.Entry(target).Reference(x => x.ReferredByMember).LoadAsync(ct);
-        return Ok(MapDto(target));
+        await _db.Entry(target).Reference(x => x.MemberType).LoadAsync(ct);
+        var transferCounts = await LoadCountCardSumsAsync(new[] { target.Id }, ct);
+        return Ok(MapDto(target, transferCounts));
     }
 
     [HttpGet("{id:long}/referrals")]

@@ -26,7 +26,11 @@ public record MemberDto(
     DateTime CreatedAt,
     long? MemberTypeId = null,
     string? MemberTypeName = null,
-    string? MemberTypeKind = null);
+    string? MemberTypeKind = null,
+    /// <summary>次卡专属：当前会员名下所有活动计次套餐的累计购买次数（含赠送）；非次卡为 null。</summary>
+    int? TotalCount = null,
+    /// <summary>次卡专属：当前会员名下所有活动计次套餐的剩余次数；非次卡为 null。</summary>
+    int? RemainCount = null);
 
 /// <summary>按手机号聚合的会员视图：一个人名下可能有多张卡（充值卡 + 计次卡）。</summary>
 public record MemberPhoneGroupDto(
@@ -53,7 +57,9 @@ public record CreateMemberRequest(
     /// <summary>开卡时绑定的会员类型；选了即按模板规则校验最低充值/最低次数并写赠送、折扣、到期日。</summary>
     long? MemberTypeId = null,
     /// <summary>仅计次卡：购买次数（必须 ≥ 模板 MinPurchaseCount）。</summary>
-    int Count = 0);
+    int Count = 0,
+    /// <summary>开卡支付来源（Cash/Wechat/Alipay/BankCard 等）；为空回退到 Cash。</summary>
+    string? PayMethod = null);
 
 public record UpdateMemberRequest(
     string Phone,

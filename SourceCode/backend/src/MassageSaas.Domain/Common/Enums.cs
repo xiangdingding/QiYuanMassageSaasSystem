@@ -34,7 +34,8 @@ public enum PayMethod
     MemberCard = 2,
     Wechat = 3,
     Alipay = 4,
-    BankCard = 5
+    BankCard = 5,
+    Other = 6
 }
 
 public enum QueueState
