@@ -279,19 +279,16 @@
           </el-radio-group>
         </el-form-item>
 
-        <el-form-item label="折扣" prop="discount">
+        <el-form-item v-if="formMode === 'create'" label="折扣" prop="discount">
           <el-input-number
             v-model="form.discount"
             :min="0.1"
             :max="1"
             :step="0.05"
             :precision="2"
-            :disabled="formMode === 'create'"
+            disabled
           />
-          <span class="muted" style="margin-left: 8px">
-            <template v-if="formMode === 'create'">由会员类型决定，不可手改</template>
-            <template v-else>如 0.85 = 8.5 折</template>
-          </span>
+          <span class="muted" style="margin-left: 8px">由会员类型决定，不可手改</span>
         </el-form-item>
 
         <el-form-item label="引荐人">
