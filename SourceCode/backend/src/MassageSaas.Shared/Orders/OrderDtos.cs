@@ -16,7 +16,9 @@ public record CheckoutRequest(
     string PayMethod,
     decimal? PaidAmount,
     decimal DiscountAmount = 0m,
-    string? Remark = null);
+    string? Remark = null,
+    /// <summary>会员卡合并结算：在 Order.Member 之外再依次扣这些卡的余额；仅 PayMethod=MemberCard 生效。</summary>
+    IReadOnlyList<long>? SecondaryMemberIds = null);
 
 public record OrderItemDto(
     long Id,

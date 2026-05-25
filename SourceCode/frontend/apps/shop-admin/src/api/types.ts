@@ -156,6 +156,8 @@ export interface CheckoutRequest {
   paidAmount?: number | null;
   discountAmount?: number;
   remark?: string | null;
+  /** 会员卡合并结算：同手机号下其它卡的 id 列表（PayMethod=MemberCard 时生效） */
+  secondaryMemberIds?: number[];
 }
 
 export interface Staff {

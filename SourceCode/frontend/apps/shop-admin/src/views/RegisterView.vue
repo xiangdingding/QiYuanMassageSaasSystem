@@ -7,14 +7,11 @@
         <el-form-item label="店铺名" prop="name">
           <el-input v-model="form.name" placeholder="如：齐源按摩中心" />
         </el-form-item>
-        <el-form-item label="店铺电话" prop="contactPhone">
-          <el-input v-model="form.contactPhone" placeholder="11 位手机号" />
-        </el-form-item>
         <el-form-item label="联系人">
           <el-input v-model="form.contactName" placeholder="选填" />
         </el-form-item>
         <el-form-item label="登录手机号" prop="ownerPhone">
-          <el-input v-model="form.ownerPhone" placeholder="店长/店员都用手机号登录" />
+          <el-input v-model="form.ownerPhone" placeholder="店长/店员都用手机号登录，同时作为店铺联系电话" />
         </el-form-item>
         <el-form-item label="登录密码" prop="ownerPassword">
           <el-input
@@ -32,9 +29,6 @@
             placeholder="再次输入"
             @keyup.enter="submit"
           />
-        </el-form-item>
-        <el-form-item label="您的姓名">
-          <el-input v-model="form.ownerRealName" placeholder="选填" />
         </el-form-item>
         <el-button
           type="primary"
@@ -63,22 +57,16 @@ const router = useRouter();
 
 const form = reactive({
   name: '',
-  contactPhone: '',
   contactName: '',
   ownerPhone: '',
   ownerPassword: '',
-  confirmPassword: '',
-  ownerRealName: ''
+  confirmPassword: ''
 });
 const formRef = ref<FormInstance>();
 const loading = ref(false);
 
 const rules: FormRules = {
   name: [{ required: true, message: '请输入店铺名', trigger: 'blur' }],
-  contactPhone: [
-    { required: true, message: '请输入联系电话', trigger: 'blur' },
-    { pattern: /^\d{11}$/, message: '请输入 11 位手机号', trigger: 'blur' }
-  ],
   ownerPhone: [
     { required: true, message: '请输入登录手机号', trigger: 'blur' },
     { pattern: /^\d{11}$/, message: '请输入 11 位手机号', trigger: 'blur' }
@@ -107,11 +95,12 @@ async function submit() {
   try {
     const resp = await tenantsApi.register({
       name: form.name,
-      contactPhone: form.contactPhone,
+      // 店铺联系电话与登录手机号合并：用同一个字段
+      contactPhone: form.ownerPhone,
       contactName: form.contactName || null,
       ownerPhone: form.ownerPhone,
       ownerPassword: form.ownerPassword,
-      ownerRealName: form.ownerRealName || null
+      ownerRealName: null
     });
     ElMessage.success('注册成功');
     await ElMessageBox.alert(

@@ -1095,6 +1095,10 @@ async function saveForm() {
 }
 
 async function openRecharge(row: Member) {
+  if (!row.isActive) {
+    ElMessage.warning('该卡已退卡 / 关闭，不能再充值');
+    return;
+  }
   rechargeTarget.value = row;
   Object.assign(rcForm, { amount: 0, bonusAmount: 0, count: 1, payMethod: 'Wechat', remark: '' });
   rechargeOpen.value = true;

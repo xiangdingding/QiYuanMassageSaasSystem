@@ -1,5 +1,5 @@
 <template>
-  <div class="pos" role="region" aria-label="收银台">
+  <div class="pos" role="region" aria-label="收银台" :style="{ gridTemplateColumns: `1fr 6px ${rightWidth}px` }">
     <div class="left">
       <el-card shadow="never">
         <template #header>
@@ -26,7 +26,7 @@
             shadow="hover"
             tabindex="0"
             role="button"
-            :aria-label="`服务 ${s.name}，时长 ${s.durationMinutes} 分钟，标准价 ${s.price.toFixed(2)} 元${member ? '，会员价 ' + s.memberPrice.toFixed(2) + ' 元' : ''}，按回车添加`"
+            :aria-label="`服务 ${s.name}，时长 ${s.durationMinutes} 分钟，${mode === 'member' ? '会员价 ' + s.memberPrice.toFixed(2) : '标准价 ' + s.price.toFixed(2)} 元，按回车添加`"
             @click="onPickService(s)"
             @keyup.enter="onPickService(s)"
             @keyup.space.prevent="onPickService(s)"
@@ -34,8 +34,8 @@
             <div class="svc-name">{{ s.name }}</div>
             <div class="svc-meta">
               <el-tag size="small">{{ s.durationMinutes }} 分钟</el-tag>
-              <el-tag size="small" type="success">¥{{ s.price.toFixed(2) }}</el-tag>
-              <el-tag v-if="member" size="small" type="warning">会员 ¥{{ s.memberPrice.toFixed(2) }}</el-tag>
+              <el-tag v-if="mode === 'walkin'" size="small" type="success">¥{{ s.price.toFixed(2) }}</el-tag>
+              <el-tag v-else size="small" type="warning">会员价 ¥{{ s.memberPrice.toFixed(2) }}</el-tag>
             </div>
             <div class="svc-code">{{ s.code }}</div>
           </el-card>
@@ -43,37 +43,81 @@
       </el-card>
     </div>
 
+    <div
+      class="splitter"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="拖动调整结账区宽度"
+      tabindex="0"
+      @mousedown="startResize"
+      @keydown.left="rightWidth = clampRight(rightWidth + 20)"
+      @keydown.right="rightWidth = clampRight(rightWidth - 20)"
+    ></div>
+
     <div class="right">
       <el-card shadow="never" class="cart">
         <template #header>
           <div class="header-row">
             <h2 class="card-title">当前订单</h2>
-            <el-button v-if="cart.length > 0 || member" link type="danger" aria-label="清空当前订单" @click="resetAll">清空</el-button>
+            <el-button v-if="cart.length > 0 || memberCards.length > 0" link type="danger" aria-label="清空当前订单" @click="resetAll">清空</el-button>
           </div>
         </template>
 
-        <div class="member-row">
-          <el-input
-            ref="memberInput"
-            v-model="memberKeyword"
-            placeholder="会员卡号 / 手机号"
-            clearable
-            :prefix-icon="User"
-            style="flex: 1"
-            aria-label="会员卡号或手机号，按 F2 快速聚焦"
-            @keyup.enter="lookupMember"
-          />
-          <el-button :icon="Search" aria-label="查询会员" @click="lookupMember">查询</el-button>
-        </div>
-        <div v-if="member" class="member-info">
-          <div class="m-line">
-            <strong>{{ member.name || member.cardNo }}</strong>
-            <el-tag size="small">余额 ¥{{ member.balance.toFixed(2) }}</el-tag>
-            <el-tag size="small" type="warning" v-if="member.discount < 1">{{ (member.discount * 10).toFixed(1) }} 折</el-tag>
+        <el-radio-group v-model="mode" class="mode-switch" aria-label="收银模式" @change="onModeChange">
+          <el-radio-button value="walkin">散客收银</el-radio-button>
+          <el-radio-button value="member">会员收银</el-radio-button>
+        </el-radio-group>
+
+        <template v-if="mode === 'member'">
+          <div class="member-row">
+            <el-input
+              ref="memberInput"
+              v-model="memberKeyword"
+              placeholder="会员卡号 / 手机号"
+              clearable
+              :prefix-icon="User"
+              style="flex: 1"
+              aria-label="会员卡号或手机号，按 F2 快速聚焦"
+              @keyup.enter="lookupMember"
+            />
+            <el-button :icon="Search" aria-label="查询会员" @click="lookupMember">查询</el-button>
           </div>
-          <div class="m-line muted">{{ member.phone }} · 累计消费 ¥{{ member.totalConsumed.toFixed(2) }}</div>
-          <el-button link type="danger" @click="member = null; memberKeyword = ''">取消关联</el-button>
-        </div>
+
+          <div v-if="memberCards.length > 0" class="member-info">
+            <div class="m-line">
+              <strong>{{ primaryMember?.name || primaryMember?.cardNo || memberCards[0].phone }}</strong>
+              <el-tag size="small">{{ memberCards[0].phone }}</el-tag>
+              <el-tag v-if="memberCards.length > 1" size="small" type="info">
+                {{ memberCards.length }} 张卡 · 可合并结算
+              </el-tag>
+            </div>
+            <div class="card-pick-list">
+              <div v-for="c in memberCards" :key="c.id" class="card-pick-row" :class="{ closed: !c.isActive }">
+                <el-checkbox
+                  :model-value="selectedCardIds.includes(c.id)"
+                  :disabled="!c.isActive"
+                  :aria-label="`选择卡号 ${c.cardNo}，余额 ${c.balance.toFixed(2)} 元${c.memberTypeName ? '，' + c.memberTypeName : ''}${!c.isActive ? '（已关闭）' : ''}`"
+                  @update:model-value="toggleCard(c.id, $event)"
+                >
+                  <span class="card-no">{{ c.cardNo }}</span>
+                  <el-tag size="small" :type="c.memberTypeKind === 'StoredValue' ? 'warning' : (c.memberTypeKind === 'CountBased' ? 'success' : 'info')" style="margin: 0 6px">
+                    {{ c.memberTypeName ?? '普通' }}
+                  </el-tag>
+                  <el-tag v-if="!c.isActive" size="small" type="info" style="margin-right:6px">已关闭</el-tag>
+                  <span class="card-bal">余额 ¥{{ c.balance.toFixed(2) }}</span>
+                  <span v-if="c.memberTypeKind === 'CountBased' && c.remainCount != null" class="muted">
+                    · 剩 {{ c.remainCount }} 次
+                  </span>
+                </el-checkbox>
+              </div>
+            </div>
+            <div class="m-line">
+              <span class="muted">已选 {{ selectedCardIds.length }} 张 · 合计余额</span>
+              <strong style="color:#d9534f">¥{{ selectedBalance.toFixed(2) }}</strong>
+              <el-button link type="danger" size="small" @click="clearMember">取消关联</el-button>
+            </div>
+          </div>
+        </template>
 
         <el-divider style="margin: 8px 0" />
 
@@ -88,8 +132,8 @@
               <el-select
                 v-model="it.technicianId"
                 placeholder="选择技师"
-                size="small"
-                style="width: 130px"
+                size="default"
+                class="ci-tech"
                 filterable
               >
                 <el-option
@@ -102,8 +146,8 @@
               <el-select
                 v-model="it.roomId"
                 placeholder="房间"
-                size="small"
-                style="width: 110px"
+                size="default"
+                class="ci-room"
                 clearable
               >
                 <el-option
@@ -114,7 +158,7 @@
                   :disabled="r.isOccupied && r.id !== it.roomId"
                 />
               </el-select>
-              <el-input-number v-model="it.quantity" :min="1" :max="20" size="small" controls-position="right" style="width: 90px" />
+              <el-input-number v-model="it.quantity" :min="1" :max="20" size="default" controls-position="right" class="ci-qty" />
               <span class="ci-price">¥{{ (it.unitPrice * it.quantity).toFixed(2) }}</span>
             </div>
           </div>
@@ -124,10 +168,6 @@
           <div class="total-line">
             <span>合计</span>
             <span class="total-amount">¥ {{ total.toFixed(2) }}</span>
-          </div>
-          <div v-if="member && member.discount < 1" class="total-line muted">
-            <span>会员折扣（自动）</span>
-            <span>-¥ {{ memberDiscount.toFixed(2) }}</span>
           </div>
           <div class="total-line">
             <span>应收</span>
@@ -156,7 +196,7 @@
       v-model="pickOpen"
       :service="pickedService"
       :technicians="technicians"
-      :is-member="!!member"
+      :is-member="!!primaryMember"
       @confirm="onTechnicianPicked"
     />
 
@@ -164,8 +204,8 @@
       v-model="checkoutOpen"
       :total="total"
       :payable="payable"
-      :has-member="!!member"
-      :member-balance="member?.balance ?? 0"
+      :has-member="!!primaryMember"
+      :member-balance="selectedBalance"
       :loading="checkingOut"
       @submit="doCheckout"
     />
@@ -234,8 +274,68 @@ function availableRooms(currentRoomId: number | null): Room[] {
   return rooms.value.filter((r) => !usedElsewhere.has(r.id));
 }
 const cart = reactive<CartItem[]>([]);
-const member = ref<Member | null>(null);
+/// 该手机号下的所有卡（一人多卡：充值卡 + 次卡）
+const memberCards = ref<Member[]>([]);
+/// 已勾选用于结账的卡 id（第一个为主卡，其余为合并结算的次要卡）
+const selectedCardIds = ref<number[]>([]);
 const memberKeyword = ref('');
+/// 收银模式：散客 = 用标准价；会员 = 用会员价（折扣已在充值/开卡时兑现，结账不再打折）
+const mode = ref<'walkin' | 'member'>('walkin');
+
+/// 主卡：勾选列表中的第一张；用作 order.memberId
+const primaryMember = computed<Member | null>(() => {
+  if (selectedCardIds.value.length === 0) return null;
+  return memberCards.value.find((c) => c.id === selectedCardIds.value[0]) ?? null;
+});
+/// 已勾选卡的余额合计（决定会员卡结算是否可行）
+const selectedBalance = computed(() =>
+  memberCards.value
+    .filter((c) => selectedCardIds.value.includes(c.id))
+    .reduce((s, c) => s + c.balance, 0)
+);
+
+function toggleCard(id: number, checked: boolean | string | number) {
+  const on = !!checked;
+  const idx = selectedCardIds.value.indexOf(id);
+  if (on && idx === -1) selectedCardIds.value = [...selectedCardIds.value, id];
+  else if (!on && idx !== -1) {
+    const arr = [...selectedCardIds.value];
+    arr.splice(idx, 1);
+    selectedCardIds.value = arr;
+  }
+}
+
+function clearMember() {
+  memberCards.value = [];
+  selectedCardIds.value = [];
+  memberKeyword.value = '';
+}
+
+/// 右侧结账区宽度（持久化到 localStorage，用户拖动调整）
+const RIGHT_WIDTH_KEY = 'pos:rightWidth';
+const RIGHT_MIN = 360;
+const RIGHT_MAX = 900;
+function clampRight(v: number) {
+  return Math.max(RIGHT_MIN, Math.min(RIGHT_MAX, Math.round(v)));
+}
+const rightWidth = ref(clampRight(Number(localStorage.getItem(RIGHT_WIDTH_KEY)) || 520));
+
+function startResize(ev: MouseEvent) {
+  ev.preventDefault();
+  const startX = ev.clientX;
+  const startWidth = rightWidth.value;
+  const onMove = (e: MouseEvent) => {
+    // 鼠标右移 → 右栏变窄；左移 → 右栏变宽
+    rightWidth.value = clampRight(startWidth - (e.clientX - startX));
+  };
+  const onUp = () => {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    localStorage.setItem(RIGHT_WIDTH_KEY, String(rightWidth.value));
+  };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
 
 const pickOpen = ref(false);
 const pickedService = ref<ServiceItem | null>(null);
@@ -256,16 +356,16 @@ const total = computed(() =>
   cart.reduce((sum, c) => sum + c.unitPrice * c.quantity, 0)
 );
 
-const memberDiscount = computed(() => {
-  if (!member.value || member.value.discount >= 1) return 0;
-  return Math.round(total.value * (1 - member.value.discount) * 100) / 100;
+// 折扣已在充值/开卡时兑现（按"现金价 × 折扣"收的现金），结账时按服务的会员价/标准价直接结算
+const payable = computed(() => total.value);
+
+const canCheckout = computed(() => {
+  if (cart.length === 0) return false;
+  if (!cart.every((c) => c.technicianId != null)) return false;
+  if (!appStore.activeStoreId) return false;
+  if (mode.value === 'member' && !primaryMember.value) return false;
+  return true;
 });
-
-const payable = computed(() => Math.max(0, total.value - memberDiscount.value));
-
-const canCheckout = computed(
-  () => cart.length > 0 && cart.every((c) => c.technicianId != null) && !!appStore.activeStoreId
-);
 
 function payMethodLabel(m: string) {
   return ({
@@ -293,7 +393,7 @@ function onPickService(s: ServiceItem) {
 function onTechnicianPicked(payload: { technicianId: number; quantity: number }) {
   if (!pickedService.value) return;
   const s = pickedService.value;
-  const unit = member.value ? s.memberPrice : s.price;
+  const unit = mode.value === 'member' ? s.memberPrice : s.price;
   cart.push({
     serviceId: s.id,
     serviceName: s.name,
@@ -306,26 +406,57 @@ function onTechnicianPicked(payload: { technicianId: number; quantity: number })
   pickOpen.value = false;
 }
 
+/// 切换收银模式：清掉相关状态，重新按新模式计算单价
+function onModeChange() {
+  if (mode.value === 'walkin') {
+    clearMember();
+  }
+  for (const c of cart) {
+    const svc = services.value.find((s) => s.id === c.serviceId);
+    if (svc) c.unitPrice = mode.value === 'member' ? svc.memberPrice : svc.price;
+  }
+}
+
 async function lookupMember() {
   const k = memberKeyword.value.trim();
   if (!k) return;
-  const data = await membersApi.list({ keyword: k, pageSize: 5 });
-  if (data.items.length === 0) {
+  // 先用关键字定位一张卡（可能是卡号或手机号），再按 phone 把同手机号下所有卡拉出来
+  // includeClosed=true 让被退卡/转赠的历史卡也显示出来，UI 区分但不可勾选
+  const first = await membersApi.list({ keyword: k, pageSize: 5, includeClosed: true });
+  if (first.items.length === 0) {
     ElMessage.warning('未找到会员');
     return;
   }
-  member.value = data.items[0];
-  // 切换会员后重算价格
+  const phone = first.items[0].phone;
+  const all = await membersApi.list({ keyword: phone, pageSize: 100, includeClosed: true });
+  memberCards.value = all.items.filter((m) => m.phone === phone);
+  // 默认选中命中的那张（若已关闭则选第一张可用卡）
+  const hitId = first.items[0].id;
+  const hit = memberCards.value.find((c) => c.id === hitId);
+  const firstActive = memberCards.value.find((c) => c.isActive);
+  const defaultPick = hit?.isActive ? hit : firstActive;
+  selectedCardIds.value = defaultPick ? [defaultPick.id] : [];
+
   for (const c of cart) {
     const svc = services.value.find((s) => s.id === c.serviceId);
-    if (svc) c.unitPrice = member.value ? svc.memberPrice : svc.price;
+    if (svc) c.unitPrice = svc.memberPrice;
   }
-  ElMessage.success(`已关联会员 ${member.value!.name || member.value!.cardNo}`);
+  const activeCnt = memberCards.value.filter((c) => c.isActive).length;
+  const closedCnt = memberCards.value.length - activeCnt;
+  ElMessage.success(
+    activeCnt > 1
+      ? `已找到 ${activeCnt} 张可用卡${closedCnt > 0 ? `（另 ${closedCnt} 张已关闭）` : ''}，可勾选合并结算`
+      : `已关联会员 ${primaryMember.value?.name || primaryMember.value?.cardNo || phone}`
+  );
 }
 
 function openCheckout() {
-  if (!canCheckout.value) {
+  if (cart.length === 0 || !cart.every((c) => c.technicianId != null)) {
     ElMessage.warning('请确保所有项目都指派了技师');
+    return;
+  }
+  if (mode.value === 'member' && !primaryMember.value) {
+    ElMessage.warning('会员收银必须先关联会员');
     return;
   }
   checkoutOpen.value = true;
@@ -340,7 +471,7 @@ async function doCheckout(payload: { payMethod: string; paidAmount: number | nul
   try {
     const created = await ordersApi.create({
       storeId: appStore.activeStoreId,
-      memberId: member.value?.id ?? null,
+      memberId: primaryMember.value?.id ?? null,
       items: cart.map((c) => ({
         serviceId: c.serviceId,
         technicianId: c.technicianId!,
@@ -349,11 +480,14 @@ async function doCheckout(payload: { payMethod: string; paidAmount: number | nul
       })),
       remark: null
     });
+    // 合并结算：主卡之外勾选的卡走 secondaryMemberIds（仅 MemberCard 支付时后端会用）
+    const secondary = selectedCardIds.value.slice(1);
     const checked = await ordersApi.checkout(created.id, {
       payMethod: payload.payMethod,
       paidAmount: payload.paidAmount,
       discountAmount: 0,
-      remark: payload.remark
+      remark: payload.remark,
+      secondaryMemberIds: secondary.length > 0 ? secondary : undefined
     });
     lastOrder.value = checked;
     checkoutOpen.value = false;
@@ -371,8 +505,8 @@ async function resetAll() {
     await ElMessageBox.confirm('确认清空当前订单？', '提示', { type: 'warning' }).catch(() => null);
   }
   cart.splice(0, cart.length);
-  member.value = null;
-  memberKeyword.value = '';
+  clearMember();
+  mode.value = 'walkin';
   lastOrder.value = null;
 }
 
@@ -391,15 +525,27 @@ useShortcuts({
 <style scoped>
 .pos {
   display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 16px;
+  /* grid-template-columns is set inline so the splitter can drag */
+  grid-template-columns: 1fr 6px 520px;
+  gap: 8px;
   height: calc(100vh - 100px);
 }
-.left, .right { min-height: 0; }
+.left, .right { min-height: 0; min-width: 0; }
 .right { display: flex; flex-direction: column; }
 .cart { flex: 1; display: flex; flex-direction: column; }
 .cart :deep(.el-card__body) { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
 .header-row { display: flex; justify-content: space-between; align-items: center; }
+
+.splitter {
+  background: var(--el-border-color-light);
+  cursor: col-resize;
+  border-radius: 3px;
+  transition: background-color 0.15s;
+}
+.splitter:hover, .splitter:focus-visible {
+  background: var(--el-color-primary);
+  outline: none;
+}
 
 .services-grid {
   display: grid;
@@ -415,10 +561,19 @@ useShortcuts({
 .svc-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
 .svc-code { color: var(--el-text-color-secondary); font-size: 12px; }
 
+.mode-switch { display: flex; margin-bottom: 10px; width: 100%; }
+.mode-switch :deep(.el-radio-button) { flex: 1; }
+.mode-switch :deep(.el-radio-button__inner) { width: 100%; }
 .member-row { display: flex; gap: 8px; }
 .member-info { background: #f5f7fa; padding: 8px; border-radius: 4px; margin-top: 8px; }
-.m-line { display: flex; gap: 8px; align-items: center; }
+.m-line { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .m-line.muted { color: var(--el-text-color-secondary); font-size: 12px; margin-top: 4px; }
+.card-pick-list { margin: 6px 0; max-height: 160px; overflow-y: auto; }
+.card-pick-row { padding: 2px 0; }
+.card-pick-row.closed { opacity: 0.55; }
+.card-pick-row :deep(.el-checkbox__label) { display: inline-flex; align-items: center; gap: 2px; }
+.card-no { font-weight: 600; }
+.card-bal { color: #d9534f; font-weight: 600; }
 
 .empty {
   text-align: center;
@@ -432,9 +587,12 @@ useShortcuts({
   padding: 8px 0;
 }
 .ci-line { display: flex; justify-content: space-between; align-items: center; }
-.ci-name { font-weight: 500; }
-.ci-meta { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
-.ci-price { margin-left: auto; font-weight: 600; }
+.ci-name { font-weight: 500; font-size: 15px; }
+.ci-meta { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+.ci-tech { flex: 1 1 200px; min-width: 180px; }
+.ci-room { flex: 0 1 140px; min-width: 120px; }
+.ci-qty { flex: 0 0 140px; }
+.ci-price { margin-left: auto; font-weight: 700; font-size: 16px; color: #d9534f; }
 
 .totals { padding-top: 8px; border-top: 1px solid var(--el-border-color-light); margin-top: 8px; }
 .total-line { display: flex; justify-content: space-between; padding: 4px 0; }

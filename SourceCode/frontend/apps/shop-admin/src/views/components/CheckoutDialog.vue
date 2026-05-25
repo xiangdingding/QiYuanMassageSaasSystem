@@ -101,7 +101,8 @@ const canSubmit = computed(() => {
 });
 
 function onOpen() {
-  form.payMethod = 'Cash';
+  // 有会员则默认走会员卡结算（余额不足时收银员可手动改其它方式）
+  form.payMethod = props.hasMember ? 'MemberCard' : 'Cash';
   form.paidAmount = props.payable;
   form.remark = '';
   // 弹窗打开后把焦点放到第一个 RadioButton（el-dialog 自带焦点陷阱，Tab 不会跑出去）

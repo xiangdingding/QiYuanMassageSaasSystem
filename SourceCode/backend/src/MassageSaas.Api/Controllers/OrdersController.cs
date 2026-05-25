@@ -366,8 +366,8 @@ public class OrdersController : ControllerBase
             return Conflict(new { code = "OrderInvalid", message = "订单已取消或已退款" });
 
         var discount = req.DiscountAmount < 0 ? 0 : req.DiscountAmount;
-        if (order.Member is not null)
-            discount = Math.Max(discount, Math.Round(order.Total * (1 - order.Member.Discount), 2));
+        // 注：会员折扣已经在 开卡/充值 时通过现金价（充值金额 × 折扣）兑现，
+        // 结账时不再按 Member.Discount 重复打折；订单线的单价已使用 MemberPrice。
         // 券折扣：取面值 or 折扣百分比中的有效值
         if (order.VoucherId.HasValue)
         {
@@ -391,10 +391,35 @@ public class OrdersController : ControllerBase
         {
             if (order.Member is null)
                 return BadRequest(new { code = "NoMember", message = "未关联会员，无法用会员卡结账" });
-            if (order.Member.Balance < paid)
-                return BadRequest(new { code = "InsufficientBalance", message = "会员余额不足" });
-            order.Member.Balance -= paid;
-            order.Member.TotalConsumed += paid;
+
+            // 合并结算：把主卡 + 次要卡按顺序扣余额（次要卡必须同手机号、未关闭）
+            var cards = new List<Member> { order.Member };
+            if (req.SecondaryMemberIds is { Count: > 0 })
+            {
+                var ids = req.SecondaryMemberIds.Distinct().Where(id => id != order.Member.Id).ToList();
+                if (ids.Count > 0)
+                {
+                    var extras = await _db.Members
+                        .Where(m => ids.Contains(m.Id) && m.IsActive && m.Phone == order.Member.Phone)
+                        .ToListAsync(ct);
+                    cards.AddRange(extras);
+                }
+            }
+
+            var totalAvail = cards.Sum(c => c.Balance);
+            if (totalAvail < paid)
+                return BadRequest(new { code = "InsufficientBalance", message = $"合并余额不足，可用 ¥{totalAvail:F2}，应付 ¥{paid:F2}" });
+
+            var remaining = paid;
+            foreach (var c in cards)
+            {
+                if (remaining <= 0) break;
+                var take = Math.Min(c.Balance, remaining);
+                if (take <= 0) continue;
+                c.Balance -= take;
+                c.TotalConsumed += take;
+                remaining -= take;
+            }
         }
         else if (order.Member is not null)
         {
