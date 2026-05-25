@@ -233,6 +233,13 @@
             </span>
           </el-form-item>
 
+          <el-form-item label="实充次数">
+            <strong style="color: #67c23a; font-size: 16px">{{ creditCount }} 次</strong>
+            <span class="muted" style="margin-left: 10px">
+              充值次数 + 赠送 {{ selectedCreateType.bonusCount ?? 0 }} 次 = 卡内可用次数
+            </span>
+          </el-form-item>
+
           <el-form-item label="充值金额">
             <strong style="font-size: 16px">¥{{ countFaceAmount.toFixed(2) }}</strong>
             <span class="muted" style="margin-left: 10px">
@@ -627,6 +634,12 @@ const chargeAmount = computed(() =>
 const creditAmount = computed(() => {
   const bonus = selectedCreateType.value?.bonusAmount ?? 0;
   return Math.round((form.initialBalance + bonus) * 100) / 100;
+});
+
+/// 计次卡：实充次数 = 购买次数 + 赠送次数（卡内可用次数）
+const creditCount = computed(() => {
+  const bonus = selectedCreateType.value?.bonusCount ?? 0;
+  return form.count + bonus;
 });
 
 function onCreateTypePicked(id: number | null) {
