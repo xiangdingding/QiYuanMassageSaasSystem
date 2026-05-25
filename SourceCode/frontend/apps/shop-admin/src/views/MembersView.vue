@@ -123,53 +123,83 @@
       />
     </el-card>
 
-    <el-dialog v-model="formOpen" :title="formMode === 'create' ? '开卡' : '编辑会员'" width="520px">
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="110px">
-        <el-form-item label="卡号" prop="cardNo">
-          <el-input v-model="form.cardNo" :disabled="formMode === 'edit'" />
-        </el-form-item>
-        <el-form-item label="手机号" prop="phone">
-          <el-input v-model="form.phone" :disabled="formMode === 'create' && phoneLocked" />
-          <span v-if="phoneLocked" class="muted" style="margin-left:8px">为该客户加办新卡，手机号已锁定</span>
-        </el-form-item>
-        <el-form-item label="姓名">
-          <el-input v-model="form.name" />
-        </el-form-item>
-        <el-form-item label="性别">
-          <el-radio-group v-model="form.gender">
-            <el-radio value="男">男</el-radio>
-            <el-radio value="女">女</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="生日">
-          <el-date-picker v-model="form.birthday" type="date" placeholder="可选" value-format="YYYY-MM-DD" />
+    <el-dialog
+      v-model="formOpen"
+      :title="formMode === 'create' ? '开卡' : '编辑会员'"
+      :width="formMode === 'create' ? '900px' : '560px'"
+      top="6vh"
+    >
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="92px" class="member-form">
+        <el-form-item v-if="formMode === 'create'" class="full-row">
+          <el-checkbox v-model="usePhoneAsCardNo" aria-label="开卡时用手机号自动作为卡号">
+            用手机号作为卡号（输入手机号后自动填入，仍可手动修改）
+          </el-checkbox>
         </el-form-item>
 
-        <el-form-item v-if="formMode === 'create'" label="会员类型" prop="memberTypeId" required>
-          <el-select
-            v-model="form.memberTypeId"
-            placeholder="开卡必选一个会员类型"
-            style="width: 100%"
-            :loading="typesLoading"
-            @change="onCreateTypePicked"
-          >
-            <el-option
-              v-for="t in activeMemberTypes"
-              :key="t.id"
-              :value="t.id"
-              :label="t.name"
-            >
-              <span>{{ t.name }}</span>
-              <span class="opt-meta">
-                {{ t.kind === 'StoredValue' ? `充值卡 · 最低¥${t.minRechargeAmount?.toFixed(0)}` : `计次卡 · ${t.serviceItemName ?? ''} · 最少${t.minPurchaseCount}次` }}
-                {{ t.discount < 1 ? ' · ' + (t.discount * 10).toFixed(1) + '折' : '' }}
-              </span>
-            </el-option>
-          </el-select>
-        </el-form-item>
+        <el-row :gutter="16">
+          <el-col :span="formMode === 'create' ? 12 : 24">
+            <el-form-item label="手机号" prop="phone">
+              <el-input v-model="form.phone" :disabled="formMode === 'create' && phoneLocked" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="formMode === 'create' ? 12 : 24">
+            <el-form-item label="卡号" prop="cardNo">
+              <el-input v-model="form.cardNo" :disabled="formMode === 'edit'" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <div v-if="phoneLocked && formMode === 'create'" class="muted lock-tip">为该客户加办新卡，手机号已锁定</div>
 
-        <el-form-item v-if="formMode === 'create' && selectedCreateType" label="类型规则">
-          <el-descriptions :column="2" size="small" border class="type-summary">
+        <el-row :gutter="16">
+          <el-col :span="formMode === 'create' ? 12 : 24">
+            <el-form-item label="姓名">
+              <el-input v-model="form.name" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="formMode === 'create' ? 12 : 24">
+            <el-form-item label="性别">
+              <el-radio-group v-model="form.gender">
+                <el-radio value="男">男</el-radio>
+                <el-radio value="女">女</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="16">
+          <el-col :span="formMode === 'create' ? 12 : 24">
+            <el-form-item label="生日">
+              <el-date-picker v-model="form.birthday" type="date" placeholder="可选" value-format="YYYY-MM-DD" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col v-if="formMode === 'create'" :span="12">
+            <el-form-item label="会员类型" prop="memberTypeId" required>
+              <el-select
+                v-model="form.memberTypeId"
+                placeholder="开卡必选一个会员类型"
+                style="width: 100%"
+                :loading="typesLoading"
+                @change="onCreateTypePicked"
+              >
+                <el-option
+                  v-for="t in activeMemberTypes"
+                  :key="t.id"
+                  :value="t.id"
+                  :label="t.name"
+                >
+                  <span>{{ t.name }}</span>
+                  <span class="opt-meta">
+                    {{ t.kind === 'StoredValue' ? `充值卡 · 最低¥${t.minRechargeAmount?.toFixed(0)}` : `计次卡 · ${t.serviceItemName ?? ''} · 最少${t.minPurchaseCount}次` }}
+                    {{ t.discount < 1 ? ' · ' + (t.discount * 10).toFixed(1) + '折' : '' }}
+                  </span>
+                </el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-form-item v-if="formMode === 'create' && selectedCreateType" label="类型规则" class="full-row">
+          <el-descriptions :column="3" size="small" border class="type-summary">
             <el-descriptions-item label="类型">
               <el-tag size="small" :type="selectedCreateType.kind === 'StoredValue' ? 'warning' : 'success'">
                 {{ selectedCreateType.kind === 'StoredValue' ? '充值卡' : '计次卡' }}
@@ -197,103 +227,104 @@
                 {{ createCardExpireText }}
               </strong>
             </el-descriptions-item>
-            <el-descriptions-item v-if="selectedCreateType.kind === 'CountBased' && selectedCreateType.serviceItemName" label="绑定服务" :span="2">
+            <el-descriptions-item v-if="selectedCreateType.kind === 'CountBased' && selectedCreateType.serviceItemName" label="绑定服务" :span="3">
               {{ selectedCreateType.serviceItemName }}
             </el-descriptions-item>
           </el-descriptions>
         </el-form-item>
 
-        <el-form-item v-if="formMode === 'create' && selectedCreateType?.kind === 'StoredValue'" label="充值金额" prop="initialBalance" required>
-          <el-input-number
-            v-model="form.initialBalance"
-            :min="selectedCreateType.minRechargeAmount ?? 0.01"
-            :precision="2"
-            :step="100"
-          />
-          <span class="muted" style="margin-left: 8px">
-            卡面金额，最低 ¥{{ selectedCreateType.minRechargeAmount?.toFixed(2) }}
-          </span>
-        </el-form-item>
+        <el-row v-if="formMode === 'create' && selectedCreateType?.kind === 'StoredValue'" :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="充值金额" prop="initialBalance" required>
+              <el-input-number
+                v-model="form.initialBalance"
+                :min="selectedCreateType.minRechargeAmount ?? 0.01"
+                :precision="2"
+                :step="100"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="实收金额">
+              <strong style="color: #e6a23c; font-size: 16px">¥{{ chargeAmount.toFixed(2) }}</strong>
+              <span class="muted" style="margin-left: 8px">× {{ (form.discount * 10).toFixed(1) }} 折</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="实充金额">
+              <strong style="color: #67c23a; font-size: 16px">¥{{ creditAmount.toFixed(2) }}</strong>
+              <span class="muted" style="margin-left: 10px">
+                充值金额 + 赠送 ¥{{ (selectedCreateType.bonusAmount ?? 0).toFixed(2) }} = 卡内余额
+              </span>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-        <el-form-item v-if="formMode === 'create' && selectedCreateType?.kind === 'StoredValue'" label="实收金额">
-          <strong style="color: #e6a23c; font-size: 16px">¥{{ chargeAmount.toFixed(2) }}</strong>
-          <span class="muted" style="margin-left: 10px">
-            充值金额 × {{ (form.discount * 10).toFixed(1) }} 折 = 客户实付
-          </span>
-        </el-form-item>
+        <el-row v-if="formMode === 'create' && selectedCreateType?.kind === 'CountBased'" :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="购买次数" prop="count" required>
+              <el-input-number
+                v-model="form.count"
+                :min="selectedCreateType.minPurchaseCount ?? 1"
+                :step="1"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="实充次数">
+              <strong style="color: #67c23a; font-size: 16px">{{ creditCount }} 次</strong>
+              <span class="muted" style="margin-left: 8px">含赠送 {{ selectedCreateType.bonusCount ?? 0 }} 次</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="充值金额">
+              <strong style="font-size: 16px">¥{{ countFaceAmount.toFixed(2) }}</strong>
+              <span class="muted" style="margin-left: 8px">
+                <template v-if="boundService">{{ form.count }} 次 × ¥{{ boundUnitPrice.toFixed(2) }}</template>
+                <template v-else>未配置会员价</template>
+              </span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="实收金额">
+              <strong style="color: #e6a23c; font-size: 16px">¥{{ countChargeAmount.toFixed(2) }}</strong>
+              <span class="muted" style="margin-left: 8px">× {{ (form.discount * 10).toFixed(1) }} 折</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-        <el-form-item v-if="formMode === 'create' && selectedCreateType?.kind === 'StoredValue'" label="实充金额">
-          <strong style="color: #67c23a; font-size: 16px">¥{{ creditAmount.toFixed(2) }}</strong>
-          <span class="muted" style="margin-left: 10px">
-            充值金额 + 赠送 ¥{{ (selectedCreateType.bonusAmount ?? 0).toFixed(2) }} = 卡内余额
-          </span>
-        </el-form-item>
+        <el-row v-if="formMode === 'create'" :gutter="16">
+          <el-col :span="16">
+            <el-form-item label="支付来源" prop="payMethod" required>
+              <el-radio-group v-model="form.payMethod">
+                <el-radio-button value="Wechat">微信</el-radio-button>
+                <el-radio-button value="Alipay">支付宝</el-radio-button>
+                <el-radio-button value="BankCard">银行卡</el-radio-button>
+                <el-radio-button value="Cash">现金</el-radio-button>
+                <el-radio-button value="Other">其它</el-radio-button>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="折扣" prop="discount">
+              <el-input-number
+                v-model="form.discount"
+                :min="0.1"
+                :max="1"
+                :step="0.05"
+                :precision="2"
+                disabled
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-        <template v-if="formMode === 'create' && selectedCreateType?.kind === 'CountBased'">
-          <el-form-item label="购买次数" prop="count" required>
-            <el-input-number
-              v-model="form.count"
-              :min="selectedCreateType.minPurchaseCount ?? 1"
-              :step="1"
-            />
-            <span class="muted" style="margin-left: 8px">
-              最低 {{ selectedCreateType.minPurchaseCount }} 次
-              <span v-if="(selectedCreateType.bonusCount ?? 0) > 0"> · 赠送 {{ selectedCreateType.bonusCount }} 次</span>
-            </span>
-          </el-form-item>
-
-          <el-form-item label="实充次数">
-            <strong style="color: #67c23a; font-size: 16px">{{ creditCount }} 次</strong>
-            <span class="muted" style="margin-left: 10px">
-              充值次数 + 赠送 {{ selectedCreateType.bonusCount ?? 0 }} 次 = 卡内可用次数
-            </span>
-          </el-form-item>
-
-          <el-form-item label="充值金额">
-            <strong style="font-size: 16px">¥{{ countFaceAmount.toFixed(2) }}</strong>
-            <span class="muted" style="margin-left: 10px">
-              <template v-if="boundService">
-                {{ form.count }} 次 × 会员价 ¥{{ boundUnitPrice.toFixed(2) }}（{{ boundService.name }}）
-              </template>
-              <template v-else>
-                绑定服务未配置会员价
-              </template>
-            </span>
-          </el-form-item>
-
-          <el-form-item label="实收金额">
-            <strong style="color: #e6a23c; font-size: 16px">¥{{ countChargeAmount.toFixed(2) }}</strong>
-            <span class="muted" style="margin-left: 10px">
-              充值金额 × {{ (form.discount * 10).toFixed(1) }} 折 = 客户实付
-            </span>
-          </el-form-item>
-        </template>
-
-        <el-form-item v-if="formMode === 'create'" label="支付来源" prop="payMethod" required>
-          <el-radio-group v-model="form.payMethod">
-            <el-radio-button value="Wechat">微信</el-radio-button>
-            <el-radio-button value="Alipay">支付宝</el-radio-button>
-            <el-radio-button value="BankCard">银行卡</el-radio-button>
-            <el-radio-button value="Cash">现金</el-radio-button>
-            <el-radio-button value="Other">其它</el-radio-button>
-          </el-radio-group>
-        </el-form-item>
-
-        <el-form-item v-if="formMode === 'create'" label="折扣" prop="discount">
-          <el-input-number
-            v-model="form.discount"
-            :min="0.1"
-            :max="1"
-            :step="0.05"
-            :precision="2"
-            disabled
-          />
-          <span class="muted" style="margin-left: 8px">由会员类型决定，不可手改</span>
-        </el-form-item>
-
-        <el-form-item label="引荐人">
-          <el-input v-model="form.referrerKeyword" placeholder="卡号 / 手机号 搜索后选择" @keyup.enter="searchReferrer" />
-          <el-button link size="small" @click="searchReferrer">查找</el-button>
+        <el-form-item label="引荐人" class="full-row">
+          <el-input v-model="form.referrerKeyword" placeholder="卡号 / 手机号 搜索后选择" @keyup.enter="searchReferrer" style="width: calc(100% - 80px)" />
+          <el-button link size="small" style="margin-left:8px" @click="searchReferrer">查找</el-button>
           <el-radio-group v-if="referrerCandidates.length" v-model="form.referredByMemberId" style="margin-top:6px; display:flex; flex-direction:column; gap:6px">
             <el-radio v-for="c in referrerCandidates" :key="c.id" :value="c.id">
               {{ c.cardNo }}（{{ c.name || '未填' }} / {{ c.phone }}）
@@ -301,7 +332,7 @@
           </el-radio-group>
           <span v-if="form.referredByMemberId" class="muted">已选引荐人 ID = {{ form.referredByMemberId }} <el-button link type="danger" size="small" @click="form.referredByMemberId = null">清除</el-button></span>
         </el-form-item>
-        <el-form-item label="备注">
+        <el-form-item label="备注" class="full-row">
           <el-input v-model="form.remark" type="textarea" :rows="2" />
         </el-form-item>
       </el-form>
@@ -631,7 +662,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import dayjs from 'dayjs';
 import { memberTypesApi, membersApi, servicesApi, type MemberType, type ReferralSummaryDto } from '@/api/modules';
@@ -650,6 +681,15 @@ const query = reactive({ page: 1, pageSize: 20, keyword: '', includeClosed: fals
 const formOpen = ref(false);
 const formMode = ref<'create' | 'edit'>('create');
 const editingId = ref<number | null>(null);
+
+/// 管理员开关：开卡时是否用手机号自动作为卡号（持久化到 localStorage，租户级即可）
+const USE_PHONE_AS_CARDNO_KEY = 'member-create:usePhoneAsCardNo';
+const usePhoneAsCardNo = ref<boolean>(localStorage.getItem(USE_PHONE_AS_CARDNO_KEY) !== '0');
+watch(usePhoneAsCardNo, (v) => {
+  localStorage.setItem(USE_PHONE_AS_CARDNO_KEY, v ? '1' : '0');
+  // 勾上的瞬间也把当前手机号同步过去
+  if (v && formMode.value === 'create' && form.phone) form.cardNo = form.phone;
+});
 const formRef = ref<FormInstance>();
 const form = reactive({
   cardNo: '',
@@ -667,6 +707,13 @@ const form = reactive({
   payMethod: 'Wechat'
 });
 const referrerCandidates = ref<Member[]>([]);
+
+/// 开卡场景下，手机号变动时同步到卡号（仅当开关打开）；用户仍可手动改卡号
+watch(() => form.phone, (newPhone) => {
+  if (formMode.value === 'create' && usePhoneAsCardNo.value) {
+    form.cardNo = newPhone;
+  }
+});
 
 // ---- 会员类型相关（共享给 创建对话框 + 办卡对话框）----
 const memberTypes = ref<MemberType[]>([]);
@@ -1271,4 +1318,8 @@ onMounted(async () => {
 :deep(.el-alert__content) { padding-right: 0; }
 .type-summary { width: 100%; }
 .permanent { color: var(--el-color-success); }
+.member-form .el-form-item { margin-bottom: 12px; }
+.member-form .full-row { width: 100%; }
+.lock-tip { font-size: 12px; margin: -8px 0 8px 100px; }
+.member-form :deep(.el-input-number) { width: 100%; }
 </style>
