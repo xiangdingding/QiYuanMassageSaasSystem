@@ -42,6 +42,7 @@ public class MembersController : ControllerBase
         var q = _db.Members.AsNoTracking()
             .Include(m => m.ReferredByMember)
             .Include(m => m.MemberType)
+                .ThenInclude(t => t!.ServiceItem)
             .AsQueryable();
         if (!string.IsNullOrWhiteSpace(keyword))
         {
@@ -68,6 +69,7 @@ public class MembersController : ControllerBase
         var m = await _db.Members.AsNoTracking()
             .Include(x => x.ReferredByMember)
             .Include(x => x.MemberType)
+                .ThenInclude(t => t!.ServiceItem)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
         if (m is null) return NotFound();
         var counts = await LoadCountCardSumsAsync(new[] { m.Id }, ct);
@@ -112,6 +114,7 @@ public class MembersController : ControllerBase
         var cardsQ = _db.Members.AsNoTracking()
             .Include(m => m.ReferredByMember)
             .Include(m => m.MemberType)
+                .ThenInclude(t => t!.ServiceItem)
             .Where(m => pagedPhones.Contains(m.Phone));
         if (storeId.HasValue) cardsQ = cardsQ.Where(m => m.StoreId == storeId.Value);
         if (!includeClosed) cardsQ = cardsQ.Where(m => m.IsActive);
@@ -143,10 +146,17 @@ public class MembersController : ControllerBase
     {
         int? totalCount = null;
         int? remainCount = null;
-        if (m.MemberType?.Kind == MemberTypeKind.CountBased && counts != null && counts.TryGetValue(m.Id, out var c))
+        long? serviceItemId = null;
+        string? serviceItemName = null;
+        if (m.MemberType?.Kind == MemberTypeKind.CountBased)
         {
-            totalCount = c.Total;
-            remainCount = c.Remain;
+            if (counts != null && counts.TryGetValue(m.Id, out var c))
+            {
+                totalCount = c.Total;
+                remainCount = c.Remain;
+            }
+            serviceItemId = m.MemberType.ServiceItemId;
+            serviceItemName = m.MemberType.ServiceItem?.Name;
         }
 
         return new MemberDto(
@@ -163,7 +173,9 @@ public class MembersController : ControllerBase
             m.MemberType?.Name,
             m.MemberType?.Kind.ToString(),
             totalCount,
-            remainCount);
+            remainCount,
+            serviceItemId,
+            serviceItemName);
     }
 
     /// <summary>
@@ -333,6 +345,8 @@ public class MembersController : ControllerBase
 
         await _db.Entry(m).Reference(x => x.ReferredByMember).LoadAsync(ct);
         await _db.Entry(m).Reference(x => x.MemberType).LoadAsync(ct);
+        if (m.MemberType is not null)
+            await _db.Entry(m.MemberType).Reference(t => t.ServiceItem).LoadAsync(ct);
         var createdCounts = await LoadCountCardSumsAsync(new[] { m.Id }, ct);
         return CreatedAtAction(nameof(Get), new { id = m.Id }, MapDto(m, createdCounts));
     }
@@ -370,6 +384,8 @@ public class MembersController : ControllerBase
 
         await _db.Entry(m).Reference(x => x.ReferredByMember).LoadAsync(ct);
         await _db.Entry(m).Reference(x => x.MemberType).LoadAsync(ct);
+        if (m.MemberType is not null)
+            await _db.Entry(m.MemberType).Reference(t => t.ServiceItem).LoadAsync(ct);
         var updatedCounts = await LoadCountCardSumsAsync(new[] { m.Id }, ct);
         return Ok(MapDto(m, updatedCounts));
     }
@@ -673,6 +689,8 @@ public class MembersController : ControllerBase
 
         await _db.Entry(target).Reference(x => x.ReferredByMember).LoadAsync(ct);
         await _db.Entry(target).Reference(x => x.MemberType).LoadAsync(ct);
+        if (target.MemberType is not null)
+            await _db.Entry(target.MemberType).Reference(t => t.ServiceItem).LoadAsync(ct);
         var transferCounts = await LoadCountCardSumsAsync(new[] { target.Id }, ct);
         return Ok(MapDto(target, transferCounts));
     }

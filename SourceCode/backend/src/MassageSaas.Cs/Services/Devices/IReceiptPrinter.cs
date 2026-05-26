@@ -4,8 +4,8 @@ using Microsoft.Extensions.Logging;
 
 namespace MassageSaas.Cs.Services.Devices;
 
-/// <summary>小票上的一行消费明细。</summary>
-public record ReceiptLine(string ServiceName, int Quantity, string TechnicianName, decimal Amount);
+/// <summary>小票上的一行消费明细。Amount 是面值小计；PaidViaPunchCard=true 表示该项次卡核销，现金未收。</summary>
+public record ReceiptLine(string ServiceName, int Quantity, string TechnicianName, decimal Amount, bool PaidViaPunchCard = false);
 
 /// <summary>一张结账小票的结构化内容，由打印机驱动负责排版。</summary>
 public record ReceiptDocument(
@@ -17,7 +17,9 @@ public record ReceiptDocument(
     decimal Discount,
     decimal Paid,
     decimal Change,
-    string PayMethod)
+    string PayMethod,
+    /// <summary>本单走次卡核销的总次数；&gt;0 时小票多打一行"消费次数"。</summary>
+    int PunchCardUsedCount = 0)
 {
     /// <summary>构造一张测试小票，覆盖多明细/优惠/找零，供"测试打印"现场调试用。</summary>
     public static ReceiptDocument CreateTestSample(string storeName) => new(
@@ -100,11 +102,15 @@ public sealed class LoggingReceiptPrinter : IReceiptPrinter
         sb.AppendLine($"时间：{d.PrintedAt:yyyy-MM-dd HH:mm}");
         sb.AppendLine("--------------------------------");
         foreach (var i in d.Items)
-            sb.AppendLine($"{i.ServiceName} x{i.Quantity}  {i.TechnicianName}  ¥{i.Amount:F2}");
+        {
+            var tag = i.PaidViaPunchCard ? "[次卡]" : "";
+            sb.AppendLine($"{i.ServiceName} x{i.Quantity}次  {i.TechnicianName}  ¥{i.Amount:F2} {tag}".TrimEnd());
+        }
         sb.AppendLine("--------------------------------");
         if (d.Discount > 0) sb.AppendLine($"优惠：¥{d.Discount:F2}");
         sb.AppendLine($"合计：¥{d.Total:F2}");
         sb.AppendLine($"实收：¥{d.Paid:F2}（{d.PayMethod}）");
+        if (d.PunchCardUsedCount > 0) sb.AppendLine($"消费次数：{d.PunchCardUsedCount} 次（次卡核销）");
         if (d.Change > 0) sb.AppendLine($"找零：¥{d.Change:F2}");
         return sb.ToString();
     }

@@ -30,7 +30,11 @@ public record MemberDto(
     /// <summary>次卡专属：当前会员名下所有活动计次套餐的累计购买次数（含赠送）；非次卡为 null。</summary>
     int? TotalCount = null,
     /// <summary>次卡专属：当前会员名下所有活动计次套餐的剩余次数；非次卡为 null。</summary>
-    int? RemainCount = null);
+    int? RemainCount = null,
+    /// <summary>次卡专属：会员类型模板绑定的服务项目 Id（用于结账时校验购物车里是否含该服务）；非次卡为 null。</summary>
+    long? ServiceItemId = null,
+    /// <summary>次卡专属：绑定服务项目名称，便于前端提示"无匹配项目"。</summary>
+    string? ServiceItemName = null);
 
 /// <summary>按手机号聚合的会员视图：一个人名下可能有多张卡（充值卡 + 计次卡）。</summary>
 public record MemberPhoneGroupDto(

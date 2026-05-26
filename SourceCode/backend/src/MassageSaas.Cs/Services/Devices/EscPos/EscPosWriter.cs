@@ -52,7 +52,9 @@ public sealed class EscPosWriter
 
         foreach (var i in doc.Items)
         {
-            Line(buf, $"{i.ServiceName} ×{i.Quantity}");
+            var nameLine = $"{i.ServiceName} ×{i.Quantity}次";
+            if (i.PaidViaPunchCard) nameLine += "  [次卡]";
+            Line(buf, nameLine);
             Line(buf, TwoColumns($"  {i.TechnicianName}", $"¥{i.Amount:F2}"));
         }
 
@@ -63,6 +65,8 @@ public sealed class EscPosWriter
         Line(buf, TwoColumns("合计", $"¥{doc.Total:F2}"));
         buf.AddRange(BoldOff);
         Line(buf, TwoColumns($"实收（{doc.PayMethod}）", $"¥{doc.Paid:F2}"));
+        if (doc.PunchCardUsedCount > 0)
+            Line(buf, TwoColumns("消费次数（次卡）", $"{doc.PunchCardUsedCount} 次"));
         if (doc.Change > 0)
             Line(buf, TwoColumns("找零", $"¥{doc.Change:F2}"));
 

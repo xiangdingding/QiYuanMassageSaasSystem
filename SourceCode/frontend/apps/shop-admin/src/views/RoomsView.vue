@@ -14,10 +14,10 @@
         <el-table-column prop="roomType" label="类型" width="120">
           <template #default="{ row }">
             <el-tag v-if="row.isTimedRoom" type="primary" size="small">计时房</el-tag>
-            <span v-else>{{ row.roomType || '—' }}</span>
+            <span v-else>{{ roomTypeLabel(row.roomType) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="capacity" label="容量" width="70" />
+        <el-table-column prop="capacity" label="容客（人）" width="100" />
         <el-table-column label="计时单价" width="100">
           <template #default="{ row }">
             <span v-if="row.isTimedRoom">¥{{ row.hourlyRate.toFixed(2) }}/时</span>
@@ -85,19 +85,19 @@
       </el-table>
     </el-card>
 
-    <el-dialog v-model="formOpen" :title="form.id ? '编辑房间' : '新建房间'" width="420px">
-      <el-form :model="form" label-width="80px">
+    <el-dialog v-model="formOpen" :title="form.id ? '编辑房间' : '新建房间'" width="460px">
+      <el-form :model="form" label-width="110px" class="room-form">
         <el-form-item label="房间号" required>
           <el-input v-model="form.roomNo" maxlength="32" placeholder="如 01 / VIP-1" />
         </el-form-item>
-        <el-form-item label="容量" required>
+        <el-form-item label="容客（人）" required>
           <el-input-number v-model="form.capacity" :min="1" :max="20" />
         </el-form-item>
         <el-form-item label="类型">
           <el-select v-model="form.roomType" placeholder="可选" clearable filterable allow-create style="width: 100%">
-            <el-option label="标准间" value="standard" />
-            <el-option label="VIP" value="vip" />
-            <el-option label="情侣间" value="couple" />
+            <el-option label="标准间" value="标准间" />
+            <el-option label="VIP" value="VIP" />
+            <el-option label="情侣间" value="情侣间" />
           </el-select>
         </el-form-item>
         <el-form-item label="计时房">
@@ -193,6 +193,21 @@ function payLabel(p: string) {
   return ({ Cash: '现金', Wechat: '微信', Alipay: '支付宝', MemberCard: '会员卡', BankCard: '银行卡', Unpaid: '未付' } as Record<string, string>)[p] ?? p;
 }
 
+/// 兼容历史数据：旧记录里的英文类型映射成中文展示
+const ROOM_TYPE_LABELS: Record<string, string> = {
+  standard: '标准间',
+  vip: 'VIP',
+  couple: '情侣间'
+};
+function roomTypeLabel(t: string | null | undefined) {
+  if (!t) return '—';
+  return ROOM_TYPE_LABELS[t.toLowerCase()] ?? t;
+}
+function normalizeRoomType(t: string | null | undefined): string | null {
+  if (!t) return null;
+  return ROOM_TYPE_LABELS[t.toLowerCase()] ?? t;
+}
+
 const canManage = computed(() => auth.role === 'ShopOwner' || auth.role === 'StoreManager');
 const activeStoreName = computed(
   () => appStore.stores.find((s) => s.id === appStore.activeStoreId)?.name ?? ''
@@ -221,7 +236,9 @@ function openNew() {
 function openEdit(row: Room) {
   Object.assign(form, {
     id: row.id, roomNo: row.roomNo, capacity: row.capacity,
-    roomType: row.roomType ?? null, remark: row.remark ?? null, isActive: row.isActive,
+    // 历史英文值在编辑时统一规整成中文，保存后自然清洗
+    roomType: normalizeRoomType(row.roomType),
+    remark: row.remark ?? null, isActive: row.isActive,
     isTimedRoom: row.isTimedRoom, hourlyRate: row.hourlyRate
   });
   formOpen.value = true;
@@ -342,4 +359,6 @@ onMounted(async () => {
 .toolbar .title { font-weight: 600; font-size: 16px; }
 .spacer { flex: 1; }
 .hint { color: #999; margin-left: 8px; font-size: 12px; }
+/* 表单标签不换行：容客（人）等较长中文标签在窄对话框里也保持单行 */
+.room-form :deep(.el-form-item__label) { white-space: nowrap; }
 </style>

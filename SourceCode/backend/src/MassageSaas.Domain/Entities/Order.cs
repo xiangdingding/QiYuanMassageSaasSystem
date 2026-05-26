@@ -56,9 +56,13 @@ public class OrderItem : BaseEntity, ITenantScoped
 
     public string ServiceName { get; set; } = null!;
     public int DurationMinutes { get; set; }
+    /// <summary>实际收银单价：次卡核销时为 0；现金/会员卡支付时等于面值。</summary>
     public decimal UnitPrice { get; set; }
     public int Quantity { get; set; } = 1;
+    /// <summary>实际收银金额：次卡核销时为 0；其它情况等于 UnitPrice × Quantity。</summary>
     public decimal ItemTotal { get; set; }
+    /// <summary>下单时记录的服务面值（无论是否走次卡都保存原价），用于小票展示"消费金额/次数"。</summary>
+    public decimal ListUnitPrice { get; set; }
     public decimal CommissionAmount { get; set; }
 
     /// <summary>分配的房间。<see cref="RoomNoSnapshot"/> 是冗余便捷字段。</summary>

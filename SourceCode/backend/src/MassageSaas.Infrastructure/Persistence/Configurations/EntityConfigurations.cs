@@ -207,6 +207,7 @@ public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         b.Property(x => x.ServiceName).HasMaxLength(200).IsRequired();
         b.Property(x => x.UnitPrice).HasPrecision(18, 2);
         b.Property(x => x.ItemTotal).HasPrecision(18, 2);
+        b.Property(x => x.ListUnitPrice).HasPrecision(18, 2);
         b.Property(x => x.CommissionAmount).HasPrecision(18, 2);
         b.Property(x => x.TipAmount).HasPrecision(18, 2);
         b.Property(x => x.RoomNoSnapshot).HasMaxLength(32);

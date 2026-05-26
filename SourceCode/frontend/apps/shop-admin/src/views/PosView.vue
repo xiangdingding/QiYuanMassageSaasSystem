@@ -95,8 +95,8 @@
               <div v-for="c in memberCards" :key="c.id" class="card-pick-row" :class="{ closed: !c.isActive }">
                 <el-checkbox
                   :model-value="selectedCardIds.includes(c.id)"
-                  :disabled="!c.isActive"
-                  :aria-label="`选择卡号 ${c.cardNo}，余额 ${c.balance.toFixed(2)} 元${c.memberTypeName ? '，' + c.memberTypeName : ''}${!c.isActive ? '（已关闭）' : ''}`"
+                  :disabled="!c.isActive || !isCardEligible(c)"
+                  :aria-label="cardAriaLabel(c)"
                   @update:model-value="toggleCard(c.id, $event)"
                 >
                   <span class="card-no">{{ c.cardNo }}</span>
@@ -104,9 +104,15 @@
                     {{ c.memberTypeName ?? '普通' }}
                   </el-tag>
                   <el-tag v-if="!c.isActive" size="small" type="info" style="margin-right:6px">已关闭</el-tag>
+                  <el-tag v-else-if="c.memberTypeKind === 'CountBased' && !isCardEligible(c)" size="small" type="danger" style="margin-right:6px">
+                    无匹配项目
+                  </el-tag>
                   <span class="card-bal">余额 ¥{{ c.balance.toFixed(2) }}</span>
                   <span v-if="c.memberTypeKind === 'CountBased' && c.remainCount != null" class="muted">
                     · 剩 {{ c.remainCount }} 次
+                  </span>
+                  <span v-if="c.memberTypeKind === 'CountBased' && c.serviceItemName" class="muted">
+                    · 绑定 {{ c.serviceItemName }}
                   </span>
                 </el-checkbox>
               </div>
@@ -210,17 +216,38 @@
       @submit="doCheckout"
     />
 
-    <el-dialog v-model="receiptOpen" title="结账成功" width="420px">
+    <el-dialog v-model="receiptOpen" title="结账成功" width="460px">
       <div v-if="lastOrder">
         <p><strong>订单号：</strong>{{ lastOrder.orderNo }}</p>
-        <p><strong>合计：</strong>¥ {{ lastOrder.total.toFixed(2) }}</p>
-        <p><strong>实收：</strong>¥ {{ lastOrder.paidAmount.toFixed(2) }}（{{ payMethodLabel(lastOrder.payMethod) }}）</p>
+        <p>
+          <strong>合计：</strong>¥ {{ receiptListTotal(lastOrder).toFixed(2) }}
+          <span v-if="(lastOrder.punchCardUsedCount ?? 0) > 0" class="muted" style="margin-left:6px">
+            （面值，含次卡抵扣）
+          </span>
+        </p>
+        <p>
+          <strong>实收：</strong>¥ {{ lastOrder.paidAmount.toFixed(2) }}（{{ payMethodLabel(lastOrder.payMethod) }}）
+        </p>
+        <p v-if="(lastOrder.punchCardUsedCount ?? 0) > 0">
+          <strong>消费次数：</strong>{{ lastOrder.punchCardUsedCount }} 次（次卡核销）
+        </p>
         <p v-if="lastOrder.discountAmount > 0">优惠：¥ {{ lastOrder.discountAmount.toFixed(2) }}</p>
         <el-table :data="lastOrder.items" size="small">
           <el-table-column prop="serviceName" label="项目" />
-          <el-table-column prop="technicianName" label="技师" width="100" />
-          <el-table-column label="金额" width="100">
-            <template #default="{ row }">¥{{ row.itemTotal.toFixed(2) }}</template>
+          <el-table-column prop="technicianName" label="技师" width="90" />
+          <el-table-column label="次数" width="60" align="right">
+            <template #default="{ row }">{{ row.quantity }} 次</template>
+          </el-table-column>
+          <el-table-column label="金额" width="110" align="right">
+            <template #default="{ row }">
+              <span>¥{{ rowListAmount(row).toFixed(2) }}</span>
+              <el-tag
+                v-if="row.memberPackageId"
+                size="small"
+                type="success"
+                style="margin-left:4px"
+              >次卡</el-tag>
+            </template>
           </el-table-column>
         </el-table>
       </div>
@@ -232,13 +259,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Search, User } from '@element-plus/icons-vue';
 import { membersApi, ordersApi, roomsApi, servicesApi, staffApi } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
 import { useShortcuts } from '@/composables/useShortcuts';
-import type { Member, Order, Room, ServiceItem, Staff } from '@/api/types';
+import type { Member, Order, OrderItem, Room, ServiceItem, Staff } from '@/api/types';
 import PickTechnicianDialog from '@/views/components/PickTechnicianDialog.vue';
 import CheckoutDialog from '@/views/components/CheckoutDialog.vue';
 
@@ -297,12 +324,38 @@ const selectedBalance = computed(() =>
 function toggleCard(id: number, checked: boolean | string | number) {
   const on = !!checked;
   const idx = selectedCardIds.value.indexOf(id);
-  if (on && idx === -1) selectedCardIds.value = [...selectedCardIds.value, id];
-  else if (!on && idx !== -1) {
+  if (on && idx === -1) {
+    const card = memberCards.value.find((c) => c.id === id);
+    if (card && !isCardEligible(card)) {
+      ElMessage.warning(
+        card.serviceItemName
+          ? `次卡绑定的「${card.serviceItemName}」不在购物车里，不能选用`
+          : '该次卡未绑定服务项目，不能用于结算'
+      );
+      return;
+    }
+    selectedCardIds.value = [...selectedCardIds.value, id];
+  } else if (!on && idx !== -1) {
     const arr = [...selectedCardIds.value];
     arr.splice(idx, 1);
     selectedCardIds.value = arr;
   }
+}
+
+/// 次卡只有绑定的服务项目出现在购物车里才能结算；其它卡（充值卡 / 无类型）不受限。
+function isCardEligible(card: Member): boolean {
+  if (card.memberTypeKind !== 'CountBased') return true;
+  if (card.serviceItemId == null) return false;
+  return cart.some((c) => c.serviceId === card.serviceItemId);
+}
+
+function cardAriaLabel(c: Member): string {
+  const parts = [`选择卡号 ${c.cardNo}`, `余额 ${c.balance.toFixed(2)} 元`];
+  if (c.memberTypeName) parts.push(c.memberTypeName);
+  if (!c.isActive) parts.push('已关闭');
+  else if (c.memberTypeKind === 'CountBased' && !isCardEligible(c))
+    parts.push(c.serviceItemName ? `无匹配项目，需添加 ${c.serviceItemName}` : '无绑定服务，不可结算');
+  return parts.join('，');
 }
 
 function clearMember() {
@@ -310,6 +363,27 @@ function clearMember() {
   selectedCardIds.value = [];
   memberKeyword.value = '';
 }
+
+/// 购物车变化（增删/换项）后，若某张已勾选的次卡绑定的服务不再出现，则自动取消勾选并提示。
+/// 避免出现"勾选了但实际无法结算"的歧义状态。
+watch(
+  () => cart.map((c) => c.serviceId).join(','),
+  () => {
+    if (selectedCardIds.value.length === 0) return;
+    const dropped: string[] = [];
+    const kept = selectedCardIds.value.filter((id) => {
+      const card = memberCards.value.find((c) => c.id === id);
+      if (!card) return true;
+      if (isCardEligible(card)) return true;
+      dropped.push(card.serviceItemName ? `${card.cardNo}（${card.serviceItemName}）` : card.cardNo);
+      return false;
+    });
+    if (dropped.length > 0) {
+      selectedCardIds.value = kept;
+      ElMessage.warning(`次卡 ${dropped.join('、')} 因购物车中无匹配服务已自动取消`);
+    }
+  }
+);
 
 /// 右侧结账区宽度（持久化到 localStorage，用户拖动调整）
 const RIGHT_WIDTH_KEY = 'pos:rightWidth';
@@ -371,6 +445,20 @@ function payMethodLabel(m: string) {
   return ({
     Cash: '现金', MemberCard: '会员卡', Wechat: '微信', Alipay: '支付宝', BankCard: '银行卡', Unpaid: '未支付'
   } as Record<string, string>)[m] ?? m;
+}
+
+/// 小票合计金额：优先用后端的 listTotal（含次卡面值），缺失时退回 total（现金合计）
+function receiptListTotal(o: Order): number {
+  if (o.listTotal != null && o.listTotal > 0) return o.listTotal;
+  return o.total;
+}
+
+/// 小票明细金额：优先 listAmount，缺失时回退到 itemTotal（旧订单兼容）
+function rowListAmount(row: OrderItem): number {
+  if (row.listAmount != null && row.listAmount > 0) return row.listAmount;
+  if (row.listUnitPrice != null && row.listUnitPrice > 0)
+    return Math.round(row.listUnitPrice * row.quantity * 100) / 100;
+  return row.itemTotal;
 }
 
 async function loadCatalog() {

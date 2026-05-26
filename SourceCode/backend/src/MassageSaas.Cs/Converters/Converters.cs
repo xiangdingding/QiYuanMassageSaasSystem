@@ -79,6 +79,26 @@ public class DecimalGreaterThanZeroConverter : IValueConverter
         => throw new NotImplementedException();
 }
 
+/// <summary>把房间类型从历史英文值 standard/vip/couple 显示为中文。</summary>
+public class RoomTypeDisplayConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var raw = value?.ToString();
+        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+        return raw.ToLowerInvariant() switch
+        {
+            "standard" => "标准间",
+            "vip" => "VIP",
+            "couple" => "情侣间",
+            _ => raw
+        };
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
 public class EnumLabelConverter : IValueConverter
 {
     private static readonly Dictionary<string, string> Map = new()

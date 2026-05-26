@@ -17,11 +17,22 @@ public partial class RoomFormWindow : Window
             Title = $"编辑房间 - {editing.RoomNo}";
             RoomNoBox.Text = editing.RoomNo;
             CapacityBox.Text = editing.Capacity.ToString();
-            TypeBox.Text = editing.RoomType ?? string.Empty;
+            // 历史英文值规整成中文：保存时一并清洗
+            TypeBox.Text = NormalizeRoomType(editing.RoomType);
             RemarkBox.Text = editing.Remark ?? string.Empty;
             ActiveBox.IsChecked = editing.IsActive;
         }
     }
+
+    private static string NormalizeRoomType(string? raw) =>
+        string.IsNullOrWhiteSpace(raw) ? string.Empty
+            : raw.Trim().ToLowerInvariant() switch
+            {
+                "standard" => "标准间",
+                "vip" => "VIP",
+                "couple" => "情侣间",
+                _ => raw.Trim()
+            };
 
     private int Capacity =>
         int.TryParse(CapacityBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : 1;

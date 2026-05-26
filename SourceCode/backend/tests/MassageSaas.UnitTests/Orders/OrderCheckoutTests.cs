@@ -141,6 +141,94 @@ public class OrderCheckoutTests
     }
 
     [Fact]
+    public async Task Checkout_RejectsPunchCardWhenBoundServiceMissingFromCart()
+    {
+        // 准备：另开一张次卡 + 一个非匹配服务，模拟用户拿次卡结算"非次卡服务"
+        var (db, ctx, primaryMember, svc, tech, _) = Seed(balance: 500m);
+        var otherSvc = new ServiceItem
+        {
+            Id = 200, TenantId = 1, Code = "S2", Name = "头疗",
+            DurationMinutes = 30, Price = 100m, MemberPrice = 90m, IsActive = true
+        };
+        db.ServiceItems.Add(otherSvc);
+
+        var typeCount = new MemberType
+        {
+            Id = 500, TenantId = 1, Code = "FOOT_10",
+            Name = "10 次足疗卡", Kind = MemberTypeKind.CountBased,
+            ServiceItemId = otherSvc.Id, // 次卡绑定"头疗"
+            Discount = 1.0m, IsActive = true
+        };
+        db.MemberTypes.Add(typeCount);
+
+        var punchCard = new Member
+        {
+            Id = 2000, TenantId = 1, StoreId = 1, CardNo = "P001",
+            Phone = "13800138000", Balance = 0m, Discount = 1.0m,
+            MemberTypeId = typeCount.Id, IsActive = true
+        };
+        db.Members.Add(punchCard);
+        await db.SaveChangesAsync();
+
+        var ctl = NewController(db, ctx);
+        // 订单只含 svc (60 分钟肩颈)；次卡绑定的是"头疗" → 应拒绝
+        var created = (await ctl.Create(new CreateOrderRequest(
+            StoreId: 1, MemberId: primaryMember.Id,
+            Items: new[] { new OrderItemInputDto(svc.Id, tech.Id, Quantity: 1) },
+            Remark: null), default)).Result as ObjectResult;
+        var orderDto = created!.Value as OrderDto;
+
+        var result = (await ctl.Checkout(orderDto!.Id, new CheckoutRequest(
+            PayMethod: "Cash", PaidAmount: 180m,
+            DiscountAmount: 0m, Remark: null,
+            SecondaryMemberIds: new[] { punchCard.Id }), default))
+            .Result as ObjectResult;
+
+        result!.StatusCode.Should().Be(400);
+        result.Value!.GetType().GetProperty("code")!.GetValue(result.Value)
+            .Should().Be("PunchCardMismatch");
+    }
+
+    [Fact]
+    public async Task Checkout_AllowsPunchCardWhenBoundServiceInCart()
+    {
+        // 同上反例：次卡绑定的服务正好在购物车里，应放行
+        var (db, ctx, primaryMember, svc, tech, _) = Seed(balance: 500m);
+        var typeCount = new MemberType
+        {
+            Id = 500, TenantId = 1, Code = "SHOULDER_10",
+            Name = "10 次肩颈卡", Kind = MemberTypeKind.CountBased,
+            ServiceItemId = svc.Id, // 次卡绑定的就是订单里那一项
+            Discount = 1.0m, IsActive = true
+        };
+        db.MemberTypes.Add(typeCount);
+        var punchCard = new Member
+        {
+            Id = 2000, TenantId = 1, StoreId = 1, CardNo = "P001",
+            Phone = "13800138000", Balance = 0m, Discount = 1.0m,
+            MemberTypeId = typeCount.Id, IsActive = true
+        };
+        db.Members.Add(punchCard);
+        await db.SaveChangesAsync();
+
+        var ctl = NewController(db, ctx);
+        var created = (await ctl.Create(new CreateOrderRequest(
+            StoreId: 1, MemberId: primaryMember.Id,
+            Items: new[] { new OrderItemInputDto(svc.Id, tech.Id, Quantity: 1) },
+            Remark: null), default)).Result as ObjectResult;
+        var orderDto = created!.Value as OrderDto;
+
+        var result = (await ctl.Checkout(orderDto!.Id, new CheckoutRequest(
+            PayMethod: "Cash", PaidAmount: 180m,
+            DiscountAmount: 0m, Remark: null,
+            SecondaryMemberIds: new[] { punchCard.Id }), default))
+            .Result as OkObjectResult;
+
+        result.Should().NotBeNull("次卡绑定服务命中购物车应放行");
+        (result!.Value as OrderDto)!.Status.Should().Be("Completed");
+    }
+
+    [Fact]
     public async Task Checkout_AppliesMemberDiscountAutomatically()
     {
         var (db, ctx, member, svc, tech, _) = Seed(balance: 500m, discount: 0.9m, price: 200m, memberPrice: 200m);

@@ -82,6 +82,10 @@ export interface Member {
   totalCount?: number | null;
   /** 次卡专属：剩余次数，非次卡为 null */
   remainCount?: number | null;
+  /** 次卡专属：会员类型模板绑定的服务项目 id；结账时用于校验购物车是否含该服务 */
+  serviceItemId?: number | null;
+  /** 次卡专属：绑定服务项目名称，用于"无匹配项目"提示 */
+  serviceItemName?: string | null;
 }
 
 export interface MemberPhoneGroup {
@@ -110,6 +114,12 @@ export interface OrderItem {
   roomNo?: string | null;
   previousTechnicianId?: number | null;
   transferredAt?: string | null;
+  /** 次卡核销时该字段非 null，UI 用于标识"次卡抵扣" */
+  memberPackageId?: number | null;
+  /** 服务面值单价（即使次卡核销也保留），用于小票面值列 */
+  listUnitPrice?: number;
+  /** 面值小计 = listUnitPrice × quantity */
+  listAmount?: number;
 }
 
 export interface Order {
@@ -130,6 +140,18 @@ export interface Order {
   cashierName?: string | null;
   remark?: string | null;
   items: OrderItem[];
+  /** 面值合计：所有 item.listAmount 之和，次卡订单也会有非 0 值 */
+  listTotal?: number;
+  /** 走次卡核销的总次数 */
+  punchCardUsedCount?: number;
+  /** 会员手机（无会员订单为 null） */
+  memberPhone?: string | null;
+  /** 会员姓名 */
+  memberName?: string | null;
+  /** 会员卡类型名（"金卡 / 100次足疗卡"等） */
+  memberTypeName?: string | null;
+  /** 会员卡类型枚举 */
+  memberTypeKind?: 'StoredValue' | 'CountBased' | null;
 }
 
 export interface OrderListItem {
@@ -143,6 +165,8 @@ export interface OrderListItem {
   createdAt: string;
   completedAt?: string | null;
   memberCardNo?: string | null;
+  /** 会员手机；非会员订单为 null */
+  memberPhone?: string | null;
 }
 
 export interface CreateOrderRequest {

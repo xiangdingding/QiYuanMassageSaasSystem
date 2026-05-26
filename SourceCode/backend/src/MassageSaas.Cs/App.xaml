@@ -15,6 +15,7 @@
             <conv:StringEqualsConverter x:Key="StringEquals" />
             <conv:NotNullToBoolConverter x:Key="NotNullToBool" />
             <conv:DecimalGreaterThanZeroConverter x:Key="DecimalToVisible" />
+            <conv:RoomTypeDisplayConverter x:Key="RoomTypeDisplay" />
 
             <DataTemplate DataType="{x:Type vmpos:PosViewModel}">
                 <views:PosView />

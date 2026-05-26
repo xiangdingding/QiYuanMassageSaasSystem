@@ -259,6 +259,19 @@ public partial class PosViewModel : ObservableObject
             MessageBox.Show("实收金额不足", "提示");
             return;
         }
+        // 次卡只能在购物车含其绑定服务时才允许结算；否则等同后端 PunchCardMismatch 提示
+        if (ActiveMember is { MemberTypeKind: "CountBased" } pc)
+        {
+            var ok = pc.ServiceItemId.HasValue && Cart.Any(c => c.ServiceId == pc.ServiceItemId.Value);
+            if (!ok)
+            {
+                var svcName = pc.ServiceItemName ?? "（未绑定服务）";
+                MessageBox.Show($"次卡 {pc.CardNo} 绑定的服务「{svcName}」不在本单内，请添加该服务或改用其它会员卡。",
+                    "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                _speech.SayAsync($"次卡未含{svcName}，无法结算");
+                return;
+            }
+        }
 
         IsBusy = true;
         try
@@ -294,9 +307,13 @@ public partial class PosViewModel : ObservableObject
     private void ShowReceipt(OrderDto o)
     {
         var change = PayMethod == "Cash" && CashReceived > o.PaidAmount ? CashReceived - o.PaidAmount : 0m;
+        // 合计金额优先用面值（含次卡），缺失时退回 Total（兼容旧订单）
+        var headlineTotal = o.ListTotal > 0 ? o.ListTotal : o.Total;
+        var punchCount = o.PunchCardUsedCount;
 
         // 语音播报：盲人收银员/店长依赖此朗读关键金额
         var spoken = $"结账成功，应收 {YuanToReadable(o.PaidAmount)}";
+        if (punchCount > 0) spoken += $"，次卡消费 {punchCount} 次";
         if (change > 0) spoken += $"，找零 {YuanToReadable(change)}";
         _speech.SayAsync(spoken);
 
@@ -306,30 +323,46 @@ public partial class PosViewModel : ObservableObject
             OrderNo: o.OrderNo,
             PrintedAt: DateTime.Now,
             Items: o.Items
-                .Select(i => new ReceiptLine(i.ServiceName, i.Quantity, i.TechnicianName ?? "—", i.ItemTotal))
+                .Select(i => new ReceiptLine(
+                    i.ServiceName,
+                    i.Quantity,
+                    i.TechnicianName ?? "—",
+                    ItemListAmount(i),
+                    PaidViaPunchCard: i.MemberPackageId.HasValue))
                 .ToList(),
-            Total: o.Total,
+            Total: headlineTotal,
             Discount: o.DiscountAmount,
             Paid: o.PaidAmount,
             Change: change,
-            PayMethod: o.PayMethod));
+            PayMethod: o.PayMethod,
+            PunchCardUsedCount: punchCount));
         if (PayMethod == "Cash") _printer.OpenCashDrawer();
         _display.ShowAmount("实收", o.PaidAmount);
 
         var lines = new List<string>
         {
             $"订单：{o.OrderNo}",
-            $"合计：¥{o.Total:F2}    实收：¥{o.PaidAmount:F2}（{o.PayMethod}）"
+            $"合计：¥{headlineTotal:F2}    实收：¥{o.PaidAmount:F2}（{o.PayMethod}）"
         };
+        if (punchCount > 0) lines.Add($"消费次数：{punchCount} 次（次卡核销）");
         if (change > 0) lines.Add($"找零：¥{change:F2}");
         if (o.DiscountAmount > 0) lines.Add($"优惠：¥{o.DiscountAmount:F2}");
         lines.Add(string.Empty);
         foreach (var i in o.Items)
         {
-            lines.Add($"· {i.ServiceName} × {i.Quantity}  技师 {i.TechnicianName} ¥{i.ItemTotal:F2}");
+            var tag = i.MemberPackageId.HasValue ? " [次卡]" : "";
+            lines.Add($"· {i.ServiceName} × {i.Quantity}次  技师 {i.TechnicianName} ¥{ItemListAmount(i):F2}{tag}");
         }
         MessageBox.Show(string.Join(Environment.NewLine, lines), "结账成功",
             MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    /// <summary>取明细的面值小计：优先 ListAmount，否则按 ListUnitPrice 算，再不济退回 ItemTotal。</summary>
+    private static decimal ItemListAmount(OrderItemDto i)
+    {
+        if (i.ListAmount > 0) return i.ListAmount;
+        if (i.ListUnitPrice > 0) return Math.Round(i.ListUnitPrice * i.Quantity, 2);
+        return i.ItemTotal;
     }
 
     /// <summary>朗读金额："328 元 5 角"，避免读屏读"328.50"成"三百二十八点五零"。</summary>

@@ -972,6 +972,10 @@ namespace MassageSaas.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal>("ListUnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<long?>("MemberPackageId")
                         .HasColumnType("bigint");
 

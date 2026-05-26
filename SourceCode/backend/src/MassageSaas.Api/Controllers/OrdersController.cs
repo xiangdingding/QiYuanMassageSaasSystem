@@ -55,7 +55,8 @@ public class OrdersController : ControllerBase
                 o.Id, o.OrderNo, o.Total, o.PaidAmount,
                 o.PayMethod.ToString(), o.Status.ToString(),
                 o.Items.Count, o.CreatedAt, o.CompletedAt,
-                o.Member != null ? o.Member.CardNo : null))
+                o.Member != null ? o.Member.CardNo : null,
+                o.Member != null ? o.Member.Phone : null))
             .ToListAsync(ct);
 
         return Ok(new PagedResult<OrderListItemDto>(items, total, pq.SafePage, pq.SafePageSize));
@@ -142,6 +143,8 @@ public class OrdersController : ControllerBase
             var techLevel = await ResolveTechLevelAsync(input.TechnicianId, ct);
             var unit = ResolvePrice(svc, member, techLevel);
             decimal lineTotal = Math.Round(unit * qty, 2);
+            // 面值始终保留：次卡核销也要在小票上展示服务原价 / 消费次数
+            var listUnit = unit;
 
             var pkg = TryConsumePackage(packages, svc.Id, qty);
             if (pkg is not null) { unit = 0m; lineTotal = 0m; }
@@ -158,6 +161,7 @@ public class OrdersController : ControllerBase
                 UnitPrice = unit,
                 Quantity = qty,
                 ItemTotal = lineTotal,
+                ListUnitPrice = listUnit,
                 CommissionAmount = 0m,
                 RoomId = room?.Id,
                 RoomNoSnapshot = room?.RoomNo,
@@ -205,6 +209,7 @@ public class OrdersController : ControllerBase
             var techLevel = await ResolveTechLevelAsync(input.TechnicianId, ct);
             var unit = ResolvePrice(svc, order.Member, techLevel);
             decimal lineTotal = Math.Round(unit * qty, 2);
+            var listUnit = unit;
             var pkg = TryConsumePackage(packages, svc.Id, qty);
             if (pkg is not null) { unit = 0m; lineTotal = 0m; }
 
@@ -217,6 +222,7 @@ public class OrdersController : ControllerBase
                 UnitPrice = unit,
                 Quantity = qty,
                 ItemTotal = lineTotal,
+                ListUnitPrice = listUnit,
                 RoomId = input.RoomId,
                 MemberPackageId = pkg?.Id,
                 IsAddOn = true
@@ -356,6 +362,8 @@ public class OrdersController : ControllerBase
         var order = await _db.Orders
             .Include(o => o.Items)
             .Include(o => o.Member)
+                .ThenInclude(m => m!.MemberType)
+                    .ThenInclude(t => t!.ServiceItem)
             .FirstOrDefaultAsync(o => o.Id == id, ct);
         if (order is null) return NotFound();
         if (await IsDayClosedAsync(order.StoreId, DateTime.UtcNow, ct))
@@ -364,6 +372,37 @@ public class OrdersController : ControllerBase
             return Conflict(new { code = "AlreadyCompleted", message = "订单已结账" });
         if (order.Status == OrderStatus.Cancelled || order.Status == OrderStatus.Refunded)
             return Conflict(new { code = "OrderInvalid", message = "订单已取消或已退款" });
+
+        // 次卡-服务匹配校验：次卡(CountBased) 只能在订单含其绑定的服务项目时才允许参与结算，
+        // 否则没有任何业务意义（次卡余额一般为 0，且无对应服务可扣次）。
+        // 校验范围：主会员 + 合并结算的次要会员；命中即返回 400 拒绝。
+        var settlementMemberIds = new List<long>();
+        if (order.MemberId.HasValue) settlementMemberIds.Add(order.MemberId.Value);
+        if (req.SecondaryMemberIds is { Count: > 0 })
+            settlementMemberIds.AddRange(req.SecondaryMemberIds.Where(mid => mid != order.MemberId));
+        if (settlementMemberIds.Count > 0)
+        {
+            var cartServiceIds = order.Items.Select(i => i.ServiceId).ToHashSet();
+            var countBasedCards = await _db.Members.AsNoTracking()
+                .Include(m => m.MemberType).ThenInclude(t => t!.ServiceItem)
+                .Where(m => settlementMemberIds.Contains(m.Id)
+                            && m.MemberType != null
+                            && m.MemberType.Kind == MemberTypeKind.CountBased)
+                .ToListAsync(ct);
+            foreach (var card in countBasedCards)
+            {
+                var boundSvcId = card.MemberType!.ServiceItemId;
+                if (boundSvcId is null || !cartServiceIds.Contains(boundSvcId.Value))
+                {
+                    var svcName = card.MemberType.ServiceItem?.Name ?? "（未绑定服务）";
+                    return BadRequest(new
+                    {
+                        code = "PunchCardMismatch",
+                        message = $"次卡 {card.CardNo} 绑定的服务「{svcName}」不在本单内，不能参与结算"
+                    });
+                }
+            }
+        }
 
         var discount = req.DiscountAmount < 0 ? 0 : req.DiscountAmount;
         // 注：会员折扣已经在 开卡/充值 时通过现金价（充值金额 × 折扣）兑现，
@@ -628,25 +667,41 @@ public class OrdersController : ControllerBase
         await _db.Orders.AsNoTracking()
             .Include(o => o.Items).ThenInclude(i => i.Technician)
             .Include(o => o.Member)
+                .ThenInclude(m => m!.MemberType)
             .Include(o => o.CashierUser)
             .FirstOrDefaultAsync(o => o.Id == id, ct);
 
-    private static OrderDto ToDto(Order o) => new(
-        o.Id, o.OrderNo, o.StoreId, o.MemberId,
-        o.Member?.CardNo,
-        o.Total, o.DiscountAmount, o.PaidAmount, o.TipAmount,
-        o.PayMethod.ToString(), o.Status.ToString(),
-        o.CreatedAt, o.StartedAt, o.CompletedAt,
-        o.CashierUserId,
-        o.CashierUser != null ? (o.CashierUser.RealName ?? o.CashierUser.Username) : null,
-        o.Remark, o.VoucherId, o.ReopenedAt, o.ReopenReason,
-        o.Items.Select(i => new OrderItemDto(
-            i.Id, i.ServiceId, i.ServiceName, i.TechnicianId,
-            i.Technician != null ? (i.Technician.RealName ?? i.Technician.Username) : null,
-            i.Quantity, i.DurationMinutes, i.UnitPrice, i.ItemTotal,
-            i.CommissionAmount, i.RoomId, i.RoomNoSnapshot,
-            i.PreviousTechnicianId, i.TransferredAt,
-            i.TipAmount, i.MemberPackageId, i.IsAddOn, i.MergedGroupKey)).ToList());
+    private static OrderDto ToDto(Order o)
+    {
+        var items = o.Items.Select(i =>
+        {
+            var listAmount = Math.Round(i.ListUnitPrice * i.Quantity, 2);
+            return new OrderItemDto(
+                i.Id, i.ServiceId, i.ServiceName, i.TechnicianId,
+                i.Technician != null ? (i.Technician.RealName ?? i.Technician.Username) : null,
+                i.Quantity, i.DurationMinutes, i.UnitPrice, i.ItemTotal,
+                i.CommissionAmount, i.RoomId, i.RoomNoSnapshot,
+                i.PreviousTechnicianId, i.TransferredAt,
+                i.TipAmount, i.MemberPackageId, i.IsAddOn, i.MergedGroupKey,
+                i.ListUnitPrice, listAmount);
+        }).ToList();
+        var listTotal = items.Sum(x => x.ListAmount);
+        var punchCount = o.Items.Where(i => i.MemberPackageId.HasValue).Sum(i => i.Quantity);
+        return new OrderDto(
+            o.Id, o.OrderNo, o.StoreId, o.MemberId,
+            o.Member?.CardNo,
+            o.Total, o.DiscountAmount, o.PaidAmount, o.TipAmount,
+            o.PayMethod.ToString(), o.Status.ToString(),
+            o.CreatedAt, o.StartedAt, o.CompletedAt,
+            o.CashierUserId,
+            o.CashierUser != null ? (o.CashierUser.RealName ?? o.CashierUser.Username) : null,
+            o.Remark, o.VoucherId, o.ReopenedAt, o.ReopenReason,
+            items, listTotal, punchCount,
+            MemberPhone: o.Member?.Phone,
+            MemberName: o.Member?.Name,
+            MemberTypeName: o.Member?.MemberType?.Name,
+            MemberTypeKind: o.Member?.MemberType?.Kind.ToString());
+    }
 
     private static string GenerateOrderNo() =>
         $"O{DateTime.UtcNow:yyyyMMddHHmmss}{Random.Shared.Next(100, 999)}";

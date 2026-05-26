@@ -38,11 +38,22 @@
             <el-tag :type="statusType(row.status)">{{ statusLabel(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="会员" width="120" prop="memberCardNo">
-          <template #default="{ row }">{{ row.memberCardNo ?? '—' }}</template>
+        <el-table-column label="会员卡号" min-width="160" prop="memberCardNo" :show-overflow-tooltip="true">
+          <template #default="{ row }">
+            <span class="nowrap-cell" :class="{ walkin: !isMemberPaid(row) }">
+              {{ memberCardCell(row) }}
+            </span>
+          </template>
         </el-table-column>
-        <el-table-column label="时间" min-width="160">
-          <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
+        <el-table-column label="会员手机号" min-width="140" prop="memberPhone" :show-overflow-tooltip="true">
+          <template #default="{ row }">
+            <span class="nowrap-cell" :class="{ walkin: !isMemberPaid(row) }">
+              {{ memberPhoneCell(row) }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="消费时间" min-width="160">
+          <template #default="{ row }">{{ formatTime(row.completedAt ?? row.createdAt) }}</template>
         </el-table-column>
       </el-table>
 
@@ -58,38 +69,64 @@
       />
     </el-card>
 
-    <el-drawer v-model="drawerOpen" title="订单详情" size="520px">
-      <div v-if="detail">
-        <el-descriptions :column="2" border>
+    <el-drawer v-model="drawerOpen" title="订单详情" size="860px" class="order-detail-drawer">
+      <div v-if="detail" class="detail-body">
+        <el-descriptions :column="2" border size="large" class="detail-desc">
           <el-descriptions-item label="订单号" :span="2">{{ detail.orderNo }}</el-descriptions-item>
           <el-descriptions-item label="状态">
-            <el-tag :type="statusType(detail.status)">{{ statusLabel(detail.status) }}</el-tag>
+            <el-tag :type="statusType(detail.status)" size="large">{{ statusLabel(detail.status) }}</el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="支付方式">{{ payLabel(detail.payMethod) }}</el-descriptions-item>
-          <el-descriptions-item label="合计">¥{{ detail.total.toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="合计">
+            ¥{{ headlineTotal(detail).toFixed(2) }}
+            <span v-if="(detail.punchCardUsedCount ?? 0) > 0" class="muted" style="margin-left:6px">（含次卡面值）</span>
+          </el-descriptions-item>
           <el-descriptions-item label="优惠">¥{{ detail.discountAmount.toFixed(2) }}</el-descriptions-item>
           <el-descriptions-item label="实收">¥{{ detail.paidAmount.toFixed(2) }}</el-descriptions-item>
           <el-descriptions-item label="收银员">{{ detail.cashierName ?? '—' }}</el-descriptions-item>
-          <el-descriptions-item label="会员卡">{{ detail.memberCardNo ?? '—' }}</el-descriptions-item>
+          <el-descriptions-item v-if="(detail.punchCardUsedCount ?? 0) > 0" label="消费次数">
+            {{ detail.punchCardUsedCount }} 次（次卡核销）
+          </el-descriptions-item>
+          <template v-if="isMemberOrder(detail)">
+            <el-descriptions-item label="会员卡号">{{ detail.memberCardNo ?? '—' }}</el-descriptions-item>
+            <el-descriptions-item label="会员手机">{{ detail.memberPhone ?? '—' }}</el-descriptions-item>
+            <el-descriptions-item label="会员姓名">{{ detail.memberName ?? '—' }}</el-descriptions-item>
+            <el-descriptions-item label="卡类型">
+              <el-tag
+                v-if="detail.memberTypeKind"
+                :type="detail.memberTypeKind === 'StoredValue' ? 'warning' : 'success'"
+                size="large"
+              >{{ detail.memberTypeName ?? memberTypeKindLabel(detail.memberTypeKind) }}</el-tag>
+              <span v-else>{{ detail.memberTypeName ?? '普通' }}</span>
+            </el-descriptions-item>
+          </template>
+          <el-descriptions-item v-else label="会员卡">{{ detail.memberCardNo ?? '—' }}</el-descriptions-item>
           <el-descriptions-item label="备注" :span="2">{{ detail.remark ?? '—' }}</el-descriptions-item>
         </el-descriptions>
-        <el-divider>项目明细</el-divider>
-        <el-table :data="detail.items" size="small">
-          <el-table-column prop="serviceName" label="项目" />
-          <el-table-column label="技师" width="120">
+        <el-divider class="detail-divider">项目明细</el-divider>
+        <el-table :data="detail.items" class="detail-items" stripe>
+          <el-table-column prop="serviceName" label="项目" min-width="180">
+            <template #default="{ row }">
+              <span class="item-name">{{ row.serviceName }}</span>
+              <el-tag v-if="row.memberPackageId" size="small" type="success" style="margin-left:6px">次卡</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="技师" width="150">
             <template #default="{ row }">
               <span>{{ row.technicianName }}</span>
               <el-tag v-if="row.transferredAt" size="small" type="warning" style="margin-left:4px">已转</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="房间" width="80">
+          <el-table-column label="房间" width="90">
             <template #default="{ row }">{{ row.roomNo ?? '—' }}</template>
           </el-table-column>
-          <el-table-column prop="quantity" label="数量" width="60" />
-          <el-table-column label="金额" width="100">
-            <template #default="{ row }">¥{{ row.itemTotal.toFixed(2) }}</template>
+          <el-table-column prop="quantity" label="次数" width="80" align="right">
+            <template #default="{ row }">{{ row.quantity }} 次</template>
           </el-table-column>
-          <el-table-column label="提成" width="100">
+          <el-table-column label="金额" width="120" align="right">
+            <template #default="{ row }">¥{{ rowAmount(row).toFixed(2) }}</template>
+          </el-table-column>
+          <el-table-column label="提成" width="110" align="right">
             <template #default="{ row }">¥{{ row.commissionAmount.toFixed(2) }}</template>
           </el-table-column>
           <el-table-column
@@ -98,7 +135,7 @@
             width="100"
           >
             <template #default="{ row }">
-              <el-button size="small" @click="openTransfer(row)">转钟</el-button>
+              <el-button size="default" @click="openTransfer(row)">转钟</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -107,10 +144,12 @@
           <el-button
             v-if="detail.status === 'Completed'"
             type="danger"
+            size="large"
             @click="onRefund"
           >退款</el-button>
           <el-button
             v-if="detail.status === 'Pending'"
+            size="large"
             @click="onCancel"
           >取消订单</el-button>
         </div>
@@ -220,6 +259,41 @@ function formatTime(v: string) {
   return dayjs(v).format('YYYY-MM-DD HH:mm');
 }
 
+/// 是否会员卡支付：用支付方式判断，非会员卡支付的订单一律按散客展示
+function isMemberPaid(row: OrderListItem) {
+  return row.payMethod === 'MemberCard';
+}
+function memberCardCell(row: OrderListItem) {
+  if (!isMemberPaid(row)) return '散客';
+  return row.memberCardNo ?? '散客';
+}
+function memberPhoneCell(row: OrderListItem) {
+  if (!isMemberPaid(row)) return '散客';
+  return row.memberPhone ?? '散客';
+}
+
+function memberTypeKindLabel(k: string | null | undefined) {
+  return k === 'StoredValue' ? '充值卡' : k === 'CountBased' ? '次卡' : '普通';
+}
+
+/// 详情卡片是否按"会员消费"展示：会员卡支付，或订单挂着会员
+function isMemberOrder(o: Order) {
+  return o.payMethod === 'MemberCard' || o.memberId != null || !!o.memberCardNo;
+}
+
+/// 合计金额取面值优先（含次卡），缺失时退回 total
+function headlineTotal(o: Order) {
+  return o.listTotal && o.listTotal > 0 ? o.listTotal : o.total;
+}
+
+/// 明细金额：面值优先，否则按 listUnitPrice × quantity，最后回退到 itemTotal
+function rowAmount(row: OrderItem) {
+  if (row.listAmount != null && row.listAmount > 0) return row.listAmount;
+  if (row.listUnitPrice != null && row.listUnitPrice > 0)
+    return Math.round(row.listUnitPrice * row.quantity * 100) / 100;
+  return row.itemTotal;
+}
+
 async function reload() {
   if (!appStore.activeStoreId) return;
   loading.value = true;
@@ -287,6 +361,22 @@ onMounted(async () => {
 <style scoped>
 .page { padding-bottom: 24px; }
 .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.actions { margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end; }
+.actions { margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end; }
 :deep(.el-table .el-table__row) { cursor: pointer; }
+
+/* 订单详情抽屉：整体放大，留更多呼吸空间 */
+.detail-body { padding: 4px 4px 24px; }
+.order-detail-drawer :deep(.el-drawer__header) { font-size: 18px; font-weight: 600; margin-bottom: 12px; }
+.detail-desc :deep(.el-descriptions__label) { font-size: 15px; padding: 12px 12px; min-width: 96px; }
+.detail-desc :deep(.el-descriptions__content) { font-size: 15px; padding: 12px 12px; }
+.detail-divider { margin: 24px 0 12px; }
+.detail-divider :deep(.el-divider__text) { font-size: 16px; font-weight: 600; }
+.detail-items :deep(.el-table__cell) { padding: 12px 8px; font-size: 15px; }
+.detail-items :deep(.el-table__header th) { font-size: 14px; font-weight: 600; }
+.detail-items .item-name { font-weight: 500; }
+.muted { color: var(--el-text-color-secondary); font-size: 13px; }
+/* 会员卡号 / 手机号单行显示，超出由 el-table 的 tooltip 接管 */
+.nowrap-cell { white-space: nowrap; display: inline-block; max-width: 100%; }
+/* 散客标记：灰色弱化，与真实会员信息区分 */
+.nowrap-cell.walkin { color: var(--el-text-color-secondary); }
 </style>
