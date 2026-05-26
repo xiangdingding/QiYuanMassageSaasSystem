@@ -685,10 +685,12 @@ const editingId = ref<number | null>(null);
 /// 管理员开关：开卡时是否用手机号自动作为卡号（持久化到 localStorage，租户级即可）
 const USE_PHONE_AS_CARDNO_KEY = 'member-create:usePhoneAsCardNo';
 const usePhoneAsCardNo = ref<boolean>(localStorage.getItem(USE_PHONE_AS_CARDNO_KEY) !== '0');
-watch(usePhoneAsCardNo, (v) => {
+watch(usePhoneAsCardNo, async (v) => {
   localStorage.setItem(USE_PHONE_AS_CARDNO_KEY, v ? '1' : '0');
-  // 勾上的瞬间也把当前手机号同步过去
-  if (v && formMode.value === 'create' && form.phone) form.cardNo = form.phone;
+  // 勾上的瞬间也把当前手机号 → 下一张卡号 同步过去
+  if (v && formMode.value === 'create' && form.phone) {
+    form.cardNo = await computeNextCardNo(form.phone);
+  }
 });
 const formRef = ref<FormInstance>();
 const form = reactive({
@@ -708,11 +710,43 @@ const form = reactive({
 });
 const referrerCandidates = ref<Member[]>([]);
 
-/// 开卡场景下，手机号变动时同步到卡号（仅当开关打开）；用户仍可手动改卡号
-watch(() => form.phone, (newPhone) => {
-  if (formMode.value === 'create' && usePhoneAsCardNo.value) {
-    form.cardNo = newPhone;
+/// 算下一张卡的卡号：N=同手机号下已有卡数（含已关闭）
+///   N=0 → phone
+///   N=1 → phone+02
+///   N=k → phone+(k+1).padStart(2,'0')
+async function computeNextCardNo(phone: string): Promise<string> {
+  if (!phone) return phone;
+  // 优先使用列表里已加载的 groups 数据，省一次请求
+  const localGroup = groups.value.find((g) => g.phone === phone);
+  if (localGroup) {
+    const n = localGroup.cardCount;
+    if (n <= 0) return phone;
+    return phone + String(n + 1).padStart(2, '0');
   }
+  // 列表没找到（用户手输了一个新手机号）— 11 位时才查询
+  if (phone.length !== 11) return phone;
+  try {
+    const r = await membersApi.list({ keyword: phone, pageSize: 100, includeClosed: true });
+    const n = r.items.filter((m) => m.phone === phone).length;
+    if (n <= 0) return phone;
+    return phone + String(n + 1).padStart(2, '0');
+  } catch {
+    return phone;
+  }
+}
+
+/// 开卡场景下，手机号变动时同步到卡号（仅当开关打开）；用户仍可手动改卡号
+watch(() => form.phone, async (newPhone) => {
+  if (formMode.value !== 'create' || !usePhoneAsCardNo.value) return;
+  // 未到 11 位先做明文同步，给用户一边输入一边看反馈
+  if (newPhone.length < 11) {
+    form.cardNo = newPhone;
+    return;
+  }
+  const snapshot = newPhone;
+  const next = await computeNextCardNo(newPhone);
+  // 若期间手机号又改了，丢弃过期结果
+  if (form.phone === snapshot) form.cardNo = next;
 });
 
 // ---- 会员类型相关（共享给 创建对话框 + 办卡对话框）----
