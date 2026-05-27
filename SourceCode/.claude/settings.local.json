@@ -15,7 +15,9 @@
       "Bash(echo \"EXIT=$?\")",
       "Bash(node_modules/.bin/tsc -p apps/miniprogram/tsconfig.json --noEmit)",
       "PowerShell(dotnet build *)",
-      "PowerShell(dotnet test *)"
+      "PowerShell(dotnet test *)",
+      "PowerShell($env:MYSQL_PWD = \"123456\"; & \"C:\\\\Program Files\\\\MySQL\\\\MySQL Server 8.0\\\\bin\\\\mysql.exe\" -h localhost -P 3306 -u root -D massage_saas -e \"DESCRIBE service_items;\")",
+      "PowerShell($env:MYSQL_PWD = \"123456\"; & \"C:\\\\Program Files\\\\MySQL\\\\MySQL Server 8.0\\\\bin\\\\mysql.exe\" -h localhost -P 3306 -u root -D massage_saas -e \"DESCRIBE member_types; SELECT TenantId, Code, Name, Kind, MinRechargeAmount, MinPurchaseCount, Discount, BonusAmount, BonusCount, ValidDays, Remark FROM member_types WHERE IsDeleted=0;\")"
     ]
   }
 }

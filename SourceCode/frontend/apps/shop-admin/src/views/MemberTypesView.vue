@@ -92,7 +92,7 @@
           <span class="muted">类型一经创建不可修改</span>
         </el-form-item>
         <el-form-item label="编码" prop="code">
-          <el-input v-model="form.code" :disabled="formMode === 'edit'" placeholder="如 GOLD / FOOT100（大写+下划线）" />
+          <el-input v-model="form.code" placeholder="租户内唯一，自由命名（如 V1 / GOLD / 901 / 金卡）" maxlength="32" />
         </el-form-item>
         <el-form-item label="名称" prop="name">
           <el-input v-model="form.name" placeholder="如 黄金卡 / 100 次足疗卡" maxlength="64" />
@@ -191,7 +191,7 @@ const form = reactive({
 const rules: FormRules = {
   code: [
     { required: true, message: '请输入编码', trigger: 'blur' },
-    { pattern: /^[A-Z][A-Z0-9_]*$/, message: '必须以大写字母开头，仅大写字母 / 数字 / 下划线', trigger: 'blur' }
+    { max: 32, message: '编码长度不超过 32 字符', trigger: 'blur' }
   ],
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
   kind: [{ required: true, message: '请选择类型', trigger: 'change' }],
@@ -273,7 +273,7 @@ async function saveForm() {
   try {
     const isCountBased = form.kind === 'CountBased';
     const payload = {
-      code: form.code.trim().toUpperCase(),
+      code: form.code.trim(),
       name: form.name.trim(),
       sort: form.sort,
       kind: form.kind,

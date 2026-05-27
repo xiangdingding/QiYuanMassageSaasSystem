@@ -75,7 +75,7 @@ public class MemberTypesController : ControllerBase
 
         var t = new MemberType
         {
-            Code = req.Code.Trim().ToUpperInvariant(),
+            Code = req.Code.Trim(),
             Name = req.Name.Trim(),
             Sort = req.Sort,
             Kind = kind,
@@ -107,10 +107,12 @@ public class MemberTypesController : ControllerBase
         if (t is null) return NotFound();
 
         // Kind 不可改：改 Kind 等于换卡种语义，应新建一种
-        if (await ValidateAsync(t.Code, t.Kind, req.Discount, req.ServiceItemId,
+        // Code 允许修改：仅做租户内唯一校验，店主可自由订正命名
+        if (await ValidateAsync(req.Code, t.Kind, req.Discount, req.ServiceItemId,
                 req.MinRechargeAmount, req.MinPurchaseCount, req.BonusAmount, req.BonusCount,
                 req.ValidDays, id, ct) is { } badResp) return badResp;
 
+        t.Code = req.Code.Trim();
         t.Name = req.Name.Trim();
         t.Sort = req.Sort;
         t.ServiceItemId = t.Kind == MemberTypeKind.CountBased ? req.ServiceItemId : null;
@@ -178,10 +180,10 @@ public class MemberTypesController : ControllerBase
         if (validDays.HasValue && validDays.Value <= 0)
             return BadRequest(new { code = "InvalidValidDays", message = "有效天数必须 > 0；不限请留空" });
 
-        var upper = code.Trim().ToUpperInvariant();
+        var normalized = code.Trim();
         var dup = await _db.MemberTypes
-            .AnyAsync(c => c.Code == upper && (excludeId == null || c.Id != excludeId), ct);
-        if (dup) return Conflict(new { code = "DuplicateCode", message = $"Code 已存在: {upper}" });
+            .AnyAsync(c => c.Code == normalized && (excludeId == null || c.Id != excludeId), ct);
+        if (dup) return Conflict(new { code = "DuplicateCode", message = $"Code 已存在: {normalized}" });
 
         return null;
     }

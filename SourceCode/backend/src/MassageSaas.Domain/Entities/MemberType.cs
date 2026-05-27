@@ -13,7 +13,7 @@ public class MemberType : BaseEntity, ITenantScoped
     public long? TenantId { get; set; }
     public Tenant Tenant { get; set; } = null!;
 
-    /// <summary>租户内唯一业务编码（大写字母+下划线）。</summary>
+    /// <summary>租户内唯一业务编码。任意字符串，店主自由命名（不做格式约束，仅做唯一性校验）。</summary>
     public string Code { get; set; } = null!;
 
     /// <summary>展示名（"金卡 / 100 次足疗卡"）。</summary>

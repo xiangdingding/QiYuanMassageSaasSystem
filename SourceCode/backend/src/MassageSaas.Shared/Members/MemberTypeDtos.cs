@@ -34,6 +34,7 @@ public record CreateMemberTypeRequest(
     string? Remark = null);
 
 public record UpdateMemberTypeRequest(
+    string Code,
     string Name,
     int Sort,
     long? ServiceItemId,
