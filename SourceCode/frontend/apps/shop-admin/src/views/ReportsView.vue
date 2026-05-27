@@ -89,6 +89,14 @@
             <el-table-column label="服务时长">
               <template #default="{ row }">{{ Math.round(row.totalDurationMinutes / 60 * 10) / 10 }} 小时</template>
             </el-table-column>
+            <el-table-column label="点钟次数" width="100" prop="designationCount" />
+            <el-table-column label="轮钟次数" width="100" prop="rotationCount" />
+            <el-table-column label="指定率" width="110">
+              <template #default="{ row }">
+                <span v-if="row.designationRate == null" class="muted">—</span>
+                <strong v-else>{{ (row.designationRate * 100).toFixed(1) }}%</strong>
+              </template>
+            </el-table-column>
           </el-table>
         </el-card>
       </el-tab-pane>

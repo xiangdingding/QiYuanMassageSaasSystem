@@ -22,7 +22,14 @@ public record TechnicianPerformanceDto(
     int OrderItemCount,
     decimal TotalServiceAmount,
     decimal TotalCommission,
-    int TotalDurationMinutes);
+    int TotalDurationMinutes,
+    /// <summary>点钟次数（Σ Quantity where AssignmentSource = Designation）。</summary>
+    int DesignationCount = 0,
+    /// <summary>轮钟次数（Σ Quantity where AssignmentSource = Rotation）。</summary>
+    int RotationCount = 0,
+    /// <summary>指定率 = Designation / (Designation + Rotation)；分母 0 时为 null。
+    /// 历史 Unknown 行不进分母，避免老数据稀释 KPI。</summary>
+    decimal? DesignationRate = null);
 
 public record MyPerformanceDto(
     decimal TodayAmount,

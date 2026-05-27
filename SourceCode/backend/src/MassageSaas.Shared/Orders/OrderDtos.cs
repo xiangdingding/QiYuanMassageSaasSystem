@@ -4,7 +4,11 @@ public record OrderItemInputDto(
     long ServiceId,
     long TechnicianId,
     int Quantity = 1,
-    long? RoomId = null);
+    long? RoomId = null,
+    /// <summary>技师来源："Rotation"=轮钟（叫号）/ "Designation"=点钟（客人指定）。
+    /// 不传或无效时后端兜底为 Designation —— 老客户端（CS POS）走手动选人，本就是点钟，
+    /// 这样不会把指定率虚高。</summary>
+    string? AssignmentSource = null);
 
 public record CreateOrderRequest(
     long StoreId,
@@ -44,7 +48,9 @@ public record OrderItemDto(
     /// <summary>下单时记录的服务面值单价（即使本项走了次卡核销也保留）。</summary>
     decimal ListUnitPrice = 0m,
     /// <summary>面值小计 = ListUnitPrice × Quantity，仅用于小票展示。</summary>
-    decimal ListAmount = 0m);
+    decimal ListAmount = 0m,
+    /// <summary>技师指派来源：Rotation 轮钟 / Designation 点钟 / Unknown 历史数据。</summary>
+    string AssignmentSource = "Unknown");
 
 public record TransferTechnicianRequest(long NewTechnicianId, string? Reason);
 

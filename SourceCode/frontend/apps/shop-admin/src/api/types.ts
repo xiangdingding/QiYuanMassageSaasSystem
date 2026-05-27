@@ -120,6 +120,8 @@ export interface OrderItem {
   listUnitPrice?: number;
   /** 面值小计 = listUnitPrice × quantity */
   listAmount?: number;
+  /** 技师上钟方式：Rotation 轮钟 / Designation 点钟 / Unknown 历史数据 */
+  assignmentSource?: 'Rotation' | 'Designation' | 'Unknown';
 }
 
 export interface Order {
@@ -185,7 +187,14 @@ export interface OrderListItem {
 export interface CreateOrderRequest {
   storeId: number;
   memberId?: number | null;
-  items: { serviceId: number; technicianId: number; quantity?: number; roomId?: number | null }[];
+  items: {
+    serviceId: number;
+    technicianId: number;
+    quantity?: number;
+    roomId?: number | null;
+    /** 上钟方式：Rotation 轮钟 / Designation 点钟；不传时后端兜底 Designation */
+    assignmentSource?: 'Rotation' | 'Designation';
+  }[];
   remark?: string | null;
   /** 一同结算的计时房 session id 列表（订单同步收尾这些房费，金额并入 Order.Total/PaidAmount） */
   roomSessionIds?: number[];
@@ -244,6 +253,8 @@ export interface CommissionRule {
   tieredRulesJson?: string | null;
   priority: number;
   isActive: boolean;
+  /** 适用来源：'Rotation' 仅轮钟 / 'Designation' 仅点钟 / null 通配两种 */
+  assignmentSource?: 'Rotation' | 'Designation' | null;
 }
 
 export interface DailyReport {
@@ -270,6 +281,12 @@ export interface TechnicianPerformance {
   totalServiceAmount: number;
   totalCommission: number;
   totalDurationMinutes: number;
+  /** 点钟次数（AssignmentSource = Designation 的 Quantity 合计） */
+  designationCount?: number;
+  /** 轮钟次数（AssignmentSource = Rotation 的 Quantity 合计） */
+  rotationCount?: number;
+  /** 指定率 = designation / (designation + rotation)；分母 0 时为 null */
+  designationRate?: number | null;
 }
 
 export interface SubscriptionStatus {

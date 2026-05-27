@@ -18,6 +18,14 @@ public class CommissionRulesController : ControllerBase
 
     public CommissionRulesController(ApplicationDbContext db) => _db = db;
 
+    /// <summary>解析规则维度的 source：留空/Unknown/无效 → null（通配两种来源）。
+    /// 注意与 Orders 维度不同：Orders 的 OrderItem.AssignmentSource 必须明确为 Rotation/Designation，
+    /// 这里规则维度允许 null 让一条规则同时覆盖轮钟和点钟。</summary>
+    private static AssignmentSource? ParseRuleSource(string? s) =>
+        Enum.TryParse<AssignmentSource>(s, true, out var v) && v != AssignmentSource.Unknown
+            ? v
+            : (AssignmentSource?)null;
+
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<CommissionRuleDto>>> List(
         [FromQuery] long? serviceId,
@@ -44,7 +52,8 @@ public class CommissionRulesController : ControllerBase
                 r.Amount,
                 r.TieredRulesJson,
                 r.Priority,
-                r.IsActive))
+                r.IsActive,
+                r.AssignmentSource.HasValue ? r.AssignmentSource.Value.ToString() : null))
             .ToListAsync(ct);
 
         return Ok(data);
@@ -64,7 +73,8 @@ public class CommissionRulesController : ControllerBase
             Amount = req.Amount,
             TieredRulesJson = req.TieredRulesJson,
             Priority = req.Priority,
-            IsActive = req.IsActive
+            IsActive = req.IsActive,
+            AssignmentSource = ParseRuleSource(req.AssignmentSource)
         };
         _db.CommissionRules.Add(entity);
         await _db.SaveChangesAsync(ct);
@@ -72,7 +82,8 @@ public class CommissionRulesController : ControllerBase
         return Ok(new CommissionRuleDto(
             entity.Id, entity.ServiceId, null, entity.TechnicianId, null,
             entity.RuleType.ToString(), entity.Amount, entity.TieredRulesJson,
-            entity.Priority, entity.IsActive));
+            entity.Priority, entity.IsActive,
+            entity.AssignmentSource.HasValue ? entity.AssignmentSource.Value.ToString() : null));
     }
 
     [HttpPut("{id:long}")]
@@ -88,11 +99,13 @@ public class CommissionRulesController : ControllerBase
         rule.TieredRulesJson = req.TieredRulesJson;
         rule.Priority = req.Priority;
         rule.IsActive = req.IsActive;
+        rule.AssignmentSource = ParseRuleSource(req.AssignmentSource);
         await _db.SaveChangesAsync(ct);
         return Ok(new CommissionRuleDto(
             rule.Id, rule.ServiceId, null, rule.TechnicianId, null,
             rule.RuleType.ToString(), rule.Amount, rule.TieredRulesJson,
-            rule.Priority, rule.IsActive));
+            rule.Priority, rule.IsActive,
+            rule.AssignmentSource.HasValue ? rule.AssignmentSource.Value.ToString() : null));
     }
 
     [HttpDelete("{id:long}")]

@@ -46,6 +46,17 @@ public enum QueueState
     OffDuty = 30
 }
 
+/// <summary>
+/// OrderItem 技师指派来源：轮钟（叫号）vs 点钟（客人指定）。仅做"来源"标记，
+/// 不参与定价/提成；现有 OrderItem 历史数据回填为 Unknown，避免污染指定率分母。
+/// </summary>
+public enum AssignmentSource
+{
+    Unknown = 0,
+    Rotation = 10,     // 轮钟：由 queue/call-next 派出
+    Designation = 20   // 点钟：客人指定（含从预约 PreferredTechnicianId 带入）
+}
+
 public enum CommissionRuleType
 {
     FixedAmount = 0,

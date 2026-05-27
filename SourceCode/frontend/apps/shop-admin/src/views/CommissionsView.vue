@@ -25,6 +25,19 @@
         <el-table-column label="数值" width="100">
           <template #default="{ row }">{{ formatAmount(row) }}</template>
         </el-table-column>
+        <el-table-column label="适用来源" width="100">
+          <template #default="{ row }">
+            <el-tag
+              v-if="row.assignmentSource === 'Rotation'"
+              type="info" size="small"
+            >仅轮钟</el-tag>
+            <el-tag
+              v-else-if="row.assignmentSource === 'Designation'"
+              type="warning" size="small"
+            >仅点钟</el-tag>
+            <span v-else class="muted">不限</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="priority" label="优先级" width="80" />
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
@@ -51,6 +64,16 @@
           <el-select v-model="form.technicianId" placeholder="留空 = 全部技师" clearable filterable style="width: 100%">
             <el-option v-for="t in technicians" :key="t.id" :label="`${t.employeeNo ?? ''} · ${t.realName ?? t.username}`" :value="t.id" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="适用来源">
+          <el-radio-group v-model="form.assignmentSource" aria-label="该规则适用的上钟方式">
+            <el-radio-button :value="null">不限</el-radio-button>
+            <el-radio-button value="Rotation">仅轮钟</el-radio-button>
+            <el-radio-button value="Designation">仅点钟</el-radio-button>
+          </el-radio-group>
+          <div class="muted" style="margin-top:4px">
+            为同一对"服务+技师"分别配两条规则（一条仅轮钟，一条仅点钟），就能让两种上钟方式走不同提成。
+          </div>
         </el-form-item>
         <el-form-item label="规则类型">
           <el-radio-group v-model="form.ruleType">
@@ -109,7 +132,8 @@ const form = reactive({
   amount: 0,
   tieredRulesJson: '',
   priority: 0,
-  isActive: true
+  isActive: true,
+  assignmentSource: null as 'Rotation' | 'Designation' | null
 });
 
 function ruleLabel(t: string) {
@@ -160,7 +184,11 @@ async function loadOptions() {
 function openCreate() {
   formMode.value = 'create';
   editingId.value = null;
-  Object.assign(form, { serviceId: null, technicianId: null, ruleType: 'FixedAmount', amount: 0, tieredRulesJson: '', priority: 0, isActive: true });
+  Object.assign(form, {
+    serviceId: null, technicianId: null, ruleType: 'FixedAmount',
+    amount: 0, tieredRulesJson: '', priority: 0, isActive: true,
+    assignmentSource: null
+  });
   formOpen.value = true;
 }
 
@@ -174,7 +202,8 @@ function openEdit(row: CommissionRule) {
     amount: row.amount,
     tieredRulesJson: row.tieredRulesJson ?? '',
     priority: row.priority,
-    isActive: row.isActive
+    isActive: row.isActive,
+    assignmentSource: row.assignmentSource ?? null
   });
   formOpen.value = true;
 }
@@ -189,7 +218,8 @@ async function save() {
       amount: form.amount,
       tieredRulesJson: form.tieredRulesJson || null,
       priority: form.priority,
-      isActive: form.isActive
+      isActive: form.isActive,
+      assignmentSource: form.assignmentSource
     };
     if (formMode.value === 'create') {
       await commissionsApi.create(body);

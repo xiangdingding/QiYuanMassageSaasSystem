@@ -194,9 +194,15 @@
 
         <el-divider style="margin: 8px 0" />
 
-        <div v-if="cart.length === 0" class="empty">未添加任何项目</div>
-        <div v-else class="cart-list">
-          <div v-for="(it, idx) in cart" :key="idx" class="cart-item">
+        <div v-if="cart.length === 0" class="empty" role="status">未添加任何项目</div>
+        <div v-else class="cart-list" role="list" aria-label="当前订单项目列表">
+          <article
+            v-for="(it, idx) in cart"
+            :key="idx"
+            class="cart-item"
+            role="listitem"
+            :aria-label="cartRowAriaLabel(it, idx)"
+          >
             <div class="ci-line">
               <span class="ci-name">
                 <el-tag v-if="it.kind === 'roomCharge'" type="primary" size="small" style="margin-right:4px">计时房</el-tag>
@@ -211,16 +217,23 @@
                   会员不一致 · 开台 {{ it.boundMemberName ?? '—' }}
                 </el-tag>
               </span>
-              <el-button link type="danger" size="small" @click="cart.splice(idx, 1)">移除</el-button>
+              <el-button
+                size="default"
+                type="danger"
+                plain
+                :aria-label="`从订单中移除第 ${idx + 1} 项 ${it.serviceName}`"
+                @click="cart.splice(idx, 1)"
+              >移除</el-button>
             </div>
             <template v-if="it.kind === 'service'">
               <div class="ci-meta">
                 <el-select
                   v-model="it.technicianId"
                   placeholder="选择技师"
-                  size="default"
+                  size="large"
                   class="ci-tech"
                   filterable
+                  :aria-label="`${it.serviceName} 的技师，输入工号或姓名搜索`"
                 >
                   <el-option
                     v-for="t in technicians"
@@ -230,11 +243,21 @@
                   />
                 </el-select>
                 <el-select
+                  v-model="it.assignmentSource"
+                  size="large"
+                  class="ci-source-select"
+                  :aria-label="`${it.serviceName} 的上钟方式，二选一`"
+                >
+                  <el-option label="轮钟" value="Rotation" />
+                  <el-option label="点钟" value="Designation" />
+                </el-select>
+                <el-select
                   v-model="it.roomId"
                   placeholder="房间"
-                  size="default"
+                  size="large"
                   class="ci-room"
                   clearable
+                  :aria-label="`${it.serviceName} 的房间，可空`"
                 >
                   <el-option
                     v-for="r in availableRooms(it.roomId)"
@@ -244,25 +267,48 @@
                     :disabled="r.isOccupied && r.id !== it.roomId"
                   />
                 </el-select>
-                <el-input-number v-model="it.quantity" :min="1" :max="20" size="default" controls-position="right" class="ci-qty" />
-                <span class="ci-price">¥{{ (it.unitPrice * it.quantity).toFixed(2) }}</span>
+                <el-input-number
+                  v-model="it.quantity"
+                  :min="1"
+                  :max="20"
+                  size="large"
+                  controls-position="right"
+                  class="ci-qty"
+                  :aria-label="`${it.serviceName} 的数量，最少 1 最多 20`"
+                />
+                <span
+                  class="ci-price"
+                  :aria-label="`小计 ${yuanReadable(it.unitPrice * it.quantity)}`"
+                >¥{{ (it.unitPrice * it.quantity).toFixed(2) }}</span>
               </div>
             </template>
             <div v-else class="ci-meta room-charge-meta">
-              <span class="muted">¥{{ it.hourlyRate.toFixed(2) }} / 小时 · 已计时 {{ it.elapsedMinutes }} 分钟</span>
-              <span class="ci-price">¥{{ it.unitPrice.toFixed(2) }}</span>
+              <span
+                class="muted"
+                :aria-label="`计时房费率 ${yuanReadable(it.hourlyRate)} 每小时，已计时 ${it.elapsedMinutes} 分钟`"
+              >¥{{ it.hourlyRate.toFixed(2) }} / 小时 · 已计时 {{ it.elapsedMinutes }} 分钟</span>
+              <span
+                class="ci-price"
+                :aria-label="`房费小计 ${yuanReadable(it.unitPrice)}`"
+              >¥{{ it.unitPrice.toFixed(2) }}</span>
             </div>
-          </div>
+          </article>
         </div>
 
-        <div class="totals">
+        <div class="totals" role="group" aria-label="订单金额汇总">
           <div class="total-line">
             <span>合计</span>
-            <span class="total-amount">¥ {{ total.toFixed(2) }}</span>
+            <span
+              class="total-amount"
+              :aria-label="`合计 ${yuanReadable(total)}`"
+            >¥ {{ total.toFixed(2) }}</span>
           </div>
           <div class="total-line">
             <span>应收</span>
-            <span class="total-amount">¥ {{ payable.toFixed(2) }}</span>
+            <span
+              class="total-amount"
+              :aria-label="`应收 ${yuanReadable(payable)}`"
+            >¥ {{ payable.toFixed(2) }}</span>
           </div>
         </div>
 
@@ -272,7 +318,7 @@
           :disabled="!canCheckout"
           :loading="checkingOut"
           style="width: 100%; margin-top: 12px"
-          :aria-label="`下单并结账，应收 ${payable.toFixed(2)} 元`"
+          :aria-label="`下单并结账，应收 ${yuanReadable(payable)}`"
           @click="openCheckout"
         >
           下单并结账（应收 ¥{{ payable.toFixed(2) }}）
@@ -323,7 +369,19 @@
 
         <el-table v-if="lastOrder && lastOrder.items.length > 0" :data="lastOrder.items" size="small">
           <el-table-column prop="serviceName" label="项目" />
-          <el-table-column prop="technicianName" label="技师" width="90" />
+          <el-table-column label="技师" width="120">
+            <template #default="{ row }">
+              <span>{{ row.technicianName }}</span>
+              <el-tag
+                v-if="row.assignmentSource === 'Rotation'"
+                size="small" type="info" style="margin-left:4px"
+              >轮</el-tag>
+              <el-tag
+                v-else-if="row.assignmentSource === 'Designation'"
+                size="small" type="warning" style="margin-left:4px"
+              >点</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column label="次数" width="60" align="right">
             <template #default="{ row }">{{ row.quantity }} 次</template>
           </el-table-column>
@@ -433,6 +491,8 @@ interface ServiceCartItem {
   unitPrice: number;
   quantity: number;
   durationMinutes: number;
+  /** 上钟方式：Rotation 轮钟 / Designation 点钟。在购物车里手动改技师会自动 flip 到 Designation。 */
+  assignmentSource: 'Rotation' | 'Designation';
 }
 interface RoomChargeCartItem {
   kind: 'roomCharge';
@@ -796,6 +856,29 @@ const canCheckout = computed(() => {
   return true;
 });
 
+/// 金额朗读：盲人收银员/店长依赖读屏；"32.5" 念成"三十二点五"无意义，转成"32 元 5 角"
+function yuanReadable(amount: number): string {
+  const safe = Number.isFinite(amount) ? amount : 0;
+  const yuan = Math.floor(safe);
+  const jiao = Math.round((safe - yuan) * 10);
+  return jiao === 0 ? `${yuan} 元` : `${yuan} 元 ${jiao} 角`;
+}
+
+/// 给一行 cart-item 拼一句总述，让读屏一开口就知道"第几项、什么服务、哪位技师、轮/点、几次、多少钱"
+function cartRowAriaLabel(it: CartItem, idx: number): string {
+  const seq = `第 ${idx + 1} 项`;
+  if (it.kind === 'roomCharge') {
+    return `${seq}，计时房 ${it.roomNo}，已计时 ${it.elapsedMinutes} 分钟，房费 ${yuanReadable(it.unitPrice)}`;
+  }
+  const tech = technicians.value.find((t) => t.id === it.technicianId);
+  const techDesc = tech ? `技师 ${tech.employeeNo ?? '-'} 号 ${tech.realName ?? tech.username}` : '未指派技师';
+  const sourceDesc = it.assignmentSource === 'Rotation' ? '轮钟' : '点钟';
+  const room = rooms.value.find((r) => r.id === it.roomId);
+  const roomDesc = room ? `房间 ${room.roomNo}` : '未指定房间';
+  const amount = yuanReadable(it.unitPrice * it.quantity);
+  return `${seq}，${it.serviceName}，${techDesc}，上钟方式 ${sourceDesc}，${roomDesc}，数量 ${it.quantity}，小计 ${amount}`;
+}
+
 function payMethodLabel(m: string) {
   return ({
     Cash: '现金', MemberCard: '会员卡', Wechat: '微信', Alipay: '支付宝', BankCard: '银行卡', Unpaid: '未支付'
@@ -853,7 +936,7 @@ function onPickService(s: ServiceItem) {
   pickOpen.value = true;
 }
 
-function onTechnicianPicked(payload: { technicianId: number; quantity: number }) {
+function onTechnicianPicked(payload: { technicianId: number; quantity: number; source: 'Rotation' | 'Designation' }) {
   if (!pickedService.value) return;
   const s = pickedService.value;
   const unit = mode.value === 'member' ? s.memberPrice : s.price;
@@ -865,7 +948,9 @@ function onTechnicianPicked(payload: { technicianId: number; quantity: number })
     roomId: null,
     unitPrice: unit,
     quantity: payload.quantity,
-    durationMinutes: s.durationMinutes
+    durationMinutes: s.durationMinutes,
+    // 由弹窗带入，店员可在"当前订单"行的下拉里随时改
+    assignmentSource: payload.source
   });
   pickOpen.value = false;
 }
@@ -964,7 +1049,8 @@ async function doCheckout(payload: { payMethod: string; paidAmount: number | nul
         serviceId: c.serviceId,
         technicianId: c.technicianId!,
         quantity: c.quantity,
-        roomId: c.roomId
+        roomId: c.roomId,
+        assignmentSource: c.assignmentSource
       })),
       remark: null,
       roomSessionIds: roomCharges.map((r) => r.sessionId)
@@ -1115,6 +1201,7 @@ useShortcuts({
 .ci-name { font-weight: 500; font-size: 15px; }
 .ci-meta { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
 .ci-tech { flex: 1 1 200px; min-width: 180px; }
+.ci-source-select { flex: 0 1 110px; min-width: 100px; }
 .ci-room { flex: 0 1 140px; min-width: 120px; }
 .ci-qty { flex: 0 0 140px; }
 .ci-price { margin-left: auto; font-weight: 700; font-size: 16px; color: #d9534f; }

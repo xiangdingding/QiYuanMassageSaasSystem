@@ -88,6 +88,10 @@ public class OrderItem : BaseEntity, ITenantScoped
     /// <summary>是否为加钟（同一 OrderId 续做）。第一项 false，后续追加项 true。</summary>
     public bool IsAddOn { get; set; }
 
+    /// <summary>本项技师来源：Rotation 轮钟 / Designation 点钟。Unknown 仅用于历史数据回填；
+    /// 新建项必须明确为前两者之一（缺省走后端 ParseSource 兜底为 Designation）。</summary>
+    public AssignmentSource AssignmentSource { get; set; } = AssignmentSource.Unknown;
+
     /// <summary>转钟是否由投诉触发：用于按"投诉率"做技师质量报表。</summary>
     public bool ComplaintTransferred { get; set; }
 

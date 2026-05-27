@@ -10,7 +10,9 @@ public record CommissionRuleDto(
     decimal Amount,
     string? TieredRulesJson,
     int Priority,
-    bool IsActive);
+    bool IsActive,
+    /// <summary>适用来源："Rotation" 仅匹配轮钟 / "Designation" 仅匹配点钟 / null 通配两种</summary>
+    string? AssignmentSource = null);
 
 public record CreateCommissionRuleRequest(
     long? ServiceId,
@@ -19,11 +21,15 @@ public record CreateCommissionRuleRequest(
     decimal Amount,
     string? TieredRulesJson,
     int Priority = 0,
-    bool IsActive = true);
+    bool IsActive = true,
+    /// <summary>适用来源：留空 = 通配两种来源；填 "Rotation" / "Designation" 区分</summary>
+    string? AssignmentSource = null);
 
 public record UpdateCommissionRuleRequest(
     string RuleType,
     decimal Amount,
     string? TieredRulesJson,
     int Priority,
-    bool IsActive);
+    bool IsActive,
+    /// <summary>适用来源：留空 = 通配两种来源；填 "Rotation" / "Designation" 区分</summary>
+    string? AssignmentSource = null);

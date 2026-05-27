@@ -120,6 +120,9 @@ namespace MassageSaas.Infrastructure.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("decimal(18,4)");
 
+                    b.Property<int?>("AssignmentSource")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -156,7 +159,7 @@ namespace MassageSaas.Infrastructure.Migrations
 
                     b.HasIndex("TechnicianId");
 
-                    b.HasIndex("TenantId", "ServiceId", "TechnicianId");
+                    b.HasIndex("TenantId", "ServiceId", "TechnicianId", "AssignmentSource");
 
                     b.ToTable("commission_rules", (string)null);
                 });
@@ -948,6 +951,11 @@ namespace MassageSaas.Infrastructure.Migrations
                         .HasColumnType("bigint");
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("AssignmentSource")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<decimal>("CommissionAmount")
                         .HasPrecision(18, 2)

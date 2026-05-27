@@ -18,4 +18,9 @@ public class CommissionRule : BaseEntity, ITenantScoped
     public string? TieredRulesJson { get; set; }
     public int Priority { get; set; }
     public bool IsActive { get; set; } = true;
+
+    /// <summary>适用来源：null 通配两种来源（默认，保持旧规则行为不变）；
+    /// Rotation 仅适用于轮钟下的 OrderItem；Designation 仅适用于点钟下的 OrderItem。
+    /// 历史数据全部为 null；新建规则可在前台 CommissionsView 里指定。</summary>
+    public AssignmentSource? AssignmentSource { get; set; }
 }

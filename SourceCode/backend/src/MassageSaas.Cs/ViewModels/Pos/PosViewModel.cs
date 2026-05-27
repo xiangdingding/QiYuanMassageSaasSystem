@@ -279,6 +279,10 @@ public partial class PosViewModel : ObservableObject
             var created = await _api.CreateOrderAsync(new CreateOrderRequest(
                 StoreId: _context.ActiveStoreId.Value,
                 MemberId: ActiveMember?.Id,
+                // TODO(轮钟/点钟): CS POS 尚未接入 queue/call-next 与 radio UI；
+                // 不传 AssignmentSource 时后端 ParseSource 兜底为 Designation，
+                // 提成自动按"仅点钟"或"通配"规则计算。BS POS 已支持完整切换，
+                // 待 CS 端补 radio + 叫下一钟按钮后再透传 AssignmentSource。
                 Items: Cart.Select(c => new OrderItemInputDto(
                     ServiceId: c.ServiceId,
                     TechnicianId: c.Technician!.Id,

@@ -201,7 +201,8 @@ public class OrdersController : ControllerBase
                 RoomId = room?.Id,
                 RoomNoSnapshot = room?.RoomNo,
                 MemberPackageId = pkg?.Id,
-                IsAddOn = false
+                IsAddOn = false,
+                AssignmentSource = ParseSource(input.AssignmentSource)
             });
         }
         // 计时房费先按当下分钟数预估并入 Total（结账时会按真实结算分钟数重算）
@@ -225,6 +226,14 @@ public class OrdersController : ControllerBase
         var saved = await LoadOrderAsync(order.Id, ct);
         return CreatedAtAction(nameof(Get), new { id = order.Id }, ToDto(saved!));
     }
+
+    /// <summary>解析前端传入的 AssignmentSource 字符串：合法的 Rotation/Designation 直接用，
+    /// 空/无效/Unknown 一律兜底为 Designation —— 沉默的老客户端做的是手动选人，本就是点钟，
+    /// 这样指定率不会被假性轮钟稀释。</summary>
+    private static AssignmentSource ParseSource(string? s) =>
+        Enum.TryParse<AssignmentSource>(s, true, out var v) && v != AssignmentSource.Unknown
+            ? v
+            : AssignmentSource.Designation;
 
     /// <summary>同手机号下的任意一张卡视为同一人；用于计时房开台 cardId 与下单 cardId 的人维度比对。</summary>
     private async Task<bool> IsSamePersonAsync(long boundCardId, long? currentCardId, CancellationToken ct)
@@ -283,7 +292,8 @@ public class OrdersController : ControllerBase
                 ListUnitPrice = listUnit,
                 RoomId = input.RoomId,
                 MemberPackageId = pkg?.Id,
-                IsAddOn = true
+                IsAddOn = true,
+                AssignmentSource = ParseSource(input.AssignmentSource)
             });
             order.Total += lineTotal;
         }
@@ -565,7 +575,8 @@ public class OrdersController : ControllerBase
             item.CommissionAmount = CommissionCalculator.Compute(
                 rules, item.TechnicianId, item.ServiceId,
                 item.ItemTotal, item.DurationMinutes * item.Quantity,
-                techCounts[item.TechnicianId]);
+                techCounts[item.TechnicianId],
+                item.AssignmentSource);
         }
 
         order.PayMethod = method;
@@ -673,6 +684,8 @@ public class OrdersController : ControllerBase
             u.Id == req.NewTechnicianId && u.Role == UserRole.Technician && u.IsActive, ct);
         if (newTech is null) return BadRequest(new { code = "TechnicianNotFound", message = "新技师不存在或已停用" });
 
+        // AssignmentSource 在转钟时保持不变：来源标记的是"客人是怎么找到第一位技师的"，
+        // 中途换人不改变这个来源。新技师的"工作量计入轮/点"通过 OrderItem 的 source 字段直接生效。
         item.PreviousTechnicianId = item.TechnicianId;
         item.TechnicianId = req.NewTechnicianId;
         item.TransferredAt = DateTime.UtcNow;
@@ -770,7 +783,8 @@ public class OrdersController : ControllerBase
                 i.CommissionAmount, i.RoomId, i.RoomNoSnapshot,
                 i.PreviousTechnicianId, i.TransferredAt,
                 i.TipAmount, i.MemberPackageId, i.IsAddOn, i.MergedGroupKey,
-                i.ListUnitPrice, listAmount);
+                i.ListUnitPrice, listAmount,
+                i.AssignmentSource.ToString());
         }).ToList();
         var roomCharges = o.RoomSessions
             .OrderBy(s => s.StartedAt)

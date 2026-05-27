@@ -69,23 +69,49 @@
       />
     </el-card>
 
-    <el-drawer v-model="drawerOpen" title="订单详情" size="860px" class="order-detail-drawer">
+    <el-drawer
+      v-model="drawerOpen"
+      :title="detail ? `订单详情 ${detail.orderNo}` : '订单详情'"
+      :aria-label="detail ? drawerAriaLabel(detail) : '订单详情'"
+      size="860px"
+      class="order-detail-drawer"
+    >
       <div v-if="detail" class="detail-body">
-        <el-descriptions :column="2" border size="large" class="detail-desc">
+        <el-descriptions
+          :column="2"
+          border
+          size="large"
+          class="detail-desc"
+          :aria-label="`订单 ${detail.orderNo} 概要`"
+        >
           <el-descriptions-item label="订单号" :span="2">{{ detail.orderNo }}</el-descriptions-item>
           <el-descriptions-item label="状态">
-            <el-tag :type="statusType(detail.status)" size="large">{{ statusLabel(detail.status) }}</el-tag>
+            <el-tag
+              :type="statusType(detail.status)"
+              size="large"
+              :aria-label="`订单状态 ${statusLabel(detail.status)}`"
+            >{{ statusLabel(detail.status) }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="支付方式">{{ payLabel(detail.payMethod) }}</el-descriptions-item>
+          <el-descriptions-item label="支付方式">
+            <span :aria-label="`支付方式 ${payLabel(detail.payMethod)}`">{{ payLabel(detail.payMethod) }}</span>
+          </el-descriptions-item>
           <el-descriptions-item label="合计">
-            ¥{{ headlineTotal(detail).toFixed(2) }}
-            <span v-if="(detail.punchCardUsedCount ?? 0) > 0" class="muted" style="margin-left:6px">（含次卡面值）</span>
+            <span :aria-label="`合计 ${yuanReadable(headlineTotal(detail))}${(detail.punchCardUsedCount ?? 0) > 0 ? '，含次卡面值' : ''}`">
+              ¥{{ headlineTotal(detail).toFixed(2) }}
+            </span>
+            <span v-if="(detail.punchCardUsedCount ?? 0) > 0" class="muted" style="margin-left:6px" aria-hidden="true">（含次卡面值）</span>
           </el-descriptions-item>
-          <el-descriptions-item label="优惠">¥{{ detail.discountAmount.toFixed(2) }}</el-descriptions-item>
-          <el-descriptions-item label="实收">¥{{ detail.paidAmount.toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="优惠">
+            <span :aria-label="`优惠 ${yuanReadable(detail.discountAmount)}`">¥{{ detail.discountAmount.toFixed(2) }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="实收">
+            <span :aria-label="`实收 ${yuanReadable(detail.paidAmount)}`">¥{{ detail.paidAmount.toFixed(2) }}</span>
+          </el-descriptions-item>
           <el-descriptions-item label="收银员">{{ detail.cashierName ?? '—' }}</el-descriptions-item>
           <el-descriptions-item v-if="(detail.punchCardUsedCount ?? 0) > 0" label="消费次数">
-            {{ detail.punchCardUsedCount }} 次（次卡核销）
+            <span :aria-label="`次卡核销消费 ${detail.punchCardUsedCount} 次`">
+              {{ detail.punchCardUsedCount }} 次（次卡核销）
+            </span>
           </el-descriptions-item>
           <template v-if="isMemberOrder(detail)">
             <el-descriptions-item label="会员卡号">{{ detail.memberCardNo ?? '—' }}</el-descriptions-item>
@@ -96,6 +122,7 @@
                 v-if="detail.memberTypeKind"
                 :type="detail.memberTypeKind === 'StoredValue' ? 'warning' : 'success'"
                 size="large"
+                :aria-label="`卡类型 ${detail.memberTypeName ?? memberTypeKindLabel(detail.memberTypeKind)}`"
               >{{ detail.memberTypeName ?? memberTypeKindLabel(detail.memberTypeKind) }}</el-tag>
               <span v-else>{{ detail.memberTypeName ?? '普通' }}</span>
             </el-descriptions-item>
@@ -104,90 +131,161 @@
           <el-descriptions-item label="备注" :span="2">{{ detail.remark ?? '—' }}</el-descriptions-item>
         </el-descriptions>
         <el-divider v-if="detail.items.length > 0" class="detail-divider">项目明细</el-divider>
-        <el-table v-if="detail.items.length > 0" :data="detail.items" class="detail-items" stripe>
+        <el-table
+          v-if="detail.items.length > 0"
+          :data="detail.items"
+          class="detail-items"
+          stripe
+          :aria-label="`订单 ${detail.orderNo} 的服务项目明细，共 ${detail.items.length} 项`"
+          :row-class-name="itemRowAriaClass"
+        >
           <el-table-column prop="serviceName" label="项目" min-width="180">
             <template #default="{ row }">
-              <span class="item-name">{{ row.serviceName }}</span>
-              <el-tag v-if="row.memberPackageId" size="small" type="success" style="margin-left:6px">次卡</el-tag>
+              <span class="item-name" :aria-label="itemRowAriaLabel(row)">{{ row.serviceName }}</span>
+              <el-tag
+                v-if="row.memberPackageId"
+                size="small"
+                type="success"
+                style="margin-left:6px"
+                aria-label="本项次卡核销"
+              >次卡</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="技师" width="150">
+          <el-table-column label="技师" width="220">
             <template #default="{ row }">
               <span>{{ row.technicianName }}</span>
-              <el-tag v-if="row.transferredAt" size="small" type="warning" style="margin-left:4px">已转</el-tag>
+              <el-tag
+                v-if="row.assignmentSource === 'Rotation'"
+                size="small" type="info" style="margin-left:4px"
+                aria-label="上钟方式 轮钟"
+              >轮钟</el-tag>
+              <el-tag
+                v-else-if="row.assignmentSource === 'Designation'"
+                size="small" type="warning" style="margin-left:4px"
+                aria-label="上钟方式 点钟"
+              >点钟</el-tag>
+              <el-tag
+                v-if="row.transferredAt"
+                size="small" type="warning" style="margin-left:4px"
+                aria-label="已转钟"
+              >已转</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="房间" width="90">
-            <template #default="{ row }">{{ row.roomNo ?? '—' }}</template>
+            <template #default="{ row }">
+              <span :aria-label="row.roomNo ? `房间 ${row.roomNo}` : '未指定房间'">{{ row.roomNo ?? '—' }}</span>
+            </template>
           </el-table-column>
           <el-table-column prop="quantity" label="次数" width="80" align="right">
-            <template #default="{ row }">{{ row.quantity }} 次</template>
+            <template #default="{ row }">
+              <span :aria-label="`${row.quantity} 次`">{{ row.quantity }} 次</span>
+            </template>
           </el-table-column>
           <el-table-column label="金额" width="120" align="right">
-            <template #default="{ row }">¥{{ rowAmount(row).toFixed(2) }}</template>
+            <template #default="{ row }">
+              <span :aria-label="`金额 ${yuanReadable(rowAmount(row))}`">¥{{ rowAmount(row).toFixed(2) }}</span>
+            </template>
           </el-table-column>
           <el-table-column label="提成" width="110" align="right">
-            <template #default="{ row }">¥{{ row.commissionAmount.toFixed(2) }}</template>
+            <template #default="{ row }">
+              <span :aria-label="`提成 ${yuanReadable(row.commissionAmount)}`">¥{{ row.commissionAmount.toFixed(2) }}</span>
+            </template>
           </el-table-column>
           <el-table-column
             v-if="detail.status === 'Pending' || detail.status === 'InProgress'"
             label="操作"
-            width="100"
+            width="110"
           >
             <template #default="{ row }">
-              <el-button size="default" @click="openTransfer(row)">转钟</el-button>
+              <el-button
+                size="large"
+                :aria-label="`转钟，把 ${row.serviceName} 的技师 ${row.technicianName ?? ''} 换成其他人`"
+                @click="openTransfer(row)"
+              >转钟</el-button>
             </template>
           </el-table-column>
         </el-table>
 
         <template v-if="(detail.roomCharges?.length ?? 0) > 0">
           <el-divider class="detail-divider">计时房费</el-divider>
-          <el-table :data="detail.roomCharges ?? []" class="detail-items" stripe>
+          <el-table
+            :data="detail.roomCharges ?? []"
+            class="detail-items"
+            stripe
+            :aria-label="`订单 ${detail.orderNo} 的计时房费明细，共 ${detail.roomCharges!.length} 条`"
+          >
             <el-table-column label="房间" min-width="120">
               <template #default="{ row }">
-                <el-tag type="primary" size="small" style="margin-right:6px">计时房</el-tag>
-                <span class="item-name">{{ row.roomNo }}</span>
+                <el-tag type="primary" size="small" style="margin-right:6px" aria-label="计时房">计时房</el-tag>
+                <span class="item-name" :aria-label="roomChargeRowAriaLabel(row)">{{ row.roomNo }}</span>
               </template>
             </el-table-column>
             <el-table-column label="时长" width="110" align="right">
-              <template #default="{ row }">{{ row.minutes }} 分钟</template>
+              <template #default="{ row }">
+                <span :aria-label="`时长 ${row.minutes} 分钟`">{{ row.minutes }} 分钟</span>
+              </template>
             </el-table-column>
             <el-table-column label="单价" width="130" align="right">
-              <template #default="{ row }">¥{{ row.hourlyRate.toFixed(2) }} / 时</template>
+              <template #default="{ row }">
+                <span :aria-label="`单价 ${yuanReadable(row.hourlyRate)} 每小时`">¥{{ row.hourlyRate.toFixed(2) }} / 时</span>
+              </template>
             </el-table-column>
             <el-table-column label="金额" width="120" align="right">
-              <template #default="{ row }">¥{{ row.amount.toFixed(2) }}</template>
+              <template #default="{ row }">
+                <span :aria-label="`金额 ${yuanReadable(row.amount)}`">¥{{ row.amount.toFixed(2) }}</span>
+              </template>
             </el-table-column>
             <el-table-column label="状态" width="100">
               <template #default="{ row }">
-                <el-tag :type="roomStatusType(row.status)" size="small">{{ roomStatusLabel(row.status) }}</el-tag>
+                <el-tag
+                  :type="roomStatusType(row.status)"
+                  size="small"
+                  :aria-label="`状态 ${roomStatusLabel(row.status)}`"
+                >{{ roomStatusLabel(row.status) }}</el-tag>
               </template>
             </el-table-column>
           </el-table>
         </template>
 
-        <div class="actions">
+        <div class="actions" role="group" aria-label="订单操作">
           <el-button
             v-if="detail.status === 'Completed'"
             type="danger"
             size="large"
+            :aria-label="`退款，把已完成订单 ${detail.orderNo} 实收 ${yuanReadable(detail.paidAmount)} 退还`"
             @click="onRefund"
           >退款</el-button>
           <el-button
             v-if="detail.status === 'Pending'"
             size="large"
+            :aria-label="`取消未结账订单 ${detail.orderNo}`"
             @click="onCancel"
           >取消订单</el-button>
         </div>
       </div>
     </el-drawer>
 
-    <el-dialog v-model="transferOpen" title="转钟（更换技师）" width="420px">
-      <el-form label-width="90px">
-        <el-form-item label="项目">{{ transferTarget?.serviceName }}</el-form-item>
-        <el-form-item label="原技师">{{ transferTarget?.technicianName }}</el-form-item>
+    <el-dialog
+      v-model="transferOpen"
+      title="转钟（更换技师）"
+      :aria-label="transferTarget ? `转钟对话框：把 ${transferTarget.serviceName} 的技师 ${transferTarget.technicianName ?? ''} 换成其他人` : '转钟对话框'"
+      width="460px"
+    >
+      <el-form label-width="100px" size="large">
+        <el-form-item label="项目">
+          <span :aria-label="`项目 ${transferTarget?.serviceName ?? ''}`">{{ transferTarget?.serviceName }}</span>
+        </el-form-item>
+        <el-form-item label="原技师">
+          <span :aria-label="`原技师 ${transferTarget?.technicianName ?? '未指派'}`">{{ transferTarget?.technicianName }}</span>
+        </el-form-item>
         <el-form-item label="新技师" required>
-          <el-select v-model="transferTo" placeholder="选择新技师" filterable style="width: 100%">
+          <el-select
+            v-model="transferTo"
+            placeholder="搜索工号或姓名，回车选中"
+            filterable
+            style="width: 100%"
+            aria-label="选择新技师"
+          >
             <el-option
               v-for="t in technicians"
               :key="t.id"
@@ -198,12 +296,27 @@
           </el-select>
         </el-form-item>
         <el-form-item label="原因">
-          <el-input v-model="transferReason" maxlength="200" placeholder="如：客人要求换人 / 原技师有事" />
+          <el-input
+            v-model="transferReason"
+            maxlength="200"
+            placeholder="如：客人要求换人 / 原技师有事"
+            aria-label="转钟原因，可选"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="transferOpen = false">取消</el-button>
-        <el-button type="primary" :loading="transferring" @click="doTransfer">确认转钟</el-button>
+        <el-button
+          size="large"
+          :aria-label="'放弃转钟并关闭对话框'"
+          @click="transferOpen = false"
+        >取消</el-button>
+        <el-button
+          type="primary"
+          size="large"
+          :loading="transferring"
+          :aria-label="'确认转钟，新技师生效'"
+          @click="doTransfer"
+        >确认转钟</el-button>
       </template>
     </el-dialog>
   </div>
@@ -325,6 +438,43 @@ function roomStatusLabel(s: string) {
 }
 function roomStatusType(s: string) {
   return ({ Open: 'warning', Settled: 'success', Cancelled: 'info' } as Record<string, any>)[s] ?? '';
+}
+
+/// 金额朗读：避免读屏把"32.5"念成"三十二点五"，给出"32 元 5 角"
+function yuanReadable(amount: number): string {
+  const safe = Number.isFinite(amount) ? amount : 0;
+  const yuan = Math.floor(safe);
+  const jiao = Math.round((safe - yuan) * 10);
+  return jiao === 0 ? `${yuan} 元` : `${yuan} 元 ${jiao} 角`;
+}
+
+/// 给抽屉一开就能朗读出来的综合述：订单号、状态、应收、含多少项、何时完成
+function drawerAriaLabel(o: Order): string {
+  const itemDesc = o.items.length > 0 ? `${o.items.length} 项服务` : '无服务项';
+  const roomDesc = (o.roomCharges?.length ?? 0) > 0 ? `，${o.roomCharges!.length} 条计时房费` : '';
+  const memberDesc = o.memberCardNo ? `，会员 ${o.memberCardNo}` : '';
+  return `订单详情 ${o.orderNo}，状态 ${statusLabel(o.status)}，实收 ${yuanReadable(o.paidAmount)}${memberDesc}，含 ${itemDesc}${roomDesc}`;
+}
+
+/// 项目明细行的整体朗读：用 row-class-name 的回调里挂一个 aria 字符串到 className，
+/// 但 Element Plus 表格不直接支持每行 aria-label；这里改在第一列的 item-name 上挂
+function itemRowAriaLabel(row: OrderItem): string {
+  const tech = row.technicianName ?? '未指派';
+  const sourceDesc = row.assignmentSource === 'Rotation' ? '，上钟方式 轮钟'
+    : row.assignmentSource === 'Designation' ? '，上钟方式 点钟'
+    : '';
+  const transferDesc = row.transferredAt ? '，已转钟' : '';
+  const room = row.roomNo ? `，房间 ${row.roomNo}` : '';
+  return `${row.serviceName}，技师 ${tech}${sourceDesc}${transferDesc}${room}，数量 ${row.quantity}，金额 ${yuanReadable(rowAmount(row))}，提成 ${yuanReadable(row.commissionAmount)}`;
+}
+
+function itemRowAriaClass() {
+  // 占位钩子：保留以便后续 CSS 标记某些行（如已转钟）
+  return '';
+}
+
+function roomChargeRowAriaLabel(row: NonNullable<Order['roomCharges']>[number]): string {
+  return `计时房 ${row.roomNo}，时长 ${row.minutes} 分钟，单价 ${yuanReadable(row.hourlyRate)} 每小时，金额 ${yuanReadable(row.amount)}，状态 ${roomStatusLabel(row.status)}`;
 }
 
 async function reload() {

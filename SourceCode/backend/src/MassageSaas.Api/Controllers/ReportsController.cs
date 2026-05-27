@@ -85,23 +85,43 @@ public class ReportsController : ControllerBase
     {
         if (to <= from) return BadRequest(new { code = "InvalidRange", message = "结束时间必须大于开始时间" });
 
-        var data = await _db.OrderItems.AsNoTracking()
+        // 先 materialize 一份带 source 拆分的中间结构，再 C# 端算指定率，避免 LINQ-to-SQL 上写复杂表达式
+        var raw = await _db.OrderItems.AsNoTracking()
             .Where(oi =>
                 oi.Order.StoreId == storeId
                 && oi.Order.Status == OrderStatus.Completed
                 && oi.Order.CompletedAt >= from
                 && oi.Order.CompletedAt < to)
             .GroupBy(oi => new { oi.TechnicianId, oi.Technician.RealName, oi.Technician.Username, oi.Technician.EmployeeNo })
-            .Select(g => new TechnicianPerformanceDto(
+            .Select(g => new
+            {
                 g.Key.TechnicianId,
-                g.Key.RealName ?? g.Key.Username,
+                Name = g.Key.RealName ?? g.Key.Username,
                 g.Key.EmployeeNo,
-                g.Sum(x => x.Quantity),
-                g.Sum(x => x.ItemTotal),
-                g.Sum(x => x.CommissionAmount),
-                g.Sum(x => x.DurationMinutes * x.Quantity)))
-            .OrderByDescending(d => d.TotalCommission)
+                Quantity = g.Sum(x => x.Quantity),
+                Amount = g.Sum(x => x.ItemTotal),
+                Commission = g.Sum(x => x.CommissionAmount),
+                Duration = g.Sum(x => x.DurationMinutes * x.Quantity),
+                Designation = g.Where(x => x.AssignmentSource == AssignmentSource.Designation).Sum(x => (int?)x.Quantity) ?? 0,
+                Rotation = g.Where(x => x.AssignmentSource == AssignmentSource.Rotation).Sum(x => (int?)x.Quantity) ?? 0
+            })
             .ToListAsync(ct);
+
+        var data = raw
+            .Select(r =>
+            {
+                var denom = r.Designation + r.Rotation;
+                // 老 Unknown 行不进分母；分母 0 时返回 null 让前端显示 "—"
+                decimal? rate = denom == 0
+                    ? null
+                    : Math.Round((decimal)r.Designation / denom, 4);
+                return new TechnicianPerformanceDto(
+                    r.TechnicianId, r.Name, r.EmployeeNo,
+                    r.Quantity, r.Amount, r.Commission, r.Duration,
+                    r.Designation, r.Rotation, rate);
+            })
+            .OrderByDescending(d => d.TotalCommission)
+            .ToList();
 
         return Ok(data);
     }

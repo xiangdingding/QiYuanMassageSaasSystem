@@ -1,3 +1,4 @@
+using MassageSaas.Domain.Common;
 using MassageSaas.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -213,6 +214,8 @@ public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         b.Property(x => x.RoomNoSnapshot).HasMaxLength(32);
         b.Property(x => x.TransferReason).HasMaxLength(200);
         b.Property(x => x.MergedGroupKey).HasMaxLength(36);
+        // 历史行回填 Unknown(0)；新行由 Controller ParseSource 兜底为 Designation
+        b.Property(x => x.AssignmentSource).HasConversion<int>().HasDefaultValue(AssignmentSource.Unknown);
         b.HasOne(x => x.Order).WithMany(o => o.Items).HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Service).WithMany().HasForeignKey(x => x.ServiceId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.Technician).WithMany().HasForeignKey(x => x.TechnicianId).OnDelete(DeleteBehavior.Restrict);
@@ -601,9 +604,11 @@ public class CommissionRuleConfiguration : IEntityTypeConfiguration<CommissionRu
         b.HasKey(x => x.Id);
         b.Property(x => x.Amount).HasPrecision(18, 4);
         b.Property(x => x.TieredRulesJson).HasColumnType("json");
+        // null = 通配两种来源；非 null = 仅适用于该来源的 OrderItem
+        b.Property(x => x.AssignmentSource).HasConversion<int?>();
         b.HasOne(x => x.Tenant).WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Service).WithMany(s => s.CommissionRules).HasForeignKey(x => x.ServiceId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Technician).WithMany().HasForeignKey(x => x.TechnicianId).OnDelete(DeleteBehavior.Cascade);
-        b.HasIndex(x => new { x.TenantId, x.ServiceId, x.TechnicianId });
+        b.HasIndex(x => new { x.TenantId, x.ServiceId, x.TechnicianId, x.AssignmentSource });
     }
 }
