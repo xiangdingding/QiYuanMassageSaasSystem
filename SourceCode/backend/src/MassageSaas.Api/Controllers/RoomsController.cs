@@ -23,6 +23,8 @@ public class RoomsController : ControllerBase
         _tenantContext = tenantContext;
     }
 
+    // 房间是纯属性，不区分"占用/空闲"——同一房间可被多个订单项同时引用。
+    // 计时房的"计时中"状态通过 /timed-rooms/sessions 单独查询，不混入这里。
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<RoomDto>>> List([FromQuery] long storeId, [FromQuery] bool includeInactive = false, CancellationToken ct = default)
     {
@@ -30,21 +32,8 @@ public class RoomsController : ControllerBase
         if (!includeInactive) roomsQ = roomsQ.Where(r => r.IsActive);
         var rooms = await roomsQ.OrderBy(r => r.RoomNo).ToListAsync(ct);
 
-        var roomIds = rooms.Select(r => r.Id).ToList();
-        // 占用 = 当前有未结账（Pending/InProgress）订单的 OrderItem 引用
-        var occupied = await _db.OrderItems.AsNoTracking()
-            .Where(oi => oi.RoomId != null
-                         && roomIds.Contains(oi.RoomId.Value)
-                         && (oi.Order.Status == OrderStatus.Pending || oi.Order.Status == OrderStatus.InProgress))
-            .Select(oi => new { RoomId = oi.RoomId!.Value, OrderId = oi.OrderId, oi.Order.OrderNo })
-            .ToListAsync(ct);
-        var occMap = occupied.GroupBy(x => x.RoomId).ToDictionary(g => g.Key, g => g.First());
-
         return Ok(rooms.Select(r => new RoomDto(
             r.Id, r.StoreId, r.RoomNo, r.Capacity, r.RoomType, r.Remark, r.IsActive,
-            occMap.ContainsKey(r.Id),
-            occMap.TryGetValue(r.Id, out var occ) ? occ.OrderId : null,
-            occMap.TryGetValue(r.Id, out var occ2) ? occ2.OrderNo : null,
             r.IsTimedRoom, r.HourlyRate)).ToList());
     }
 
@@ -72,7 +61,7 @@ public class RoomsController : ControllerBase
         _db.Rooms.Add(room);
         await _db.SaveChangesAsync(ct);
         return Ok(new RoomDto(room.Id, room.StoreId, room.RoomNo, room.Capacity,
-            room.RoomType, room.Remark, room.IsActive, false, null, null,
+            room.RoomType, room.Remark, room.IsActive,
             room.IsTimedRoom, room.HourlyRate));
     }
 
@@ -103,19 +92,18 @@ public class RoomsController : ControllerBase
         await _db.SaveChangesAsync(ct);
 
         return Ok(new RoomDto(room.Id, room.StoreId, room.RoomNo, room.Capacity,
-            room.RoomType, room.Remark, room.IsActive, false, null, null,
+            room.RoomType, room.Remark, room.IsActive,
             room.IsTimedRoom, room.HourlyRate));
     }
 
+    // 房间是纯属性，无独占语义；进行中订单引用某房间不再阻塞软删。
+    // 计时房若有 Open session 仍由调用方先手动结清/取消计时（在 RoomsView 已有"取消计时"入口）。
     [HttpDelete("{id:long}")]
     [Authorize(Policy = "ShopStaff")]
     public async Task<IActionResult> Remove(long id, CancellationToken ct)
     {
         var room = await _db.Rooms.FirstOrDefaultAsync(r => r.Id == id, ct);
         if (room is null) return NotFound();
-        var inUse = await _db.OrderItems.AnyAsync(oi => oi.RoomId == id
-            && (oi.Order.Status == OrderStatus.Pending || oi.Order.Status == OrderStatus.InProgress), ct);
-        if (inUse) return Conflict(new { code = "InUse", message = "房间被进行中订单占用，请改为停用" });
         room.IsDeleted = true;
         await _db.SaveChangesAsync(ct);
         return NoContent();

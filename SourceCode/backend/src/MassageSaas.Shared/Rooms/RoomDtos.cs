@@ -8,9 +8,6 @@ public record RoomDto(
     string? RoomType,
     string? Remark,
     bool IsActive,
-    bool IsOccupied,
-    long? OccupiedByOrderId,
-    string? OccupiedByOrderNo,
     bool IsTimedRoom,
     decimal HourlyRate);
 

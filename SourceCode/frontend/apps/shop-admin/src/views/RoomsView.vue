@@ -28,19 +28,18 @@
           <template #default="{ row }">
             <el-tag v-if="!row.isActive" type="info">已停用</el-tag>
             <el-tag v-else-if="row.isTimedRoom && timedOpen(row.id)" type="warning">计时中</el-tag>
-            <el-tag v-else-if="row.isOccupied" type="warning">占用中</el-tag>
             <el-tag v-else type="success">可用</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="占用 / 计时" min-width="200">
+        <el-table-column label="计时进度" min-width="200">
           <template #default="{ row }">
             <span v-if="row.isTimedRoom && timedOpen(row.id)">
               已计时 {{ timedOpen(row.id)!.elapsedMinutes }} 分钟 · 客 {{ timedOpen(row.id)!.customerName || timedOpen(row.id)!.memberName || '散客' }}
             </span>
-            <span v-else>{{ row.occupiedByOrderNo || '—' }}</span>
+            <span v-else>—</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="240" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
             <el-button v-if="canManage" size="small" :aria-label="`编辑 ${row.roomNo} 号房`" @click="openEdit(row)">编辑</el-button>
             <el-button
@@ -50,7 +49,7 @@
               :aria-label="`取消 ${row.roomNo} 号房当前计时（不计费）`"
               @click="cancelTiming(row, timedOpen(row.id)!)"
             >取消计时</el-button>
-            <el-button v-if="canManage" size="small" type="danger" :disabled="row.isOccupied || !!timedOpen(row.id)"
+            <el-button v-if="canManage" size="small" type="danger" :disabled="!!timedOpen(row.id)"
                        @click="remove(row)">删除</el-button>
           </template>
         </el-table-column>

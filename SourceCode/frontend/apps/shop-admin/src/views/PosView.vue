@@ -276,9 +276,8 @@
                 <el-option
                   v-for="r in availableRooms(it.roomId)"
                   :key="r.id"
-                  :label="r.roomNo + (r.isOccupied ? '（占用中）' : '')"
+                  :label="r.roomNo"
                   :value="r.id"
-                  :disabled="r.isOccupied && r.id !== it.roomId"
                 />
               </el-select>
               <span v-else class="muted">{{ it.roomNo }}</span>
@@ -559,17 +558,10 @@ function quickAddFirst() {
   if (first) onPickService(first);
 }
 
-function availableRooms(currentRoomId: number | null): Room[] {
-  // 当前 cart 中已选过的房间在其它项目里禁用，自己当前选的留可见
-  // 仅在 service 行里关注 roomId；计时房作为 roomCharge 行不会出现在普通服务的房间下拉里
-  const usedElsewhere = new Set(
-    cart
-      .filter((c): c is ServiceCartItem =>
-        c.kind === 'service' && c.roomId !== null && c.roomId !== currentRoomId)
-      .map((c) => c.roomId!)
-  );
-  // 普通服务的房间下拉里也排除计时房（计时房通过 roomCharge 走另一条线）
-  return rooms.value.filter((r) => !usedElsewhere.has(r.id) && !r.isTimedRoom);
+function availableRooms(_currentRoomId: number | null): Room[] {
+  // 房间是纯属性、无独占——同一房间可同时被多个购物车行引用，由前台自行协调实际物理使用。
+  // 普通服务的房间下拉里仍排除计时房（计时房通过 roomCharge 走另一条线）。
+  return rooms.value.filter((r) => !r.isTimedRoom);
 }
 const cart = reactive<CartItem[]>([]);
 /// 该手机号下的所有卡（一人多卡：充值卡 + 次卡）

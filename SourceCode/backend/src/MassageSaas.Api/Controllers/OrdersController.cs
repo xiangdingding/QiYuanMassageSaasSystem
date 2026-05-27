@@ -101,7 +101,8 @@ public class OrdersController : ControllerBase
         var store = await _db.Stores.FirstOrDefaultAsync(s => s.Id == req.StoreId && s.IsActive, ct);
         if (store is null) return BadRequest(new { code = "StoreNotFound", message = "门店不存在或已停用" });
 
-        // 房间校验：必须属于该门店、启用、且未被进行中订单占用
+        // 房间校验：仅校验"属于该门店且启用"。房间是纯属性，无独占语义——
+        // 多个 OrderItem 可同时引用同一房间，由前台自行协调实际物理使用。
         var roomIds = items.Where(i => i.RoomId.HasValue).Select(i => i.RoomId!.Value).Distinct().ToList();
         Dictionary<long, Room> rooms = new();
         if (roomIds.Count > 0)
@@ -112,14 +113,6 @@ public class OrdersController : ControllerBase
             if (rs.Count != roomIds.Count)
                 return BadRequest(new { code = "RoomInvalid", message = "存在不属于该门店或已停用的房间" });
             rooms = rs.ToDictionary(r => r.Id);
-
-            var occupiedNow = await _db.OrderItems.AsNoTracking()
-                .Where(oi => oi.RoomId != null && roomIds.Contains(oi.RoomId.Value)
-                             && (oi.Order.Status == OrderStatus.Pending || oi.Order.Status == OrderStatus.InProgress))
-                .Select(oi => oi.RoomId!.Value)
-                .ToListAsync(ct);
-            if (occupiedNow.Count > 0)
-                return Conflict(new { code = "RoomOccupied", message = "选中的房间正被其他订单占用" });
         }
 
         Member? member = null;

@@ -75,7 +75,6 @@ public partial class RoomsViewModel : ObservableObject
     private async Task RemoveAsync(RoomDto? r)
     {
         if (r is null) return;
-        if (r.IsOccupied) { MessageBox.Show("房间被占用，请改为停用"); return; }
         if (MessageBox.Show($"删除房间 {r.RoomNo}？", "提示",
                 MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
         try

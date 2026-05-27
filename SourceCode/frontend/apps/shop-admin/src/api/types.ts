@@ -329,9 +329,6 @@ export interface Room {
   roomType?: string | null;
   remark?: string | null;
   isActive: boolean;
-  isOccupied: boolean;
-  occupiedByOrderId?: number | null;
-  occupiedByOrderNo?: string | null;
   isTimedRoom: boolean;
   hourlyRate: number;
 }

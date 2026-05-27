@@ -25,10 +25,9 @@
                     <Style TargetType="DataGridRow">
                         <Setter Property="AutomationProperties.Name">
                             <Setter.Value>
-                                <MultiBinding StringFormat="{}{0} 号房，容客 {1} 人，{2}">
+                                <MultiBinding StringFormat="{}{0} 号房，容客 {1} 人">
                                     <Binding Path="RoomNo" />
                                     <Binding Path="Capacity" />
-                                    <Binding Path="OccupiedByOrderNo" FallbackValue="空闲" TargetNullValue="空闲" />
                                 </MultiBinding>
                             </Setter.Value>
                         </Setter>
@@ -38,11 +37,9 @@
                     <DataGridTextColumn Header="房间号" Binding="{Binding RoomNo}" Width="100" />
                     <DataGridTextColumn Header="类型" Binding="{Binding RoomType, Converter={StaticResource RoomTypeDisplay}}" Width="120" />
                     <DataGridTextColumn Header="容客（人）" Binding="{Binding Capacity}" Width="100" />
-                    <DataGridTextColumn Header="占用中" Binding="{Binding IsOccupied}" Width="80" />
-                    <DataGridTextColumn Header="占用订单" Binding="{Binding OccupiedByOrderNo}" Width="160" />
                     <DataGridTextColumn Header="启用" Binding="{Binding IsActive}" Width="60" />
-                    <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="240" />
-                    <DataGridTemplateColumn Header="操作" Width="180">
+                    <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="280" />
+                    <DataGridTemplateColumn Header="操作" Width="200">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
