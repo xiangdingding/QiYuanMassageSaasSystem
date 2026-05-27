@@ -1,0 +1,59 @@
+.container { padding: 32rpx; }
+.muted { color: #888; font-size: 30rpx; }
+.room-list { display: flex; flex-direction: column; gap: 20rpx; margin-top: 16rpx; }
+.room-card {
+  border: 2rpx solid #d9d9d9;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  background: #fff;
+}
+.room-card.open {
+  border-color: #faad14;
+  background: #fffbe6;
+}
+.room-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12rpx;
+}
+.room-no { font-size: 40rpx; font-weight: 600; }
+.room-rate { font-size: 28rpx; color: #555; }
+.room-status {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  margin-bottom: 16rpx;
+}
+.status-text { font-size: 34rpx; color: #d46b08; font-weight: 600; }
+.status-customer { font-size: 30rpx; color: #555; }
+
+/* 简易模态：兼容老版本基础库，避免依赖原生 picker / dialog 组件 */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.modal-card {
+  width: 80%;
+  background: #fff;
+  border-radius: 12rpx;
+  padding: 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+.modal-title { font-size: 36rpx; font-weight: 600; }
+.modal-row { display: flex; flex-direction: column; gap: 8rpx; }
+.modal-label { font-size: 30rpx; color: #555; }
+.modal-input {
+  border: 2rpx solid #d9d9d9;
+  border-radius: 8rpx;
+  padding: 16rpx;
+  font-size: 32rpx;
+}
+.modal-actions { display: flex; gap: 16rpx; justify-content: flex-end; }

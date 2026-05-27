@@ -152,6 +152,19 @@ export interface Order {
   memberTypeName?: string | null;
   /** 会员卡类型枚举 */
   memberTypeKind?: 'StoredValue' | 'CountBased' | null;
+  /** 挂在该订单上的计时房费（与 items 并列展示，不计提成） */
+  roomCharges?: OrderRoomCharge[] | null;
+}
+
+export interface OrderRoomCharge {
+  sessionId: number;
+  roomId: number;
+  roomNo: string;
+  minutes: number;
+  hourlyRate: number;
+  amount: number;
+  payMethod: string;
+  status: string;
 }
 
 export interface OrderListItem {
@@ -174,6 +187,8 @@ export interface CreateOrderRequest {
   memberId?: number | null;
   items: { serviceId: number; technicianId: number; quantity?: number; roomId?: number | null }[];
   remark?: string | null;
+  /** 一同结算的计时房 session id 列表（订单同步收尾这些房费，金额并入 Order.Total/PaidAmount） */
+  roomSessionIds?: number[];
 }
 
 export interface CheckoutRequest {

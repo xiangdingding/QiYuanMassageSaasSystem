@@ -1,0 +1,83 @@
+<view class="container" role="main">
+  <view class="a11y-section" aria-live="polite">
+    <text class="a11y-label">本店计时房</text>
+    <text class="a11y-value">{{rows.length}} 间</text>
+  </view>
+
+  <view wx:if="{{rows.length === 0 && !loading}}" class="a11y-section">
+    <text class="a11y-value muted">本店尚未配置计时房，请联系店长</text>
+  </view>
+
+  <view class="room-list" role="list">
+    <view
+      wx:for="{{rows}}"
+      wx:key="id"
+      class="room-card {{item.isOpen ? 'open' : ''}}"
+      role="listitem"
+      aria-label="{{item.ariaLabel}}">
+      <view class="room-head">
+        <text class="room-no">{{item.roomNo}} 号房</text>
+        <text class="room-rate">{{item.hourlyRateText}}</text>
+      </view>
+      <view class="room-status">
+        <text class="status-text">{{item.statusText}}</text>
+        <text wx:if="{{item.isOpen}}" class="status-customer">客 {{item.customerName}}</text>
+      </view>
+
+      <button
+        wx:if="{{!item.isOpen}}"
+        class="a11y-btn a11y-btn-primary"
+        aria-label="为 {{item.roomNo}} 号房开台计时"
+        data-id="{{item.id}}"
+        bindtap="onTapStart">
+        开台
+      </button>
+      <button
+        wx:else
+        class="a11y-btn a11y-btn-warn"
+        aria-label="通知前台为 {{item.roomNo}} 号房结账"
+        data-id="{{item.id}}"
+        bindtap="onTapNotifyCashier">
+        通知前台结账
+      </button>
+    </view>
+  </view>
+
+  <button class="a11y-btn" aria-label="刷新计时房状态" bindtap="refresh">刷新</button>
+</view>
+
+<view wx:if="{{startVisible}}" class="modal-mask" bindtap="onStartCancel">
+  <view class="modal-card" catchtap>
+    <view class="modal-title">开台计时 — {{startRoomNo}} 号房</view>
+    <view class="modal-row">
+      <text class="modal-label">客户姓名（可空）</text>
+      <input
+        class="modal-input"
+        value="{{startCustomerName}}"
+        placeholder="如：王女士；散客可不填"
+        maxlength="64"
+        aria-label="输入客户姓名，散客可空"
+        bindinput="onStartCustomerInput" />
+    </view>
+    <view class="modal-row">
+      <text class="modal-label">备注（可空）</text>
+      <input
+        class="modal-input"
+        value="{{startRemark}}"
+        placeholder="如：偏好按重一些"
+        maxlength="200"
+        aria-label="输入备注"
+        bindinput="onStartRemarkInput" />
+    </view>
+    <view class="modal-actions">
+      <button class="a11y-btn" aria-label="取消开台" bindtap="onStartCancel">取消</button>
+      <button
+        class="a11y-btn a11y-btn-primary"
+        aria-label="确认开台"
+        loading="{{starting}}"
+        bindtap="onStartConfirm">
+        确认开台
+      </button>
+    </view>
+  </view>
+</view>

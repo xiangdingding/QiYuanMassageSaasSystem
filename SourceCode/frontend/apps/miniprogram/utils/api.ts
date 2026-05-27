@@ -71,6 +71,43 @@ export const api = {
 };
 
 /**
+ * 计时房：技师端只需要"列房间 + 看 session + 开台"三步——
+ * 结束计时与收钱属于收银职责，技师只在结束服务后口头通知前台即可。
+ */
+export interface RoomDto {
+  id: number;
+  storeId: number;
+  roomNo: string;
+  capacity: number;
+  roomType: string | null;
+  remark: string | null;
+  isActive: boolean;
+  isOccupied: boolean;
+  occupiedByOrderId: number | null;
+  occupiedByOrderNo: string | null;
+  isTimedRoom: boolean;
+  hourlyRate: number;
+}
+
+export interface TimedRoomSessionDto {
+  id: number; storeId: number; roomId: number; roomNo: string;
+  memberId: number | null; memberName: string | null; customerName: string | null;
+  startedAt: string; endedAt: string | null;
+  hourlyRateSnapshot: number; billedMinutes: number; elapsedMinutes: number;
+  amount: number; payMethod: string; status: string;
+  operatorName: string | null; remark: string | null;
+}
+
+export const timedRoomsApi = {
+  list: (storeId: number) =>
+    api.get<RoomDto[]>('/rooms', { storeId, includeInactive: false }),
+  sessions: (storeId: number) =>
+    api.get<TimedRoomSessionDto[]>('/timed-rooms/sessions', { storeId }),
+  start: (roomId: number, body: { memberId?: number | null; customerName?: string | null; remark?: string | null }) =>
+    api.post<TimedRoomSessionDto>(`/timed-rooms/${roomId}/start`, body)
+};
+
+/**
  * 把金额（元）转成屏幕阅读器友好的中文："328 元 5 角"。
  * 与 performance.ts 共享逻辑，避免每个页面重复实现。
  */

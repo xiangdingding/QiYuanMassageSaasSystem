@@ -47,10 +47,11 @@ public class ReportsController : ControllerBase
         var alipay = await completed.Where(o => o.PayMethod == PayMethod.Alipay).SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
         var bank = await completed.Where(o => o.PayMethod == PayMethod.BankCard).SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
 
-        // 计时房已结算收入并入营业额与各支付方式
+        // 计时房已结算收入并入营业额与各支付方式（已挂订单的 session 跳过，避免与 Orders.PaidAmount 重算）
         var timed = _db.TimedRoomSessions.AsNoTracking()
             .Where(s => s.StoreId == storeId
                         && s.Status == TimedRoomSessionStatus.Settled
+                        && s.OrderId == null
                         && s.EndedAt != null && s.EndedAt >= start && s.EndedAt < end);
         revenue += await timed.SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
         cash += await timed.Where(s => s.PayMethod == PayMethod.Cash).SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
@@ -169,9 +170,11 @@ public class ReportsController : ControllerBase
             .OrderBy(p => p.Day)
             .ToListAsync(ct);
 
-        // 计时房已结算收入按结算日并入对应日营业额（保持与日报/日结口径一致）
+        // 计时房已结算收入按结算日并入对应日营业额（保持与日报/日结口径一致；
+        // 已挂订单的 session 跳过，避免与 Orders.PaidAmount 重算）
         var timedByDay = await _db.TimedRoomSessions.AsNoTracking()
             .Where(s => s.StoreId == storeId && s.Status == TimedRoomSessionStatus.Settled
+                        && s.OrderId == null
                         && s.EndedAt != null && s.EndedAt >= start && s.EndedAt < end)
             .GroupBy(s => s.EndedAt!.Value.Date)
             .Select(g => new { Day = g.Key, Amount = g.Sum(s => s.Amount) })
@@ -223,9 +226,10 @@ public class ReportsController : ControllerBase
             .OrderBy(p => p.Day)
             .ToListAsync(ct);
 
-        // 计时房已结算收入按结算月并入
+        // 计时房已结算收入按结算月并入（已挂订单的 session 跳过，避免与 Orders.PaidAmount 重算）
         var timedByMonth = await _db.TimedRoomSessions.AsNoTracking()
             .Where(s => s.StoreId == storeId && s.Status == TimedRoomSessionStatus.Settled
+                        && s.OrderId == null
                         && s.EndedAt != null && s.EndedAt >= start && s.EndedAt < end)
             .GroupBy(s => new { s.EndedAt!.Value.Year, s.EndedAt!.Value.Month })
             .Select(g => new { g.Key.Year, g.Key.Month, Amount = g.Sum(s => s.Amount) })

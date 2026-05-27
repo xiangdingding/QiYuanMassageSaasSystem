@@ -115,6 +115,9 @@ Page({
   goPayroll() {
     wx.navigateTo({ url: '/pages/tech/payroll/payroll' });
   },
+  goTimedRooms() {
+    wx.navigateTo({ url: '/pages/tech/timed-rooms/timed-rooms' });
+  },
   async changeState(state: string, ok: string) {
     if (this.data.changing) return;
     this.setData({ changing: true });

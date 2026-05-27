@@ -130,12 +130,6 @@
       top="6vh"
     >
       <el-form :model="form" :rules="rules" ref="formRef" label-width="92px" class="member-form">
-        <el-form-item v-if="formMode === 'create'" class="full-row">
-          <el-checkbox v-model="usePhoneAsCardNo" aria-label="开卡时用手机号自动作为卡号">
-            用手机号作为卡号（输入手机号后自动填入，仍可手动修改）
-          </el-checkbox>
-        </el-form-item>
-
         <el-row :gutter="16">
           <el-col :span="formMode === 'create' ? 12 : 24">
             <el-form-item label="手机号" prop="phone">
@@ -323,14 +317,29 @@
         </el-row>
 
         <el-form-item label="引荐人" class="full-row">
-          <el-input v-model="form.referrerKeyword" placeholder="卡号 / 手机号 搜索后选择" @keyup.enter="searchReferrer" style="width: calc(100% - 80px)" />
-          <el-button link size="small" style="margin-left:8px" @click="searchReferrer">查找</el-button>
-          <el-radio-group v-if="referrerCandidates.length" v-model="form.referredByMemberId" style="margin-top:6px; display:flex; flex-direction:column; gap:6px">
-            <el-radio v-for="c in referrerCandidates" :key="c.id" :value="c.id">
-              {{ c.cardNo }}（{{ c.name || '未填' }} / {{ c.phone }}）
-            </el-radio>
-          </el-radio-group>
-          <span v-if="form.referredByMemberId" class="muted">已选引荐人 ID = {{ form.referredByMemberId }} <el-button link type="danger" size="small" @click="form.referredByMemberId = null">清除</el-button></span>
+          <el-select
+            :model-value="form.referrerPhone"
+            filterable
+            remote
+            clearable
+            :remote-method="searchReferrer"
+            :loading="referrerSearchLoading"
+            placeholder="输入卡号或手机号搜索，按人聚合，选中即可"
+            style="width: 100%"
+            @update:model-value="onReferrerSelected"
+          >
+            <el-option
+              v-for="g in referrerSearchResults"
+              :key="g.phone"
+              :value="g.phone"
+              :label="referrerOptionLabel(g)"
+            />
+          </el-select>
+          <div class="muted" style="margin-top:4px">
+            按手机号聚合显示，一个会员只出一行（含名下所有卡）。已选：
+            <strong v-if="form.referrerLabel">{{ form.referrerLabel }}</strong>
+            <span v-else>无</span>
+          </div>
         </el-form-item>
         <el-form-item label="备注" class="full-row">
           <el-input v-model="form.remark" type="textarea" :rows="2" />
@@ -682,16 +691,6 @@ const formOpen = ref(false);
 const formMode = ref<'create' | 'edit'>('create');
 const editingId = ref<number | null>(null);
 
-/// 管理员开关：开卡时是否用手机号自动作为卡号（持久化到 localStorage，租户级即可）
-const USE_PHONE_AS_CARDNO_KEY = 'member-create:usePhoneAsCardNo';
-const usePhoneAsCardNo = ref<boolean>(localStorage.getItem(USE_PHONE_AS_CARDNO_KEY) !== '0');
-watch(usePhoneAsCardNo, async (v) => {
-  localStorage.setItem(USE_PHONE_AS_CARDNO_KEY, v ? '1' : '0');
-  // 勾上的瞬间也把当前手机号 → 下一张卡号 同步过去
-  if (v && formMode.value === 'create' && form.phone) {
-    form.cardNo = await computeNextCardNo(form.phone);
-  }
-});
 const formRef = ref<FormInstance>();
 const form = reactive({
   cardNo: '',
@@ -702,42 +701,45 @@ const form = reactive({
   discount: 1,
   initialBalance: 0,
   remark: '',
-  referrerKeyword: '',
+  // 引荐人按"人"维度选：select 的 v-model 用 phone 唯一定位一个人，
+  // referredByMemberId 仍按现行 schema 传一张卡的 Id（取该人首张可用卡）以满足后端 FK
+  referrerPhone: '',
+  referrerLabel: '',
   referredByMemberId: null as number | null,
   memberTypeId: null as number | null,
   count: 0,
   payMethod: 'Wechat'
 });
-const referrerCandidates = ref<Member[]>([]);
+const referrerSearchResults = ref<MemberPhoneGroup[]>([]);
+const referrerSearchLoading = ref(false);
 
-/// 算下一张卡的卡号：N=同手机号下已有卡数（含已关闭）
-///   N=0 → phone
-///   N=1 → phone+02
+/// 算下一张卡的卡号：N=同手机号下已有卡数（含已关闭），统一两位后缀
+///   N=0 → phone+01
 ///   N=k → phone+(k+1).padStart(2,'0')
 async function computeNextCardNo(phone: string): Promise<string> {
   if (!phone) return phone;
   // 优先使用列表里已加载的 groups 数据，省一次请求
   const localGroup = groups.value.find((g) => g.phone === phone);
   if (localGroup) {
-    const n = localGroup.cardCount;
-    if (n <= 0) return phone;
-    return phone + String(n + 1).padStart(2, '0');
+    return phone + String(localGroup.cardCount + 1).padStart(2, '0');
   }
   // 列表没找到（用户手输了一个新手机号）— 11 位时才查询
   if (phone.length !== 11) return phone;
   try {
     const r = await membersApi.list({ keyword: phone, pageSize: 100, includeClosed: true });
     const n = r.items.filter((m) => m.phone === phone).length;
-    if (n <= 0) return phone;
     return phone + String(n + 1).padStart(2, '0');
   } catch {
     return phone;
   }
 }
 
-/// 开卡场景下，手机号变动时同步到卡号（仅当开关打开）；用户仍可手动改卡号
+/// 开卡场景下，手机号变动时自动同步到卡号：
+/// - 第 1 张：cardNo = phone（与手机号一致）
+/// - 第 2 张起：cardNo = phone + NN（02、03 …，便于一人多卡）
+/// 用户仍可在卡号输入框里手动覆盖，覆盖后该次开卡不再被 phone 变更覆盖。
 watch(() => form.phone, async (newPhone) => {
-  if (formMode.value !== 'create' || !usePhoneAsCardNo.value) return;
+  if (formMode.value !== 'create') return;
   // 未到 11 位先做明文同步，给用户一边输入一边看反馈
   if (newPhone.length < 11) {
     form.cardNo = newPhone;
@@ -907,15 +909,43 @@ async function doIssueCard() {
   }
 }
 
-async function searchReferrer() {
-  if (!form.referrerKeyword.trim()) return;
-  const r = await membersApi.list({
-    keyword: form.referrerKeyword.trim(),
-    page: 1, pageSize: 10,
-    storeId: appStore.activeStoreId ?? undefined
-  });
-  referrerCandidates.value = r.items.filter((m) => m.isActive);
-  if (!referrerCandidates.value.length) ElMessage.info('没有匹配的可用会员');
+/// el-select remote-method：按手机号聚合搜索，相同会员只出一行（与收银台开台引荐人风格一致）
+async function searchReferrer(keyword: string) {
+  const k = keyword.trim();
+  if (!k) { referrerSearchResults.value = []; return; }
+  referrerSearchLoading.value = true;
+  try {
+    const r = await membersApi.grouped({
+      keyword: k, pageSize: 10, includeClosed: false,
+      storeId: appStore.activeStoreId ?? undefined
+    });
+    referrerSearchResults.value = r.items;
+  } catch {
+    referrerSearchResults.value = [];
+  } finally {
+    referrerSearchLoading.value = false;
+  }
+}
+
+function referrerOptionLabel(g: MemberPhoneGroup): string {
+  const name = g.primaryName ?? '未填';
+  return `${g.phone} · ${name} · ${g.cardCount} 张卡`;
+}
+
+/// 选中"人"后挑该人名下首张可用卡满足后端 referredByMemberId（cardId）参数
+function onReferrerSelected(phone: string | null) {
+  if (!phone) {
+    form.referrerPhone = '';
+    form.referrerLabel = '';
+    form.referredByMemberId = null;
+    return;
+  }
+  const group = referrerSearchResults.value.find((g) => g.phone === phone);
+  if (!group) return;
+  const activeCard = group.cards.find((c) => c.isActive) ?? group.cards[0];
+  form.referrerPhone = phone;
+  form.referrerLabel = referrerOptionLabel(group);
+  form.referredByMemberId = activeCard?.id ?? null;
 }
 const rules: FormRules = {
   cardNo: [{ required: true, message: '请输入卡号', trigger: 'blur' }],
@@ -1025,10 +1055,10 @@ async function openCreate() {
   Object.assign(form, {
     cardNo: '', phone: '', name: '', gender: '', birthday: '',
     discount: 1, initialBalance: 0, remark: '',
-    referrerKeyword: '', referredByMemberId: null,
+    referrerPhone: '', referrerLabel: '', referredByMemberId: null,
     memberTypeId: null, count: 0, payMethod: 'Wechat'
   });
-  referrerCandidates.value = [];
+  referrerSearchResults.value = [];
   formOpen.value = true;
   // 异步加载会员类型不阻塞打开对话框
   await ensureMemberTypesLoaded();
@@ -1055,13 +1085,14 @@ function openEdit(row: Member) {
     discount: row.discount,
     initialBalance: 0,
     remark: row.remark ?? '',
-    referrerKeyword: '',
+    referrerPhone: '',
+    referrerLabel: '',
     referredByMemberId: row.referredByMemberId ?? null,
     memberTypeId: null,
     count: 0,
     payMethod: 'Wechat'
   });
-  referrerCandidates.value = [];
+  referrerSearchResults.value = [];
   formOpen.value = true;
 }
 

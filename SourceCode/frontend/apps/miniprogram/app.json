@@ -5,6 +5,7 @@
     "pages/tech/performance/performance",
     "pages/tech/reviews/reviews",
     "pages/tech/payroll/payroll",
+    "pages/tech/timed-rooms/timed-rooms",
     "pages/auth/login/login",
     "pages/customer/book/book",
     "pages/customer/my/my"

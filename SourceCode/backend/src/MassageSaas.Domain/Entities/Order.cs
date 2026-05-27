@@ -40,6 +40,8 @@ public class Order : BaseEntity, ITenantScoped
     public Voucher? Voucher { get; set; }
 
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
+    /// <summary>挂在该订单上的计时房费 session（同次结算的房费一起作为订单一部分展示）。</summary>
+    public ICollection<TimedRoomSession> RoomSessions { get; set; } = new List<TimedRoomSession>();
 }
 
 public class OrderItem : BaseEntity, ITenantScoped

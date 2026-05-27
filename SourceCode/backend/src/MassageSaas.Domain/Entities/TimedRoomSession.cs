@@ -34,4 +34,9 @@ public class TimedRoomSession : BaseEntity, ITenantScoped
     public long? OperatorUserId { get; set; }
     public User? OperatorUser { get; set; }
     public string? Remark { get; set; }
+
+    /// <summary>关联订单：从收银台一起结算时记下，让计时房费成为该订单的一行。
+    /// 没有关联订单（如直接在房间页 Stop 走旧接口）时为 null，仍按独立流水入账。</summary>
+    public long? OrderId { get; set; }
+    public Order? Order { get; set; }
 }

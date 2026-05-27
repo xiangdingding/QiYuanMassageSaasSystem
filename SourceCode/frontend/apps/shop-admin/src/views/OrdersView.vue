@@ -103,8 +103,8 @@
           <el-descriptions-item v-else label="会员卡">{{ detail.memberCardNo ?? '—' }}</el-descriptions-item>
           <el-descriptions-item label="备注" :span="2">{{ detail.remark ?? '—' }}</el-descriptions-item>
         </el-descriptions>
-        <el-divider class="detail-divider">项目明细</el-divider>
-        <el-table :data="detail.items" class="detail-items" stripe>
+        <el-divider v-if="detail.items.length > 0" class="detail-divider">项目明细</el-divider>
+        <el-table v-if="detail.items.length > 0" :data="detail.items" class="detail-items" stripe>
           <el-table-column prop="serviceName" label="项目" min-width="180">
             <template #default="{ row }">
               <span class="item-name">{{ row.serviceName }}</span>
@@ -139,6 +139,32 @@
             </template>
           </el-table-column>
         </el-table>
+
+        <template v-if="(detail.roomCharges?.length ?? 0) > 0">
+          <el-divider class="detail-divider">计时房费</el-divider>
+          <el-table :data="detail.roomCharges ?? []" class="detail-items" stripe>
+            <el-table-column label="房间" min-width="120">
+              <template #default="{ row }">
+                <el-tag type="primary" size="small" style="margin-right:6px">计时房</el-tag>
+                <span class="item-name">{{ row.roomNo }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="时长" width="110" align="right">
+              <template #default="{ row }">{{ row.minutes }} 分钟</template>
+            </el-table-column>
+            <el-table-column label="单价" width="130" align="right">
+              <template #default="{ row }">¥{{ row.hourlyRate.toFixed(2) }} / 时</template>
+            </el-table-column>
+            <el-table-column label="金额" width="120" align="right">
+              <template #default="{ row }">¥{{ row.amount.toFixed(2) }}</template>
+            </el-table-column>
+            <el-table-column label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="roomStatusType(row.status)" size="small">{{ roomStatusLabel(row.status) }}</el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </template>
 
         <div class="actions">
           <el-button
@@ -292,6 +318,13 @@ function rowAmount(row: OrderItem) {
   if (row.listUnitPrice != null && row.listUnitPrice > 0)
     return Math.round(row.listUnitPrice * row.quantity * 100) / 100;
   return row.itemTotal;
+}
+
+function roomStatusLabel(s: string) {
+  return ({ Open: '计时中', Settled: '已结算', Cancelled: '已作废' } as Record<string, string>)[s] ?? s;
+}
+function roomStatusType(s: string) {
+  return ({ Open: 'warning', Settled: 'success', Cancelled: 'info' } as Record<string, any>)[s] ?? '';
 }
 
 async function reload() {

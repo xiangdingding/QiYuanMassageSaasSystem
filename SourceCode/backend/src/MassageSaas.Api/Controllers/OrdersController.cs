@@ -54,7 +54,8 @@ public class OrdersController : ControllerBase
             .Select(o => new OrderListItemDto(
                 o.Id, o.OrderNo, o.Total, o.PaidAmount,
                 o.PayMethod.ToString(), o.Status.ToString(),
-                o.Items.Count, o.CreatedAt, o.CompletedAt,
+                // 项数把计时房费也算上一行，避免"纯房费单"显示 0 项造成误读
+                o.Items.Count + o.RoomSessions.Count, o.CreatedAt, o.CompletedAt,
                 o.Member != null ? o.Member.CardNo : null,
                 o.Member != null ? o.Member.Phone : null))
             .ToListAsync(ct);
@@ -73,28 +74,35 @@ public class OrdersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<OrderDto>> Create([FromBody] CreateOrderRequest req, CancellationToken ct)
     {
-        if (req.Items is null || req.Items.Count == 0)
-            return BadRequest(new { code = "InvalidInput", message = "至少需要一个服务项" });
+        var items = req.Items ?? Array.Empty<OrderItemInputDto>();
+        var roomSessionIds = (req.RoomSessionIds ?? Array.Empty<long>()).Distinct().ToList();
+        if (items.Count == 0 && roomSessionIds.Count == 0)
+            return BadRequest(new { code = "InvalidInput", message = "至少需要一个服务项或一笔计时房费" });
 
-        var serviceIds = req.Items.Select(i => i.ServiceId).Distinct().ToList();
-        var techIds = req.Items.Select(i => i.TechnicianId).Distinct().ToList();
+        var serviceIds = items.Select(i => i.ServiceId).Distinct().ToList();
+        var techIds = items.Select(i => i.TechnicianId).Distinct().ToList();
 
-        var services = await _db.ServiceItems.AsNoTracking()
-            .Where(s => serviceIds.Contains(s.Id) && s.IsActive)
-            .ToDictionaryAsync(s => s.Id, ct);
+        var services = serviceIds.Count == 0
+            ? new Dictionary<long, ServiceItem>()
+            : await _db.ServiceItems.AsNoTracking()
+                .Where(s => serviceIds.Contains(s.Id) && s.IsActive)
+                .ToDictionaryAsync(s => s.Id, ct);
         if (services.Count != serviceIds.Count)
             return BadRequest(new { code = "ServiceNotFound", message = "存在未启用或不存在的服务项" });
 
-        var techCount = await _db.Users.CountAsync(u =>
-            techIds.Contains(u.Id) && u.Role == UserRole.Technician && u.IsActive, ct);
-        if (techCount != techIds.Count)
-            return BadRequest(new { code = "TechnicianNotFound", message = "存在不存在或已停用的技师" });
+        if (techIds.Count > 0)
+        {
+            var techCount = await _db.Users.CountAsync(u =>
+                techIds.Contains(u.Id) && u.Role == UserRole.Technician && u.IsActive, ct);
+            if (techCount != techIds.Count)
+                return BadRequest(new { code = "TechnicianNotFound", message = "存在不存在或已停用的技师" });
+        }
 
         var store = await _db.Stores.FirstOrDefaultAsync(s => s.Id == req.StoreId && s.IsActive, ct);
         if (store is null) return BadRequest(new { code = "StoreNotFound", message = "门店不存在或已停用" });
 
         // 房间校验：必须属于该门店、启用、且未被进行中订单占用
-        var roomIds = req.Items.Where(i => i.RoomId.HasValue).Select(i => i.RoomId!.Value).Distinct().ToList();
+        var roomIds = items.Where(i => i.RoomId.HasValue).Select(i => i.RoomId!.Value).Distinct().ToList();
         Dictionary<long, Room> rooms = new();
         if (roomIds.Count > 0)
         {
@@ -121,6 +129,33 @@ public class OrdersController : ControllerBase
             if (member is null) return BadRequest(new { code = "MemberNotFound", message = "会员不存在" });
         }
 
+        // 校验并预约计时房 session：必须属于本店、Open、并且若开台绑定了会员则必须与当前结算人一致
+        var sessions = new List<TimedRoomSession>();
+        if (roomSessionIds.Count > 0)
+        {
+            sessions = await _db.TimedRoomSessions
+                .Where(s => roomSessionIds.Contains(s.Id))
+                .ToListAsync(ct);
+            if (sessions.Count != roomSessionIds.Count)
+                return BadRequest(new { code = "RoomSessionNotFound", message = "存在不存在的计时房记录" });
+            foreach (var s in sessions)
+            {
+                if (s.StoreId != req.StoreId)
+                    return BadRequest(new { code = "RoomSessionStoreMismatch", message = "计时房记录不属于该门店" });
+                if (s.Status != TimedRoomSessionStatus.Open)
+                    return Conflict(new { code = "RoomSessionNotOpen", message = "存在已结算/作废的计时房记录" });
+                if (s.OrderId is not null)
+                    return Conflict(new { code = "RoomSessionTaken", message = "计时房记录已挂在其它订单" });
+                if (s.MemberId is long boundCardId)
+                {
+                    // 同手机号下的任意一张卡视为同一人；与前端校验口径一致
+                    var samePerson = await IsSamePersonAsync(boundCardId, member?.Id, ct);
+                    if (!samePerson)
+                        return BadRequest(new { code = "RoomSessionMemberMismatch", message = "计时房开台会员与当前结算会员不一致" });
+                }
+            }
+        }
+
         var order = new Order
         {
             StoreId = req.StoreId,
@@ -135,7 +170,7 @@ public class OrdersController : ControllerBase
 
         var packages = await LoadActivePackagesAsync(member?.Id, ct);
         decimal total = 0m;
-        foreach (var input in req.Items)
+        foreach (var input in items)
         {
             var svc = services[input.ServiceId];
             var qty = input.Quantity < 1 ? 1 : input.Quantity;
@@ -169,14 +204,37 @@ public class OrdersController : ControllerBase
                 IsAddOn = false
             });
         }
+        // 计时房费先按当下分钟数预估并入 Total（结账时会按真实结算分钟数重算）
+        foreach (var s in sessions)
+        {
+            var minutes = Math.Max(1, (int)Math.Ceiling((DateTime.UtcNow - s.StartedAt).TotalMinutes));
+            total += Math.Round(minutes / 60m * s.HourlyRateSnapshot, 2, MidpointRounding.AwayFromZero);
+        }
         order.Total = total;
         order.PaidAmount = 0m;
 
         _db.Orders.Add(order);
         await _db.SaveChangesAsync(ct);
 
+        if (sessions.Count > 0)
+        {
+            foreach (var s in sessions) s.OrderId = order.Id;
+            await _db.SaveChangesAsync(ct);
+        }
+
         var saved = await LoadOrderAsync(order.Id, ct);
         return CreatedAtAction(nameof(Get), new { id = order.Id }, ToDto(saved!));
+    }
+
+    /// <summary>同手机号下的任意一张卡视为同一人；用于计时房开台 cardId 与下单 cardId 的人维度比对。</summary>
+    private async Task<bool> IsSamePersonAsync(long boundCardId, long? currentCardId, CancellationToken ct)
+    {
+        if (!currentCardId.HasValue) return false;
+        if (boundCardId == currentCardId.Value) return true;
+        var phones = await _db.Members.AsNoTracking()
+            .Where(m => m.Id == boundCardId || m.Id == currentCardId.Value)
+            .Select(m => m.Phone).Distinct().ToListAsync(ct);
+        return phones.Count == 1;
     }
 
     /// <summary>
@@ -373,6 +431,27 @@ public class OrdersController : ControllerBase
         if (order.Status == OrderStatus.Cancelled || order.Status == OrderStatus.Refunded)
             return Conflict(new { code = "OrderInvalid", message = "订单已取消或已退款" });
 
+        // 结算所有挂在该订单上的计时房费 session：按真实分钟数收尾，金额并入 Order.Total
+        var linkedSessions = await _db.TimedRoomSessions
+            .Where(s => s.OrderId == order.Id)
+            .ToListAsync(ct);
+        decimal roomTotal = 0m;
+        var settlementTime = DateTime.UtcNow;
+        foreach (var s in linkedSessions)
+        {
+            if (s.Status != TimedRoomSessionStatus.Open)
+                return Conflict(new { code = "RoomSessionNotOpen", message = $"计时房 {s.RoomId} 已结算或作废，请重建订单" });
+            var minutes = Math.Max(1, (int)Math.Ceiling((settlementTime - s.StartedAt).TotalMinutes));
+            var amount = Math.Round(minutes / 60m * s.HourlyRateSnapshot, 2, MidpointRounding.AwayFromZero);
+            s.EndedAt = settlementTime;
+            s.BilledMinutes = minutes;
+            s.Amount = amount;
+            roomTotal += amount;
+        }
+        // 把房费汇总折回 Total（覆盖 Create 时的预估值，避免计时漂移）
+        var itemTotal = order.Items.Sum(i => i.ItemTotal);
+        order.Total = itemTotal + roomTotal;
+
         // 次卡-服务匹配校验：次卡(CountBased) 只能在订单含其绑定的服务项目时才允许参与结算，
         // 否则没有任何业务意义（次卡余额一般为 0，且无对应服务可扣次）。
         // 校验范围：主会员 + 合并结算的次要会员；命中即返回 400 拒绝。
@@ -494,6 +573,13 @@ public class OrdersController : ControllerBase
         order.PaidAmount = paid;
         order.Status = OrderStatus.Completed;
         order.CompletedAt = DateTime.UtcNow;
+
+        // 计时房 session 跟随订单收尾：支付方式与订单一致，状态推到已结算
+        foreach (var s in linkedSessions)
+        {
+            s.PayMethod = method;
+            s.Status = TimedRoomSessionStatus.Settled;
+        }
         if (!string.IsNullOrWhiteSpace(req.Remark))
             order.Remark = (order.Remark ?? string.Empty) + " | 结账备注: " + req.Remark;
 
@@ -669,6 +755,7 @@ public class OrdersController : ControllerBase
             .Include(o => o.Member)
                 .ThenInclude(m => m!.MemberType)
             .Include(o => o.CashierUser)
+            .Include(o => o.RoomSessions).ThenInclude(s => s.Room)
             .FirstOrDefaultAsync(o => o.Id == id, ct);
 
     private static OrderDto ToDto(Order o)
@@ -685,7 +772,17 @@ public class OrdersController : ControllerBase
                 i.TipAmount, i.MemberPackageId, i.IsAddOn, i.MergedGroupKey,
                 i.ListUnitPrice, listAmount);
         }).ToList();
-        var listTotal = items.Sum(x => x.ListAmount);
+        var roomCharges = o.RoomSessions
+            .OrderBy(s => s.StartedAt)
+            .Select(s => new OrderRoomChargeDto(
+                s.Id, s.RoomId, s.Room?.RoomNo ?? string.Empty,
+                // 未结算时显示当前预估分钟，已结算用实际记账分钟
+                s.BilledMinutes > 0 ? s.BilledMinutes
+                    : Math.Max(1, (int)Math.Ceiling(((s.EndedAt ?? DateTime.UtcNow) - s.StartedAt).TotalMinutes)),
+                s.HourlyRateSnapshot, s.Amount,
+                s.PayMethod.ToString(), s.Status.ToString()))
+            .ToList();
+        var listTotal = items.Sum(x => x.ListAmount) + roomCharges.Sum(x => x.Amount);
         var punchCount = o.Items.Where(i => i.MemberPackageId.HasValue).Sum(i => i.Quantity);
         return new OrderDto(
             o.Id, o.OrderNo, o.StoreId, o.MemberId,
@@ -700,7 +797,8 @@ public class OrdersController : ControllerBase
             MemberPhone: o.Member?.Phone,
             MemberName: o.Member?.Name,
             MemberTypeName: o.Member?.MemberType?.Name,
-            MemberTypeKind: o.Member?.MemberType?.Kind.ToString());
+            MemberTypeKind: o.Member?.MemberType?.Kind.ToString(),
+            RoomCharges: roomCharges);
     }
 
     private static string GenerateOrderNo() =>

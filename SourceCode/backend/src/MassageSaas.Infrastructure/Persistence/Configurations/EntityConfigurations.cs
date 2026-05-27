@@ -509,8 +509,11 @@ public class TimedRoomSessionConfiguration : IEntityTypeConfiguration<TimedRoomS
         b.HasOne(x => x.Room).WithMany().HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.Member).WithMany().HasForeignKey(x => x.MemberId).OnDelete(DeleteBehavior.SetNull);
         b.HasOne(x => x.OperatorUser).WithMany().HasForeignKey(x => x.OperatorUserId).OnDelete(DeleteBehavior.SetNull);
+        // 订单只是聚合视图，订单被删时计时房费记录保留（解链即可）
+        b.HasOne(x => x.Order).WithMany(o => o.RoomSessions).HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.SetNull);
         b.HasIndex(x => new { x.StoreId, x.Status });
         b.HasIndex(x => new { x.RoomId, x.Status });
+        b.HasIndex(x => x.OrderId);
     }
 }
 

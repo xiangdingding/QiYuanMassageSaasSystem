@@ -4,6 +4,7 @@ using MassageSaas.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MassageSaas.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260526071154_AddOrderItemListUnitPrice")]
+    partial class AddOrderItemListUnitPrice
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2132,9 +2135,6 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Property<long?>("OperatorUserId")
                         .HasColumnType("bigint");
 
-                    b.Property<long?>("OrderId")
-                        .HasColumnType("bigint");
-
                     b.Property<int>("PayMethod")
                         .HasColumnType("int");
 
@@ -2165,8 +2165,6 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.HasIndex("MemberId");
 
                     b.HasIndex("OperatorUserId");
-
-                    b.HasIndex("OrderId");
 
                     b.HasIndex("RoomId", "Status");
 
@@ -3037,11 +3035,6 @@ namespace MassageSaas.Infrastructure.Migrations
                         .HasForeignKey("OperatorUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("MassageSaas.Domain.Entities.Order", "Order")
-                        .WithMany("RoomSessions")
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("MassageSaas.Domain.Entities.Room", "Room")
                         .WithMany()
                         .HasForeignKey("RoomId")
@@ -3057,8 +3050,6 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Navigation("Member");
 
                     b.Navigation("OperatorUser");
-
-                    b.Navigation("Order");
 
                     b.Navigation("Room");
 
@@ -3085,8 +3076,6 @@ namespace MassageSaas.Infrastructure.Migrations
             modelBuilder.Entity("MassageSaas.Domain.Entities.Order", b =>
                 {
                     b.Navigation("Items");
-
-                    b.Navigation("RoomSessions");
                 });
 
             modelBuilder.Entity("MassageSaas.Domain.Entities.PayrollItem", b =>

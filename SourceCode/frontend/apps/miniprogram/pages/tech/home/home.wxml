@@ -90,6 +90,13 @@
 
   <button
     class="a11y-btn"
+    aria-label="进入计时房，开台或查看房间状态"
+    bindtap="goTimedRooms">
+    计时房（开台 / 查看）
+  </button>
+
+  <button
+    class="a11y-btn"
     aria-label="查看顾客对我的评价"
     bindtap="goReviews">
     我的评价

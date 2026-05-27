@@ -54,10 +54,12 @@ public class DayClosesController : ControllerBase
         var alipay = await orders.Where(o => o.PayMethod == PayMethod.Alipay).SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
         var bank = await orders.Where(o => o.PayMethod == PayMethod.BankCard).SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
 
-        // 计时房已结算收入：按结算时间（EndedAt）归当日，并入各支付方式与营业额
+        // 计时房已结算收入：按结算时间（EndedAt）归当日，并入各支付方式与营业额。
+        // 已挂到订单（OrderId != null）的 session 不再重复计入：其金额已包含在 Orders.PaidAmount 中。
         var timed = _db.TimedRoomSessions.AsNoTracking()
             .Where(s => s.StoreId == storeId
                         && s.Status == TimedRoomSessionStatus.Settled
+                        && s.OrderId == null
                         && s.EndedAt != null && s.EndedAt >= start && s.EndedAt < end);
         revenue += await timed.SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
         cash += await timed.Where(s => s.PayMethod == PayMethod.Cash).SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;

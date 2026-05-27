@@ -10,7 +10,9 @@ public record CreateOrderRequest(
     long StoreId,
     long? MemberId,
     IReadOnlyList<OrderItemInputDto> Items,
-    string? Remark);
+    string? Remark,
+    /// <summary>本次结账一起带入的进行中计时房 session id 列表；可与 Items 共存或单独存在（即纯房费单）。</summary>
+    IReadOnlyList<long>? RoomSessionIds = null);
 
 public record CheckoutRequest(
     string PayMethod,
@@ -55,6 +57,18 @@ public record SetTipRequest(decimal TipAmount);
 
 public record ReopenOrderRequest(string? Reason);
 
+/// <summary>订单里挂载的计时房费明细。与 OrderItem 并列，单独列出而非走 OrderItem，
+/// 避免把"服务+技师+提成"模型污染（房费没有技师、不计提成）。</summary>
+public record OrderRoomChargeDto(
+    long SessionId,
+    long RoomId,
+    string RoomNo,
+    int Minutes,
+    decimal HourlyRate,
+    decimal Amount,
+    string PayMethod,
+    string Status);
+
 public record OrderDto(
     long Id,
     string OrderNo,
@@ -77,7 +91,7 @@ public record OrderDto(
     DateTime? ReopenedAt,
     string? ReopenReason,
     IReadOnlyList<OrderItemDto> Items,
-    /// <summary>面值合计 = Σ Item.ListAmount；与 Total（现金可收金额）独立，次卡订单也有非 0 值。</summary>
+    /// <summary>面值合计 = Σ Item.ListAmount + Σ RoomCharges.Amount；与 Total 独立，次卡订单也有非 0 值。</summary>
     decimal ListTotal = 0m,
     /// <summary>本单走次卡核销的总次数 = Σ Item.Quantity (MemberPackageId != null)。</summary>
     int PunchCardUsedCount = 0,
@@ -88,7 +102,9 @@ public record OrderDto(
     /// <summary>会员卡类型展示名（如"金卡/100次足疗卡"）；非会员订单 null。</summary>
     string? MemberTypeName = null,
     /// <summary>会员卡类型枚举字符串：StoredValue/CountBased；非会员订单 null。</summary>
-    string? MemberTypeKind = null);
+    string? MemberTypeKind = null,
+    /// <summary>挂在该订单上的计时房费明细（与 OrderItem 并列展示），不计提成。</summary>
+    IReadOnlyList<OrderRoomChargeDto>? RoomCharges = null);
 
 public record OrderListItemDto(
     long Id,
