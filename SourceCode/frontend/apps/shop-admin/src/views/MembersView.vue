@@ -19,97 +19,175 @@
         <el-checkbox v-model="query.includeClosed" @change="reload">显示已关闭会员</el-checkbox>
       </div>
 
-      <el-table :data="groups" v-loading="loading" stripe style="margin-top: 12px" row-key="phone">
-        <el-table-column type="expand">
-          <template #default="{ row }">
-            <el-table :data="row.cards" size="small" class="card-table" :show-header="true">
-              <el-table-column label="卡号" width="120">
-                <template #default="{ row: c }">
-                  <span :class="{ closed: !c.isActive }">{{ c.cardNo }}</span>
-                  <el-tag v-if="!c.isActive" size="small" type="info" style="margin-left:6px">已关闭</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="姓名" width="100" prop="name" />
-              <el-table-column label="余额" width="110">
-                <template #default="{ row: c }">
-                  <strong style="color: #d9534f">¥{{ c.balance.toFixed(2) }}</strong>
-                </template>
-              </el-table-column>
-              <el-table-column label="充值金额" width="110">
-                <template #default="{ row: c }">¥{{ c.totalRecharge.toFixed(2) }}</template>
-              </el-table-column>
-              <el-table-column label="消费金额" width="110">
-                <template #default="{ row: c }">¥{{ c.totalConsumed.toFixed(2) }}</template>
-              </el-table-column>
-              <el-table-column label="充值次数" width="140">
-                <template #default="{ row: c }">
-                  <template v-if="c.memberTypeKind === 'CountBased'">
-                    <strong>{{ c.totalCount ?? 0 }}</strong> 次
-                    <span class="muted" style="margin-left:4px">剩 {{ c.remainCount ?? 0 }} 次</span>
-                  </template>
-                  <span v-else class="muted">—</span>
-                </template>
-              </el-table-column>
-              <el-table-column label="折扣" width="80">
-                <template #default="{ row: c }">
-                  <el-tag v-if="c.discount < 1" size="small" type="warning">{{ (c.discount * 10).toFixed(1) }}折</el-tag>
-                  <span v-else class="muted">原价</span>
-                </template>
-              </el-table-column>
-              <el-table-column label="会员卡类型" min-width="140">
-                <template #default="{ row: c }">
-                  <el-tag v-if="c.memberTypeName" size="small" :type="c.memberTypeKind === 'StoredValue' ? 'warning' : 'success'">
-                    {{ c.memberTypeName }}
-                  </el-tag>
-                  <span v-else class="muted">—</span>
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="360" fixed="right">
-                <template #default="{ row: c }">
-                  <el-button link type="primary" :disabled="!c.isActive" @click="openRecharge(c)">充值</el-button>
-                  <el-button link type="primary" @click="openHistory(c)">流水</el-button>
-                  <el-button link type="primary" @click="openEdit(c)">编辑</el-button>
-                  <el-button link type="warning" :disabled="!c.isActive || c.balance <= 0" @click="openRefund(c)">退卡</el-button>
-                  <el-button link type="warning" :disabled="!c.isActive || c.balance <= 0" @click="openTransfer(c)">转赠</el-button>
-                  <el-button link type="info" @click="openReferrals(c)">引荐</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-          </template>
-        </el-table-column>
+      <div
+        v-loading="loading"
+        class="member-list"
+        role="list"
+        aria-label="会员列表，按手机号聚合，每个会员可展开旗下所有卡"
+      >
+        <div v-if="!loading && groups.length === 0" class="empty-tip" role="status">
+          暂无会员，使用上方"开卡"按钮新开第一张
+        </div>
 
-        <el-table-column label="手机号" width="160" prop="phone">
-          <template #default="{ row }">
-            <strong>{{ row.phone }}</strong>
-            <el-tag v-if="row.hasInactive" size="small" type="info" style="margin-left:6px">含关闭</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="姓名" width="120">
-          <template #default="{ row }">
-            <span v-if="row.primaryName">{{ row.primaryName }}</span>
-            <span v-else class="muted">未填</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="持卡数" width="90">
-          <template #default="{ row }">{{ row.cardCount }} 张</template>
-        </el-table-column>
-        <el-table-column label="总余额" width="140">
-          <template #default="{ row }">
-            <strong style="color:#d9534f">¥{{ row.totalBalance.toFixed(2) }}</strong>
-          </template>
-        </el-table-column>
-        <el-table-column label="累计充值" width="130">
-          <template #default="{ row }">¥{{ row.totalRecharge.toFixed(2) }}</template>
-        </el-table-column>
-        <el-table-column label="累计消费" width="130">
-          <template #default="{ row }">¥{{ row.totalConsumed.toFixed(2) }}</template>
-        </el-table-column>
-        <el-table-column label="操作" min-width="160" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="success" @click="openCreateForPhone(row.phone)">加办一张卡</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+        <article
+          v-for="g in groups"
+          :key="g.phone"
+          class="member-card"
+          role="listitem"
+          :aria-label="groupAriaLabel(g)"
+        >
+          <header class="member-head">
+            <div class="head-main">
+              <div class="head-line1">
+                <span class="phone">{{ g.phone }}</span>
+                <span class="name">{{ g.primaryName || '未填姓名' }}</span>
+                <span v-if="g.hasInactive" class="badge badge-muted" aria-label="该会员名下含已关闭的卡">含关闭卡</span>
+              </div>
+              <div class="head-stats" role="group" :aria-label="`${g.primaryName || g.phone} 的资金汇总`">
+                <span class="stat">
+                  <span class="stat-label">持卡</span>
+                  <strong class="stat-val">{{ g.cardCount }} 张</strong>
+                </span>
+                <span class="stat">
+                  <span class="stat-label">总余额</span>
+                  <strong class="stat-val money" :aria-label="`总余额 ${yuanReadable(g.totalBalance)}`">
+                    ¥{{ g.totalBalance.toFixed(2) }}
+                  </strong>
+                </span>
+                <span class="stat">
+                  <span class="stat-label">累计充值</span>
+                  <strong class="stat-val" :aria-label="`累计充值 ${yuanReadable(g.totalRecharge)}`">
+                    ¥{{ g.totalRecharge.toFixed(2) }}
+                  </strong>
+                </span>
+                <span class="stat">
+                  <span class="stat-label">累计消费</span>
+                  <strong class="stat-val" :aria-label="`累计消费 ${yuanReadable(g.totalConsumed)}`">
+                    ¥{{ g.totalConsumed.toFixed(2) }}
+                  </strong>
+                </span>
+              </div>
+            </div>
+            <div class="head-actions">
+              <el-button
+                size="large"
+                :aria-expanded="isExpanded(g.phone)"
+                :aria-controls="`cards-${g.phone}`"
+                :aria-label="`${isExpanded(g.phone) ? '收起' : '展开'} ${g.primaryName || g.phone} 名下 ${g.cardCount} 张卡的卡号与明细`"
+                @click="toggleExpand(g.phone)"
+              >
+                {{ isExpanded(g.phone) ? `收起卡号（${g.cardCount} 张）` : `展开卡号（${g.cardCount} 张）` }}
+              </el-button>
+              <el-button
+                type="success"
+                size="large"
+                :aria-label="`为 ${g.primaryName || g.phone} 加办一张新会员卡`"
+                @click="openCreateForPhone(g.phone)"
+              >
+                加办一张卡
+              </el-button>
+            </div>
+          </header>
+
+          <ul
+            v-if="isExpanded(g.phone)"
+            :id="`cards-${g.phone}`"
+            class="card-list"
+            role="list"
+            :aria-label="`${g.primaryName || g.phone} 名下卡列表，共 ${g.cardCount} 张`"
+          >
+            <li
+              v-for="c in g.cards"
+              :key="c.id"
+              class="card-row"
+              :class="{ closed: !c.isActive }"
+              :aria-label="cardAriaLabel(c, g.primaryName)"
+            >
+              <div class="card-info">
+                <div class="card-line1">
+                  <span class="card-no">卡号 {{ c.cardNo }}</span>
+                  <span
+                    v-if="c.memberTypeName"
+                    class="badge"
+                    :class="c.memberTypeKind === 'StoredValue' ? 'badge-warning' : 'badge-success'"
+                    :aria-label="`卡类型 ${c.memberTypeName}`"
+                  >
+                    {{ c.memberTypeName }}
+                  </span>
+                  <span v-if="c.discount < 1" class="badge badge-warning" :aria-label="`折扣 ${(c.discount * 10).toFixed(1)} 折`">
+                    {{ (c.discount * 10).toFixed(1) }} 折
+                  </span>
+                  <span v-if="!c.isActive" class="badge badge-info" aria-label="该卡已关闭">已关闭</span>
+                </div>
+                <div class="card-stats" role="group" :aria-label="`卡 ${c.cardNo} 的资金明细`">
+                  <span class="stat">
+                    <span class="stat-label">余额</span>
+                    <strong class="stat-val money" :aria-label="`余额 ${yuanReadable(c.balance)}`">
+                      ¥{{ c.balance.toFixed(2) }}
+                    </strong>
+                  </span>
+                  <span class="stat">
+                    <span class="stat-label">充值</span>
+                    <strong class="stat-val" :aria-label="`累计充值 ${yuanReadable(c.totalRecharge)}`">
+                      ¥{{ c.totalRecharge.toFixed(2) }}
+                    </strong>
+                  </span>
+                  <span class="stat">
+                    <span class="stat-label">消费</span>
+                    <strong class="stat-val" :aria-label="`累计消费 ${yuanReadable(c.totalConsumed)}`">
+                      ¥{{ c.totalConsumed.toFixed(2) }}
+                    </strong>
+                  </span>
+                  <span v-if="c.memberTypeKind === 'CountBased'" class="stat">
+                    <span class="stat-label">次数</span>
+                    <strong class="stat-val" :aria-label="`累计 ${c.totalCount ?? 0} 次，剩 ${c.remainCount ?? 0} 次`">
+                      {{ c.totalCount ?? 0 }} / 剩 {{ c.remainCount ?? 0 }} 次
+                    </strong>
+                  </span>
+                </div>
+              </div>
+              <div class="card-actions" role="group" :aria-label="`卡 ${c.cardNo} 操作`">
+                <el-button
+                  type="primary"
+                  size="large"
+                  :disabled="!c.isActive"
+                  :aria-label="`为卡 ${c.cardNo} 充值，当前余额 ${yuanReadable(c.balance)}`"
+                  @click="openRecharge(c)"
+                >充值</el-button>
+                <el-button
+                  size="large"
+                  :aria-label="`查看卡 ${c.cardNo} 的充值与消费流水`"
+                  @click="openHistory(c)"
+                >流水</el-button>
+                <el-button
+                  size="large"
+                  :aria-label="`编辑卡 ${c.cardNo} 的会员资料`"
+                  @click="openEdit(c)"
+                >编辑</el-button>
+                <el-button
+                  type="warning"
+                  size="large"
+                  :disabled="!c.isActive || c.balance <= 0"
+                  :aria-label="`退卡 ${c.cardNo}，把余额 ${yuanReadable(c.balance)} 退还给客户`"
+                  @click="openRefund(c)"
+                >退卡</el-button>
+                <el-button
+                  type="warning"
+                  size="large"
+                  :disabled="!c.isActive || c.balance <= 0"
+                  :aria-label="`将卡 ${c.cardNo} 的余额转赠给其他会员`"
+                  @click="openTransfer(c)"
+                >转赠</el-button>
+                <el-button
+                  size="large"
+                  :aria-label="`查看卡 ${c.cardNo} 的引荐记录`"
+                  @click="openReferrals(c)"
+                >引荐</el-button>
+              </div>
+            </li>
+          </ul>
+        </article>
+      </div>
 
       <el-pagination
         style="margin-top: 12px; justify-content: flex-end; display: flex"
@@ -1026,6 +1104,8 @@ async function reload() {
     });
     groups.value = data.items;
     total.value = data.total;
+    // 数据换了一批，之前展开的可能已不在结果集，整体收起避免空 id 残留
+    expandedPhones.value = new Set();
   } finally {
     loading.value = false;
   }
@@ -1039,6 +1119,45 @@ const RECHARGE_KIND_TAG: Record<string, 'info' | 'warning' | 'success' | 'danger
 };
 function rechargeKindLabel(k: string) { return RECHARGE_KIND_LABEL[k] ?? k; }
 function rechargeKindTag(k: string) { return RECHARGE_KIND_TAG[k] ?? 'info'; }
+
+/// 卡号默认折叠，按"会员（手机号）"维度展开/收起；切换数据源后整体收起。
+/// 用 Set 存当前展开的 phone；mutation 后整体替换以触发 Vue 响应式
+const expandedPhones = ref<Set<string>>(new Set());
+function isExpanded(phone: string) {
+  return expandedPhones.value.has(phone);
+}
+function toggleExpand(phone: string) {
+  const next = new Set(expandedPhones.value);
+  if (next.has(phone)) next.delete(phone);
+  else next.add(phone);
+  expandedPhones.value = next;
+}
+
+/// 把数字金额读成"123 元 4 角"，给读屏软件听，避免它把"123.40"读成"一百二十三点四零"
+function yuanReadable(amount: number): string {
+  const safe = Number.isFinite(amount) ? amount : 0;
+  const yuan = Math.floor(safe);
+  const jiao = Math.round((safe - yuan) * 10);
+  return jiao === 0 ? `${yuan} 元` : `${yuan} 元 ${jiao} 角`;
+}
+
+/// 一行总述给读屏念出来，避免它逐字段碎读
+function groupAriaLabel(g: MemberPhoneGroup): string {
+  const name = g.primaryName || '未填姓名';
+  const closed = g.hasInactive ? '，含已关闭的卡' : '';
+  return `${name}，手机 ${g.phone}，持卡 ${g.cardCount} 张${closed}，总余额 ${yuanReadable(g.totalBalance)}`;
+}
+
+function cardAriaLabel(c: Member, primaryName: string | null | undefined): string {
+  const name = primaryName || '未填姓名';
+  const type = c.memberTypeName ?? '普通卡';
+  const status = c.isActive ? '使用中' : '已关闭';
+  const discount = c.discount < 1 ? `，折扣 ${(c.discount * 10).toFixed(1)} 折` : '';
+  const countSuffix = c.memberTypeKind === 'CountBased'
+    ? `，累计 ${c.totalCount ?? 0} 次，剩 ${c.remainCount ?? 0} 次`
+    : '';
+  return `${name} 的卡 ${c.cardNo}，${type}，${status}${discount}，余额 ${yuanReadable(c.balance)}${countSuffix}`;
+}
 
 function resetQuery() {
   query.keyword = '';
@@ -1376,7 +1495,6 @@ onMounted(async () => {
 .page { padding-bottom: 24px; }
 .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .muted { color: var(--el-text-color-secondary); font-size: 12px; }
-.closed { color: #999; text-decoration: line-through; }
 .metric-row { display: flex; gap: 32px; align-items: center; font-size: 14px; }
 .opt-meta {
   float: right;
@@ -1391,4 +1509,78 @@ onMounted(async () => {
 .member-form .full-row { width: 100%; }
 .lock-tip { font-size: 12px; margin: -8px 0 8px 100px; }
 .member-form :deep(.el-input-number) { width: 100%; }
+
+/* —— 会员列表：盲人友好的卡片式布局 —— */
+/* 字号、间距、对比都比表格大一档；每张卡是独立的可聚焦区域，便于读屏跳读 */
+.member-list { margin-top: 16px; display: flex; flex-direction: column; gap: 16px; min-height: 120px; }
+.empty-tip { text-align: center; color: var(--el-text-color-secondary); padding: 48px 0; font-size: 16px; }
+
+.member-card {
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 8px;
+  background: #fff;
+  padding: 16px 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+.member-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--el-border-color-lighter);
+}
+.head-main { flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.head-line1 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.phone { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+.name { font-size: 18px; color: var(--el-text-color-primary); }
+.head-stats { display: flex; gap: 24px; flex-wrap: wrap; }
+.head-actions { display: flex; gap: 8px; }
+
+.stat { display: inline-flex; align-items: baseline; gap: 6px; font-size: 15px; }
+.stat-label { color: var(--el-text-color-secondary); font-size: 13px; }
+.stat-val { font-size: 16px; font-weight: 600; color: var(--el-text-color-primary); }
+.stat-val.money { color: #d9534f; font-size: 18px; }
+
+.card-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+  background: #fafbfc;
+}
+.card-row.closed { background: #f5f5f5; opacity: 0.85; }
+.card-row.closed .card-no { color: #999; text-decoration: line-through; }
+.card-info { flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.card-line1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 16px; }
+.card-no { font-weight: 600; }
+.card-stats { display: flex; gap: 20px; flex-wrap: wrap; }
+.card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+/* 主操作按钮稍大，确保点击/键盘焦点都好命中 */
+.card-actions :deep(.el-button) { min-width: 80px; font-size: 15px; }
+.head-actions :deep(.el-button) { font-size: 15px; }
+
+/* 文本+颜色双重传达状态（盲人无障碍约定：不靠纯颜色） */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+.badge-muted { background: #f0f0f0; color: #666; border-color: #ddd; }
+.badge-info { background: #ecf5ff; color: #409eff; border-color: #b3d8ff; }
+.badge-warning { background: #fdf6ec; color: #e6a23c; border-color: #f5dab1; }
+.badge-success { background: #f0f9eb; color: #67c23a; border-color: #c2e7b0; }
+
+/* 键盘焦点态强化，方便弱视用户定位 */
+.member-card:focus-within { outline: 2px solid var(--el-color-primary); outline-offset: 2px; }
+.card-row:focus-within { outline: 2px solid var(--el-color-primary); outline-offset: 1px; }
 </style>
