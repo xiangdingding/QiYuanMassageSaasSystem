@@ -31,7 +31,10 @@
             @keyup.enter="onPickService(s)"
             @keyup.space.prevent="onPickService(s)"
           >
-            <div class="svc-name">{{ s.name }}</div>
+            <div class="svc-name">
+              <span class="svc-code">{{ s.code }}</span>
+              <span class="svc-name-text">{{ s.name }}</span>
+            </div>
             <div class="svc-meta">
               <el-tag size="small">{{ s.durationMinutes }} 分钟</el-tag>
               <el-tag
@@ -46,7 +49,6 @@
               >会员 ¥{{ s.memberPrice.toFixed(2) }}</el-tag>
             </div>
             <div v-if="s.description" class="svc-desc" :title="s.description">{{ s.description }}</div>
-            <div class="svc-code">{{ s.code }}</div>
           </el-card>
         </div>
       </el-card>
@@ -1125,18 +1127,28 @@ useShortcuts({
   /* grid-template-columns is set inline so the splitter can drag */
   grid-template-columns: 1fr 6px 760px;
   gap: 8px;
+  /* 外层不滚动，整页限制在视口内；左右栏各自的网格/表格按需出自己的滚动条 */
   height: calc(100vh - 100px);
+  overflow: hidden;
 }
 .left, .right { min-height: 0; min-width: 0; }
-.left { display: flex; flex-direction: column; gap: 8px; }
+.left { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+/* "选择服务项目"分到剩余高度；其内部 .services-grid 自己滚动 */
 .services-card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.services-card :deep(.el-card__body) { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-.timed-card { flex: 0 0 auto; max-height: 36%; display: flex; flex-direction: column; }
-.timed-card :deep(.el-card__body) { padding: 12px; overflow: auto; }
-.right { display: flex; flex-direction: column; }
-.cart { flex: 1; display: flex; flex-direction: column; }
-.cart :deep(.el-card__body) { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-.header-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.services-card :deep(.el-card__body) { flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 8px 10px; }
+/* 卡片标题区压缩：减小 padding、字号、控件高度，把更多空间让给项目网格 */
+.services-card :deep(.el-card__header),
+.timed-card :deep(.el-card__header),
+.cart :deep(.el-card__header) { padding: 6px 10px; }
+.card-title { margin: 0; font-size: 14px; font-weight: 600; }
+.timed-card { flex: 0 0 auto; max-height: 28%; display: flex; flex-direction: column; }
+.timed-card :deep(.el-card__body) { padding: 8px 10px; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.right { display: flex; flex-direction: column; min-height: 0; }
+.cart { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.cart :deep(.el-card__body) { display: flex; flex-direction: column; flex: 1; overflow: hidden; padding: 8px 10px; }
+.header-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 24px; }
+.header-row :deep(.el-input__wrapper) { padding: 0 8px; }
+.header-row :deep(.el-input) { --el-input-height: 26px; }
 
 .splitter {
   background: var(--el-border-color-light);
@@ -1149,45 +1161,83 @@ useShortcuts({
   outline: none;
 }
 
+/* 服务项目与计时房固定 3 列网格，多余项向下排；
+   外层卡片定/分高，由自身 overflow-y: auto 出滚动条（不让外层滚动） */
 .services-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
   overflow-y: auto;
   padding-right: 4px;
   flex: 1;
   min-height: 0;
 }
-/* 计时房卡片网格 */
 .timed-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
-.timed-card-item :deep(.el-card__body) { padding: 10px 12px; }
+.timed-card-item :deep(.el-card__body) { padding: 6px 8px; }
 .timed-card-item.open { border-color: var(--el-color-warning); }
 .timed-card-item.inCart { border-color: var(--el-color-success); background: #f6ffed; }
-.timed-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-.timed-no { font-weight: 600; font-size: 15px; }
-.timed-info { font-size: 13px; margin-bottom: 8px; }
-.timed-info .muted { font-size: 12px; }
-.timed-amount { color: #d9534f; font-weight: 600; margin-top: 4px; }
-.timed-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.timed-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.timed-no { font-weight: 600; font-size: 13px; }
+.timed-info { font-size: 12px; margin-bottom: 4px; }
+.timed-info .muted { font-size: 11px; }
+.timed-amount { color: #d9534f; font-weight: 600; margin-top: 2px; }
+.timed-actions { display: flex; gap: 4px; flex-wrap: wrap; }
 .room-charge-meta { gap: 12px; }
-.service-card { cursor: pointer; }
-.service-card :deep(.el-card__body) { padding: 12px; }
-.svc-name { font-weight: 600; margin-bottom: 6px; }
-.svc-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
-.svc-code { color: var(--el-text-color-secondary); font-size: 12px; }
-/* 备注：单卡内 2 行截断，hover 完整 title；避免长备注撑高整网格 */
+/* 服务卡：每排 3 个等宽（grid 1fr）+ 固定高度，所有卡视觉一致；
+   高度不够时由 .services-grid 自身出滚动条 */
+.service-card {
+  cursor: pointer;
+  height: 96px;
+  display: flex;
+  flex-direction: column;
+}
+.service-card :deep(.el-card__body) {
+  padding: 6px 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+/* 名称行：编号在前，名称在后，同行展示；超长名称按单元格宽度截断 */
+.svc-name {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 15px;
+  line-height: 1.3;
+  min-width: 0;
+}
+.svc-name-text {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.svc-code {
+  flex: 0 0 auto;
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.svc-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.svc-meta :deep(.el-tag) { font-size: 12px; padding: 0 6px; height: 20px; line-height: 20px; }
+/* 备注：1 行截断显示；无备注的卡上半部分留空也保持同一高度 */
 .svc-desc {
   color: var(--el-text-color-regular);
   font-size: 12px;
-  margin-bottom: 6px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  margin-top: 4px;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mode-switch { display: flex; margin-bottom: 10px; width: 100%; }
