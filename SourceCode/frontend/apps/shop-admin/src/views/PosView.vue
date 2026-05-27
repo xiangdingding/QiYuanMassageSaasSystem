@@ -1161,24 +1161,38 @@ useShortcuts({
   outline: none;
 }
 
-/* 服务项目与计时房固定 3 列网格，多余项向下排；
-   外层卡片定/分高，由自身 overflow-y: auto 出滚动条（不让外层滚动） */
+/* 服务项目与计时房用 flex-wrap：每排默认 3 张占满；
+   - 总数 < 3 张时这一排平分剩余宽度（如 2 张各 50%、1 张 100%）
+   - 末排不足 3 张时同样平分（如 4 张时第 2 排那 1 张铺满整排）
+   外层高度不够由自身 overflow-y: auto 出滚动条 */
 .services-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
   gap: 6px;
   overflow-y: auto;
   padding-right: 4px;
   flex: 1;
   min-height: 0;
 }
+.services-grid > .service-card {
+  flex: 1 1 0;
+  min-width: calc((100% - 12px) / 3);
+  max-width: 100%;
+}
 .timed-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
   gap: 6px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
+}
+.timed-grid > .timed-card-item {
+  flex: 1 1 0;
+  min-width: calc((100% - 12px) / 3);
+  max-width: 100%;
 }
 .timed-card-item :deep(.el-card__body) { padding: 6px 8px; }
 .timed-card-item.open { border-color: var(--el-color-warning); }
@@ -1194,7 +1208,7 @@ useShortcuts({
    高度不够时由 .services-grid 自身出滚动条 */
 .service-card {
   cursor: pointer;
-  height: 96px;
+  height: 126px;
   display: flex;
   flex-direction: column;
 }
@@ -1230,14 +1244,17 @@ useShortcuts({
 }
 .svc-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .svc-meta :deep(.el-tag) { font-size: 12px; padding: 0 6px; height: 20px; line-height: 20px; }
-/* 备注：1 行截断显示；无备注的卡上半部分留空也保持同一高度 */
+/* 备注：2 行截断显示，hover 看完整 title；无备注的卡同样高度保持整排对齐 */
 .svc-desc {
   color: var(--el-text-color-regular);
   font-size: 12px;
+  line-height: 1.4;
   margin-top: 4px;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-all;
 }
 
 .mode-switch { display: flex; margin-bottom: 10px; width: 100%; }
