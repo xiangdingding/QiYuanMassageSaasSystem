@@ -1141,7 +1141,7 @@ useShortcuts({
 .timed-card :deep(.el-card__header),
 .cart :deep(.el-card__header) { padding: 6px 10px; }
 .card-title { margin: 0; font-size: 14px; font-weight: 600; }
-.timed-card { flex: 0 0 auto; max-height: 28%; display: flex; flex-direction: column; }
+.timed-card { flex: 0 0 auto; max-height: 42%; display: flex; flex-direction: column; }
 .timed-card :deep(.el-card__body) { padding: 8px 10px; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
 .right { display: flex; flex-direction: column; min-height: 0; }
 .cart { flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -1161,38 +1161,24 @@ useShortcuts({
   outline: none;
 }
 
-/* 服务项目与计时房用 flex-wrap：每排默认 3 张占满；
-   - 总数 < 3 张时这一排平分剩余宽度（如 2 张各 50%、1 张 100%）
-   - 末排不足 3 张时同样平分（如 4 张时第 2 排那 1 张铺满整排）
-   外层高度不够由自身 overflow-y: auto 出滚动条 */
+/* 严格每排 3 个等宽（1fr），不足 3 个时左对齐不拉伸；
+   行数超出由自身 overflow-y: auto 出滚动条（外层不滚） */
 .services-grid {
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   overflow-y: auto;
   padding-right: 4px;
   flex: 1;
   min-height: 0;
 }
-.services-grid > .service-card {
-  flex: 1 1 0;
-  min-width: calc((100% - 12px) / 3);
-  max-width: 100%;
-}
 .timed-grid {
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
-}
-.timed-grid > .timed-card-item {
-  flex: 1 1 0;
-  min-width: calc((100% - 12px) / 3);
-  max-width: 100%;
 }
 .timed-card-item :deep(.el-card__body) { padding: 6px 8px; }
 .timed-card-item.open { border-color: var(--el-color-warning); }
