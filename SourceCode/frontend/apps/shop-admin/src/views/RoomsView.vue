@@ -40,9 +40,16 @@
             <span v-else>{{ row.occupiedByOrderNo || '—' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <el-button v-if="canManage" size="small" :aria-label="`编辑 ${row.roomNo} 号房`" @click="openEdit(row)">编辑</el-button>
+            <el-button
+              v-if="row.isTimedRoom && timedOpen(row.id)"
+              size="small"
+              type="danger"
+              :aria-label="`取消 ${row.roomNo} 号房当前计时（不计费）`"
+              @click="cancelTiming(row, timedOpen(row.id)!)"
+            >取消计时</el-button>
             <el-button v-if="canManage" size="small" type="danger" :disabled="row.isOccupied || !!timedOpen(row.id)"
                        @click="remove(row)">删除</el-button>
           </template>
@@ -148,6 +155,21 @@ async function reload() {
   } finally {
     loading.value = false;
   }
+}
+
+/// 取消一段进行中的计时（误开台 / 客人临时不消费）：标为 Cancelled，不计费、不入账。
+async function cancelTiming(room: Room, session: TimedRoomSessionDto) {
+  const ok = await ElMessageBox.confirm(
+    `确认取消 ${room.roomNo} 号房当前计时？已计 ${session.elapsedMinutes} 分钟将被作废、不计费。`,
+    '取消计时',
+    { type: 'warning', confirmButtonText: '确认取消', cancelButtonText: '不取消' }
+  ).then(() => true).catch(() => false);
+  if (!ok) return;
+  try {
+    await timedRoomsApi.cancel(session.id);
+    await reload();
+    ElMessage.success(`${room.roomNo} 号房计时已取消`);
+  } catch { /* http 已弹错 */ }
 }
 
 function openNew() {

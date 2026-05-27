@@ -304,6 +304,25 @@ export const subscriptionsApi = {
 export const appointmentsApi = {
   list: (params: { storeId?: number; status?: AppointmentStatus; from?: string; to?: string; page?: number; pageSize?: number }) =>
     http().get<PagedResult<Appointment>>('/appointments', { params }).then((r) => r.data),
+  create: (body: {
+    storeId: number;
+    serviceId?: number | null;
+    preferredTechnicianId?: number | null;
+    customerName: string;
+    customerPhone: string;
+    expectedArriveAt: string;
+    partySize: number;
+    remark?: string | null;
+  }) => http().post<Appointment>('/appointments', body).then((r) => r.data),
+  update: (id: number, body: {
+    serviceId?: number | null;
+    preferredTechnicianId?: number | null;
+    customerName: string;
+    customerPhone: string;
+    expectedArriveAt: string;
+    partySize: number;
+    remark?: string | null;
+  }) => http().put<Appointment>(`/appointments/${id}`, body).then((r) => r.data),
   confirm: (id: number, remark?: string | null) =>
     http().post<Appointment>(`/appointments/${id}/confirm`, { remark }).then((r) => r.data),
   arrive: (id: number) => http().post<Appointment>(`/appointments/${id}/arrive`).then((r) => r.data),

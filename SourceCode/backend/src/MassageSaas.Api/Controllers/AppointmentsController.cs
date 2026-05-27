@@ -142,8 +142,10 @@ public class AppointmentsController : ControllerBase
 
         var pq = new PageQuery(page, pageSize, null);
         var total = await q.CountAsync(ct);
+        // 已取消的统一沉底，让前台一眼看到待处理的；其它状态按到店时间正排
         var rows = await q
-            .OrderBy(a => a.ExpectedArriveAt)
+            .OrderBy(a => a.Status == AppointmentStatus.Cancelled ? 1 : 0)
+            .ThenBy(a => a.ExpectedArriveAt)
             .Skip((pq.SafePage - 1) * pq.SafePageSize)
             .Take(pq.SafePageSize)
             .ToListAsync(ct);
@@ -156,6 +158,52 @@ public class AppointmentsController : ControllerBase
         _tenantContext.BypassTenantFilter();
         var dto = await LoadDtoAsync(id, ct);
         return dto is null ? NotFound() : Ok(dto);
+    }
+
+    /// <summary>
+    /// 修改预约：仅 Pending（未确认）允许改；Confirmed 之后改时间须先取消重排，避免和已通知客人的口径出现不一致。
+    /// </summary>
+    [HttpPut("{id:long}")]
+    [Authorize(Policy = "ShopStaff")]
+    public async Task<ActionResult<AppointmentDto>> Update(long id, [FromBody] UpdateAppointmentRequest req, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(req.CustomerName) || string.IsNullOrWhiteSpace(req.CustomerPhone))
+            return BadRequest(new { code = "InvalidInput", message = "请填写姓名与手机号" });
+        if (req.ExpectedArriveAt < DateTime.UtcNow.AddMinutes(-5))
+            return BadRequest(new { code = "InvalidInput", message = "到店时间不能早于当前时间" });
+        if (req.PartySize < 1 || req.PartySize > 20)
+            return BadRequest(new { code = "InvalidInput", message = "人数应在 1-20 之间" });
+
+        var a = await _db.Appointments.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (a is null) return NotFound();
+        if (a.Status != AppointmentStatus.Pending)
+            return Conflict(new { code = "InvalidState", message = "仅未确认（待确认）的预约可修改" });
+
+        if (req.ServiceId.HasValue)
+        {
+            var serviceOk = await _db.ServiceItems
+                .AnyAsync(s => s.Id == req.ServiceId.Value && s.IsActive, ct);
+            if (!serviceOk) return BadRequest(new { code = "ServiceNotFound", message = "服务项不存在" });
+        }
+        if (req.PreferredTechnicianId.HasValue)
+        {
+            var techOk = await _db.Users.AnyAsync(u =>
+                u.Id == req.PreferredTechnicianId.Value &&
+                u.Role == UserRole.Technician && u.IsActive, ct);
+            if (!techOk) return BadRequest(new { code = "TechnicianNotFound", message = "技师不存在或已停用" });
+        }
+
+        a.ServiceId = req.ServiceId;
+        a.PreferredTechnicianId = req.PreferredTechnicianId;
+        a.CustomerName = req.CustomerName.Trim();
+        a.CustomerPhone = req.CustomerPhone.Trim();
+        a.ExpectedArriveAt = req.ExpectedArriveAt;
+        a.PartySize = req.PartySize;
+        a.Remark = req.Remark;
+
+        await _db.SaveChangesAsync(ct);
+        _logger.LogInformation("Appointment {Id} updated by user={UserId}", id, _tenantContext.UserId);
+        return Ok(await LoadDtoAsync(id, ct));
     }
 
     [HttpPost("{id:long}/confirm")]

@@ -21,6 +21,11 @@
         />
         <el-button type="primary" @click="reload">查询</el-button>
         <el-button @click="resetQuery">重置</el-button>
+        <el-button
+          type="success"
+          :aria-label="'登记新的电话预约'"
+          @click="openCreate"
+        >登记电话预约</el-button>
       </div>
 
       <el-table :data="rows" v-loading="loading" stripe style="margin-top: 12px">
@@ -44,6 +49,14 @@
                        :aria-label="`确认 ${row.customerName} 的预约`" @click="confirm(row)">
               确认
             </el-button>
+            <el-button
+              v-if="row.status === 'Pending'"
+              size="small"
+              :aria-label="`修改 ${row.customerName} 的预约信息`"
+              @click="openEdit(row)"
+            >
+              修改
+            </el-button>
             <el-button v-if="row.status === 'Pending' || row.status === 'Confirmed'" size="small" type="success"
                        :aria-label="`标记 ${row.customerName} 已到店`" @click="arrive(row)">
               到店
@@ -56,6 +69,15 @@
               @click="cancel(row)"
             >
               取消
+            </el-button>
+            <el-button
+              v-if="row.status === 'Cancelled'"
+              size="small"
+              type="primary"
+              :aria-label="`基于 ${row.customerName} 的取消单再次预约`"
+              @click="openRebook(row)"
+            >
+              再次预约
             </el-button>
           </template>
         </el-table-column>
@@ -72,16 +94,116 @@
         />
       </div>
     </el-card>
+
+    <el-dialog
+      v-model="createOpen"
+      :title="dialogTitle"
+      width="560px"
+      :aria-label="dialogTitle + '对话框'"
+    >
+      <el-form ref="createFormRef" :model="form" :rules="formRules" label-width="100px">
+        <el-form-item label="客户姓名" prop="customerName">
+          <el-input
+            v-model="form.customerName"
+            placeholder="客人称呼，如 张先生"
+            maxlength="32"
+            aria-label="客户姓名"
+          />
+        </el-form-item>
+        <el-form-item label="客户电话" prop="customerPhone">
+          <el-input
+            v-model="form.customerPhone"
+            placeholder="11 位手机号"
+            maxlength="20"
+            aria-label="客户电话"
+          />
+        </el-form-item>
+        <el-form-item label="到店时间" prop="expectedArriveAt">
+          <el-date-picker
+            v-model="form.expectedArriveAt"
+            type="datetime"
+            placeholder="预约到店时间"
+            format="YYYY-MM-DD HH:mm"
+            value-format="YYYY-MM-DDTHH:mm:ss[Z]"
+            style="width: 100%"
+            aria-label="到店时间"
+          />
+        </el-form-item>
+        <el-form-item label="人数" prop="partySize">
+          <el-input-number
+            v-model="form.partySize"
+            :min="1"
+            :max="20"
+            controls-position="right"
+            style="width: 160px"
+            aria-label="到店人数"
+          />
+        </el-form-item>
+        <el-form-item label="服务项目">
+          <el-select
+            v-model="form.serviceId"
+            placeholder="可空，客人未指定时不选"
+            clearable
+            filterable
+            style="width: 100%"
+            aria-label="预约服务项目，可不指定"
+          >
+            <el-option
+              v-for="s in services"
+              :key="s.id"
+              :label="`${s.name}（${s.durationMinutes} 分钟）`"
+              :value="s.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="指定技师">
+          <el-select
+            v-model="form.preferredTechnicianId"
+            placeholder="可空，客人未指定时不选"
+            clearable
+            filterable
+            style="width: 100%"
+            aria-label="指定技师，可不指定"
+          >
+            <el-option
+              v-for="t in technicians"
+              :key="t.id"
+              :label="`${t.employeeNo ?? '-'} · ${t.realName ?? t.username}`"
+              :value="t.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input
+            v-model="form.remark"
+            type="textarea"
+            :rows="2"
+            maxlength="200"
+            placeholder="客人特殊要求、过敏、提前到等"
+            aria-label="预约备注"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button :aria-label="'关闭对话框'" @click="createOpen = false">取消</el-button>
+        <el-button
+          type="primary"
+          :loading="saving"
+          :aria-label="editingId ? '保存预约修改' : '确认登记电话预约'"
+          @click="submitCreate"
+        >{{ editingId ? '保存修改' : '登记' }}</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import dayjs from 'dayjs';
-import { appointmentsApi } from '@/api/modules';
+import { appointmentsApi, servicesApi, staffApi } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
-import type { Appointment, AppointmentStatus } from '@/api/types';
+import type { Appointment, AppointmentStatus, ServiceItem, Staff } from '@/api/types';
 
 const appStore = useAppStore();
 
@@ -150,6 +272,158 @@ async function cancel(row: Appointment) {
   await appointmentsApi.cancel(row.id, value || null);
   ElMessage.success('已取消');
   await reload();
+}
+
+// ---- 登记电话预约 / 再次预约 / 修改预约 ----
+const createOpen = ref(false);
+const saving = ref(false);
+const services = ref<ServiceItem[]>([]);
+const technicians = ref<Staff[]>([]);
+const createFormRef = ref<FormInstance | null>(null);
+/// 非空 = 当前是"再次预约"模式（基于某条已取消单），仅用于切换弹窗标题做提示
+const rebookFromId = ref<number | null>(null);
+/// 非空 = 当前是"修改"模式，提交时走 update 而不是 create
+const editingId = ref<number | null>(null);
+
+const dialogTitle = computed(() => {
+  if (editingId.value) return '修改预约信息';
+  if (rebookFromId.value) return '再次预约（基于已取消单）';
+  return '登记电话预约';
+});
+const form = reactive<{
+  customerName: string;
+  customerPhone: string;
+  expectedArriveAt: string;
+  partySize: number;
+  serviceId: number | null;
+  preferredTechnicianId: number | null;
+  remark: string;
+}>({
+  customerName: '',
+  customerPhone: '',
+  expectedArriveAt: '',
+  partySize: 1,
+  serviceId: null,
+  preferredTechnicianId: null,
+  remark: ''
+});
+const formRules: FormRules = {
+  customerName: [{ required: true, message: '请填写客户姓名', trigger: 'blur' }],
+  customerPhone: [
+    { required: true, message: '请填写客户电话', trigger: 'blur' },
+    { pattern: /^\d{6,20}$/, message: '电话号码只允许数字', trigger: 'blur' }
+  ],
+  expectedArriveAt: [{ required: true, message: '请选择到店时间', trigger: 'change' }],
+  partySize: [{ required: true, type: 'number', min: 1, max: 20, message: '人数 1-20', trigger: 'change' }]
+};
+
+/// 服务 / 技师列表懒加载：弹窗首开时拉一次，复用即可
+async function ensureLookupsLoaded() {
+  if (services.value.length > 0 && technicians.value.length > 0) return;
+  try {
+    const [s, t] = await Promise.all([
+      servicesApi.list(false),
+      staffApi.list({ role: 'Technician', pageSize: 200, storeId: appStore.activeStoreId ?? undefined })
+    ]);
+    services.value = s;
+    technicians.value = t.items;
+  } catch { /* http 已弹错 */ }
+}
+
+async function openCreate() {
+  if (!appStore.activeStoreId) {
+    ElMessage.warning('请先选择门店');
+    return;
+  }
+  rebookFromId.value = null;
+  editingId.value = null;
+  Object.assign(form, {
+    customerName: '',
+    customerPhone: '',
+    // 默认 30 分钟后，避免客户立刻到店时还要手动改。
+    // 沿用 el-date-picker 的 value-format（本地时间字符串拼 Z），与查询区一致
+    expectedArriveAt: dayjs().add(30, 'minute').format('YYYY-MM-DDTHH:mm:ss[Z]'),
+    partySize: 1,
+    serviceId: null,
+    preferredTechnicianId: null,
+    remark: ''
+  });
+  createOpen.value = true;
+  await ensureLookupsLoaded();
+}
+
+/// 基于一条已取消单再次预约：客人信息照搬，时间清空让前台和客人重定
+async function openRebook(row: Appointment) {
+  if (!appStore.activeStoreId) {
+    ElMessage.warning('请先选择门店');
+    return;
+  }
+  rebookFromId.value = row.id;
+  editingId.value = null;
+  Object.assign(form, {
+    customerName: row.customerName,
+    customerPhone: row.customerPhone,
+    // 旧时间已过去，给个 30 分钟后的默认，前台再据电话沟通调整
+    expectedArriveAt: dayjs().add(30, 'minute').format('YYYY-MM-DDTHH:mm:ss[Z]'),
+    partySize: row.partySize || 1,
+    serviceId: row.serviceId ?? null,
+    preferredTechnicianId: row.preferredTechnicianId ?? null,
+    remark: row.remark ?? ''
+  });
+  createOpen.value = true;
+  await ensureLookupsLoaded();
+}
+
+/// 修改未确认（Pending）的预约：信息全数预填，到店时间保留原值
+async function openEdit(row: Appointment) {
+  if (row.status !== 'Pending') {
+    ElMessage.warning('仅未确认的预约可修改');
+    return;
+  }
+  editingId.value = row.id;
+  rebookFromId.value = null;
+  Object.assign(form, {
+    customerName: row.customerName,
+    customerPhone: row.customerPhone,
+    expectedArriveAt: row.expectedArriveAt,
+    partySize: row.partySize || 1,
+    serviceId: row.serviceId ?? null,
+    preferredTechnicianId: row.preferredTechnicianId ?? null,
+    remark: row.remark ?? ''
+  });
+  createOpen.value = true;
+  await ensureLookupsLoaded();
+}
+
+async function submitCreate() {
+  if (!createFormRef.value || !appStore.activeStoreId) return;
+  const ok = await createFormRef.value.validate().catch(() => false);
+  if (!ok) return;
+  saving.value = true;
+  try {
+    const body = {
+      serviceId: form.serviceId,
+      preferredTechnicianId: form.preferredTechnicianId,
+      customerName: form.customerName.trim(),
+      customerPhone: form.customerPhone.trim(),
+      expectedArriveAt: form.expectedArriveAt,
+      partySize: form.partySize,
+      remark: form.remark.trim() || null
+    };
+    if (editingId.value) {
+      await appointmentsApi.update(editingId.value, body);
+      ElMessage.success('已保存修改');
+    } else {
+      await appointmentsApi.create({ storeId: appStore.activeStoreId, ...body });
+      ElMessage.success('已登记，状态待确认');
+    }
+    createOpen.value = false;
+    await reload();
+  } catch {
+    /* http 已弹错 */
+  } finally {
+    saving.value = false;
+  }
 }
 
 watch(() => appStore.activeStoreId, () => reload());

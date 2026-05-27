@@ -26,7 +26,7 @@
             shadow="hover"
             tabindex="0"
             role="button"
-            :aria-label="`服务 ${s.name}，时长 ${s.durationMinutes} 分钟，${mode === 'member' ? '会员价 ' + s.memberPrice.toFixed(2) : '标准价 ' + s.price.toFixed(2)} 元，按回车添加`"
+            :aria-label="`服务 ${s.name}，时长 ${s.durationMinutes} 分钟，标准价 ${s.price.toFixed(2)} 元，会员价 ${s.memberPrice.toFixed(2)} 元${s.description ? '，备注：' + s.description : ''}，当前模式将按${mode === 'member' ? '会员价' : '标准价'}下单，按回车添加`"
             @click="onPickService(s)"
             @keyup.enter="onPickService(s)"
             @keyup.space.prevent="onPickService(s)"
@@ -34,9 +34,18 @@
             <div class="svc-name">{{ s.name }}</div>
             <div class="svc-meta">
               <el-tag size="small">{{ s.durationMinutes }} 分钟</el-tag>
-              <el-tag v-if="mode === 'walkin'" size="small" type="success">¥{{ s.price.toFixed(2) }}</el-tag>
-              <el-tag v-else size="small" type="warning">会员价 ¥{{ s.memberPrice.toFixed(2) }}</el-tag>
+              <el-tag
+                size="small"
+                :type="mode === 'walkin' ? 'success' : 'info'"
+                :effect="mode === 'walkin' ? 'dark' : 'plain'"
+              >标准 ¥{{ s.price.toFixed(2) }}</el-tag>
+              <el-tag
+                size="small"
+                :type="mode === 'member' ? 'warning' : 'info'"
+                :effect="mode === 'member' ? 'dark' : 'plain'"
+              >会员 ¥{{ s.memberPrice.toFixed(2) }}</el-tag>
             </div>
+            <div v-if="s.description" class="svc-desc" :title="s.description">{{ s.description }}</div>
             <div class="svc-code">{{ s.code }}</div>
           </el-card>
         </div>
@@ -67,15 +76,25 @@
                 <div class="muted">客 {{ openSessionOf(r.id)!.customerName || openSessionOf(r.id)!.memberName || '散客' }}</div>
                 <div class="timed-amount">≈ ¥{{ (openSessionOf(r.id)!.elapsedMinutes / 60 * openSessionOf(r.id)!.hourlyRateSnapshot).toFixed(2) }}</div>
               </div>
-              <el-button
-                type="primary"
-                size="small"
-                :disabled="cartRoomSessionIds.has(openSessionOf(r.id)!.id)"
-                :aria-label="`将 ${r.roomNo} 计时房费加入订单`"
-                @click="addRoomChargeToCart(r, openSessionOf(r.id)!)"
-              >
-                {{ cartRoomSessionIds.has(openSessionOf(r.id)!.id) ? '已加入' : '加入订单' }}
-              </el-button>
+              <div class="timed-actions">
+                <el-button
+                  type="primary"
+                  size="small"
+                  :disabled="cartRoomSessionIds.has(openSessionOf(r.id)!.id)"
+                  :aria-label="`将 ${r.roomNo} 计时房费加入订单`"
+                  @click="addRoomChargeToCart(r, openSessionOf(r.id)!)"
+                >
+                  {{ cartRoomSessionIds.has(openSessionOf(r.id)!.id) ? '已加入' : '加入订单' }}
+                </el-button>
+                <el-button
+                  size="small"
+                  type="danger"
+                  :aria-label="`取消 ${r.roomNo} 的计时（不计费）`"
+                  @click="cancelTiming(r, openSessionOf(r.id)!)"
+                >
+                  取消计时
+                </el-button>
+              </div>
             </template>
             <template v-else>
               <div class="timed-info muted">空闲</div>
@@ -689,6 +708,25 @@ async function doStartTiming() {
   }
 }
 
+/// 取消一段进行中的计时（误开台 / 客人临时不消费）：session 标为 Cancelled，不计费。
+/// 若该 session 已加入购物车，先从车里移除避免提交时引用废 session。
+async function cancelTiming(room: Room, session: TimedRoomSessionDto) {
+  const ok = await ElMessageBox.confirm(
+    `确认取消 ${room.roomNo} 的计时？已计 ${session.elapsedMinutes} 分钟将被作废、不计费。`,
+    '取消计时',
+    { type: 'warning', confirmButtonText: '确认取消', cancelButtonText: '不取消' }
+  ).then(() => true).catch(() => false);
+  if (!ok) return;
+  try {
+    await timedRoomsApi.cancel(session.id);
+    // 同步把购物车里这条 roomCharge 拿掉
+    const idx = cart.findIndex((c) => c.kind === 'roomCharge' && (c as RoomChargeCartItem).sessionId === session.id);
+    if (idx !== -1) cart.splice(idx, 1);
+    await reloadTimedSessions();
+    ElMessage.success(`${room.roomNo} 计时已取消`);
+  } catch { /* http 已弹错 */ }
+}
+
 /// 把进行中的计时 session 加入 cart 作为一行 roomCharge。
 /// 同步将开台时绑定的会员快照进 cart item，结算前会校验"绑定会员=结算会员"。
 function addRoomChargeToCart(room: Room, session: TimedRoomSessionDto) {
@@ -1029,12 +1067,23 @@ useShortcuts({
 .timed-info { font-size: 13px; margin-bottom: 8px; }
 .timed-info .muted { font-size: 12px; }
 .timed-amount { color: #d9534f; font-weight: 600; margin-top: 4px; }
+.timed-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .room-charge-meta { gap: 12px; }
 .service-card { cursor: pointer; }
 .service-card :deep(.el-card__body) { padding: 12px; }
 .svc-name { font-weight: 600; margin-bottom: 6px; }
 .svc-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
 .svc-code { color: var(--el-text-color-secondary); font-size: 12px; }
+/* 备注：单卡内 2 行截断，hover 完整 title；避免长备注撑高整网格 */
+.svc-desc {
+  color: var(--el-text-color-regular);
+  font-size: 12px;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 .mode-switch { display: flex; margin-bottom: 10px; width: 100%; }
 .mode-switch :deep(.el-radio-button) { flex: 1; }

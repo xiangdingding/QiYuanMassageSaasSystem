@@ -34,3 +34,13 @@ public record AppointmentDto(
 public record CancelAppointmentRequest(string? Reason);
 
 public record ConfirmAppointmentRequest(string? Remark);
+
+/// <summary>修改待确认的预约：StoreId 不可改（跨店改单要走"取消+重排"），其它字段同 Create。</summary>
+public record UpdateAppointmentRequest(
+    long? ServiceId,
+    long? PreferredTechnicianId,
+    string CustomerName,
+    string CustomerPhone,
+    DateTime ExpectedArriveAt,
+    int PartySize,
+    string? Remark);
