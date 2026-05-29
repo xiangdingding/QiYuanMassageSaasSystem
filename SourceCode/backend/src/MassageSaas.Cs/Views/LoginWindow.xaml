@@ -27,7 +27,18 @@
                    FontSize="12"
                    Foreground="#666"
                    HorizontalAlignment="Center"
-                   Margin="0,4,0,24" />
+                   Margin="0,4,0,12" />
+
+        <CheckBox Grid.Row="1"
+                  x:Name="A11yToggle"
+                  Content="启用无障碍模式（放大字号、加粗焦点、读屏优化）"
+                  HorizontalAlignment="Center"
+                  Margin="0,40,0,12"
+                  FontSize="13"
+                  Checked="A11yToggle_Changed"
+                  Unchecked="A11yToggle_Changed"
+                  AutomationProperties.Name="无障碍模式开关"
+                  AutomationProperties.HelpText="勾选后立即应用，并在下次启动时记住该选择" />
 
         <TextBox Grid.Row="2"
                  Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"

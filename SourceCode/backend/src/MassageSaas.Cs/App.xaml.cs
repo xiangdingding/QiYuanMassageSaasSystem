@@ -43,6 +43,7 @@ public partial class App : Application
                 services.AddSingleton<SessionService>();
                 services.AddSingleton<NavigationService>();
                 services.AddSingleton<AppContextService>();
+                services.AddSingleton<PreferencesService>();
                 services.AddSingleton<ISpeechAnnouncer, SpeechAnnouncer>();
                 services.AddTransient<AuthMessageHandler>();
 
@@ -98,11 +99,33 @@ public partial class App : Application
 
         await Host.StartAsync();
 
+        // 启动时根据持久化偏好挂主题；后续切换通过 Changed 事件热加载/卸载
+        var prefs = Resolve<PreferencesService>();
+        prefs.Changed += ApplyA11yTheme;
+        ApplyA11yTheme(prefs.A11yMode);
+
         var session = Resolve<SessionService>();
         if (session.IsAuthenticated)
             ShowMain();
         else
             ShowLogin();
+    }
+
+    /// <summary>合并/卸载无障碍主题 ResourceDictionary。Dispatcher 包一层以兼容非 UI 线程触发。</summary>
+    private static ResourceDictionary? _a11yTheme;
+    private static void ApplyA11yTheme(PreferencesService.AppMode mode)
+    {
+        Current.Dispatcher.Invoke(() =>
+        {
+            _a11yTheme ??= new ResourceDictionary
+            {
+                Source = new Uri("/Themes/A11yTheme.xaml", UriKind.Relative)
+            };
+            var merged = Current.Resources.MergedDictionaries;
+            var isMerged = merged.Contains(_a11yTheme);
+            if (mode == PreferencesService.AppMode.Accessible && !isMerged) merged.Add(_a11yTheme);
+            else if (mode == PreferencesService.AppMode.Normal && isMerged) merged.Remove(_a11yTheme);
+        });
     }
 
     public static void ShowLogin()

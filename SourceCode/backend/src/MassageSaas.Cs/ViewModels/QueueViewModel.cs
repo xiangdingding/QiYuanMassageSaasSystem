@@ -81,7 +81,7 @@ public partial class QueueViewModel : ObservableObject, IDisposable
             else
             {
                 LastCalled = $"刚叫到：{r.EmployeeNo} 号 · {r.TechnicianName}";
-                _speech.Say($"叫 {r.EmployeeNo} 号，{r.TechnicianName}");
+                _speech.Say($"请 {r.EmployeeNo} 号，{r.TechnicianName} 技师上钟");
                 await ReloadAsync();
             }
         }

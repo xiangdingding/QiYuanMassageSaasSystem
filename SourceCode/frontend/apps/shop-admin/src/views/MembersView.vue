@@ -12,7 +12,7 @@
         />
         <el-button type="primary" aria-label="执行会员搜索" @click="reload">查询</el-button>
         <el-button aria-label="重置搜索条件" @click="resetQuery">重置</el-button>
-        <el-button type="success" aria-label="开新会员卡" @click="openCreate">开卡</el-button>
+        <el-button type="primary" aria-label="开新会员卡" @click="openCreate">开卡</el-button>
       </div>
 
       <div class="toolbar" style="margin-top:8px">
@@ -70,7 +70,7 @@
             </div>
             <div class="head-actions">
               <el-button
-                size="large"
+                size="small"
                 :aria-expanded="isExpanded(g.phone)"
                 :aria-controls="`cards-${g.phone}`"
                 :aria-label="`${isExpanded(g.phone) ? '收起' : '展开'} ${g.primaryName || g.phone} 名下 ${g.cardCount} 张卡的卡号与明细`"
@@ -80,7 +80,7 @@
               </el-button>
               <el-button
                 type="success"
-                size="large"
+                size="small"
                 :aria-label="`为 ${g.primaryName || g.phone} 加办一张新会员卡`"
                 @click="openCreateForPhone(g.phone)"
               >
@@ -149,37 +149,37 @@
               <div class="card-actions" role="group" :aria-label="`卡 ${c.cardNo} 操作`">
                 <el-button
                   type="primary"
-                  size="large"
+                  size="small"
                   :disabled="!c.isActive"
                   :aria-label="`为卡 ${c.cardNo} 充值，当前余额 ${yuanReadable(c.balance)}`"
                   @click="openRecharge(c)"
                 >充值</el-button>
                 <el-button
-                  size="large"
+                  size="small"
                   :aria-label="`查看卡 ${c.cardNo} 的充值与消费流水`"
                   @click="openHistory(c)"
                 >流水</el-button>
                 <el-button
-                  size="large"
+                  size="small"
                   :aria-label="`编辑卡 ${c.cardNo} 的会员资料`"
                   @click="openEdit(c)"
                 >编辑</el-button>
                 <el-button
                   type="warning"
-                  size="large"
+                  size="small"
                   :disabled="!c.isActive || c.balance <= 0"
                   :aria-label="`退卡 ${c.cardNo}，把余额 ${yuanReadable(c.balance)} 退还给客户`"
                   @click="openRefund(c)"
                 >退卡</el-button>
                 <el-button
                   type="warning"
-                  size="large"
+                  size="small"
                   :disabled="!c.isActive || c.balance <= 0"
                   :aria-label="`将卡 ${c.cardNo} 的余额转赠给其他会员`"
                   @click="openTransfer(c)"
                 >转赠</el-button>
                 <el-button
-                  size="large"
+                  size="small"
                   :aria-label="`查看卡 ${c.cardNo} 的引荐记录`"
                   @click="openReferrals(c)"
                 >引荐</el-button>
@@ -319,13 +319,13 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="实收金额">
-              <strong style="color: #e6a23c; font-size: 16px">¥{{ chargeAmount.toFixed(2) }}</strong>
+              <strong>¥{{ chargeAmount.toFixed(2) }}</strong>
               <span class="muted" style="margin-left: 8px">× {{ (form.discount * 10).toFixed(1) }} 折</span>
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="实充金额">
-              <strong style="color: #67c23a; font-size: 16px">¥{{ creditAmount.toFixed(2) }}</strong>
+              <strong>¥{{ creditAmount.toFixed(2) }}</strong>
               <span class="muted" style="margin-left: 10px">
                 充值金额 + 赠送 ¥{{ (selectedCreateType.bonusAmount ?? 0).toFixed(2) }} = 卡内余额
               </span>
@@ -346,13 +346,13 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="实充次数">
-              <strong style="color: #67c23a; font-size: 16px">{{ creditCount }} 次</strong>
+              <strong>{{ creditCount }} 次</strong>
               <span class="muted" style="margin-left: 8px">含赠送 {{ selectedCreateType.bonusCount ?? 0 }} 次</span>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="充值金额">
-              <strong style="font-size: 16px">¥{{ countFaceAmount.toFixed(2) }}</strong>
+              <strong>¥{{ countFaceAmount.toFixed(2) }}</strong>
               <span class="muted" style="margin-left: 8px">
                 <template v-if="boundService">{{ form.count }} 次 × ¥{{ boundUnitPrice.toFixed(2) }}</template>
                 <template v-else>未配置会员价</template>
@@ -361,7 +361,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="实收金额">
-              <strong style="color: #e6a23c; font-size: 16px">¥{{ countChargeAmount.toFixed(2) }}</strong>
+              <strong>¥{{ countChargeAmount.toFixed(2) }}</strong>
               <span class="muted" style="margin-left: 8px">× {{ (form.discount * 10).toFixed(1) }} 折</span>
             </el-form-item>
           </el-col>
@@ -459,11 +459,11 @@
             </span>
           </el-form-item>
           <el-form-item label="实充次数">
-            <strong style="color: #67c23a; font-size:16px">{{ rechargeCreditCount }} 次</strong>
+            <strong>{{ rechargeCreditCount }} 次</strong>
             <span class="muted" style="margin-left:8px">充值次数 + 赠送 {{ rechargeType.bonusCount ?? 0 }} 次 = 卡内可用次数</span>
           </el-form-item>
           <el-form-item label="充值金额">
-            <strong style="font-size:16px">¥{{ rechargeCountFaceAmount.toFixed(2) }}</strong>
+            <strong>¥{{ rechargeCountFaceAmount.toFixed(2) }}</strong>
             <span class="muted" style="margin-left:8px">
               <template v-if="rechargeBoundService">
                 {{ rcForm.count }} 次 × 会员价 ¥{{ rechargeBoundUnitPrice.toFixed(2) }}（{{ rechargeBoundService.name }}）
@@ -472,7 +472,7 @@
             </span>
           </el-form-item>
           <el-form-item label="实收金额">
-            <strong style="color:#e6a23c; font-size:16px">¥{{ rechargeCountChargeAmount.toFixed(2) }}</strong>
+            <strong>¥{{ rechargeCountChargeAmount.toFixed(2) }}</strong>
             <span class="muted" style="margin-left:8px">
               充值金额 × {{ ((rechargeType.discount ?? 1) * 10).toFixed(1) }} 折 = 客户实付
             </span>
@@ -503,13 +503,13 @@
           </el-form-item>
           <template v-if="rechargeType">
             <el-form-item label="实收金额">
-              <strong style="color:#e6a23c; font-size:16px">¥{{ rechargeChargeAmount.toFixed(2) }}</strong>
+              <strong>¥{{ rechargeChargeAmount.toFixed(2) }}</strong>
               <span class="muted" style="margin-left:8px">
                 充值金额 × {{ ((rechargeType.discount ?? 1) * 10).toFixed(1) }} 折 = 客户实付
               </span>
             </el-form-item>
             <el-form-item label="实充金额">
-              <strong style="color:#67c23a; font-size:16px">¥{{ rechargeCreditAmount.toFixed(2) }}</strong>
+              <strong>¥{{ rechargeCreditAmount.toFixed(2) }}</strong>
               <span class="muted" style="margin-left:8px">
                 充值金额 + 赠送 ¥{{ (rechargeType.bonusAmount ?? 0).toFixed(2) }} = 卡内余额
               </span>
@@ -609,7 +609,7 @@
       </template>
     </el-dialog>
 
-    <el-drawer v-model="historyOpen" title="会员流水" size="640px">
+    <el-drawer v-model="historyOpen" title="会员流水" size="880px">
       <el-tabs v-if="historyTarget" v-model="historyTab">
         <el-tab-pane label="资金流水" name="recharge">
           <el-table :data="rechargeList" size="small">
@@ -1510,61 +1510,59 @@ onMounted(async () => {
 .lock-tip { font-size: 12px; margin: -8px 0 8px 100px; }
 .member-form :deep(.el-input-number) { width: 100%; }
 
-/* —— 会员列表：盲人友好的卡片式布局 —— */
-/* 字号、间距、对比都比表格大一档；每张卡是独立的可聚焦区域，便于读屏跳读 */
-.member-list { margin-top: 16px; display: flex; flex-direction: column; gap: 16px; min-height: 120px; }
-.empty-tip { text-align: center; color: var(--el-text-color-secondary); padding: 48px 0; font-size: 16px; }
+/* —— 会员列表：卡片布局 ——
+   字号 / 颜色全部走 Element Plus 默认，与其他列表页一致；
+   只保留结构性属性（间距、边框、布局方向）。
+   无障碍模式由 App.vue 全局规则统一放大关键文字与留白。 */
+.member-list { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; min-height: 120px; }
+.empty-tip { text-align: center; color: var(--el-text-color-secondary); padding: 48px 0; }
 
 .member-card {
   border: 1px solid var(--el-border-color-light);
   border-radius: 8px;
   background: #fff;
-  padding: 16px 20px;
+  padding: 12px 16px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 .member-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
-  padding-bottom: 12px;
+  padding-bottom: 8px;
   border-bottom: 1px dashed var(--el-border-color-lighter);
 }
-.head-main { flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.head-line1 { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.phone { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
-.name { font-size: 18px; color: var(--el-text-color-primary); }
-.head-stats { display: flex; gap: 24px; flex-wrap: wrap; }
-.head-actions { display: flex; gap: 8px; }
+.head-main { flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.head-line1 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+/* 手机号是主键，仅用 font-weight 强调；不改字号 / 颜色 */
+.phone { font-weight: 600; }
+.head-stats { display: flex; gap: 20px; flex-wrap: wrap; }
+.head-actions { display: flex; gap: 6px; }
 
-.stat { display: inline-flex; align-items: baseline; gap: 6px; font-size: 15px; }
-.stat-label { color: var(--el-text-color-secondary); font-size: 13px; }
-.stat-val { font-size: 16px; font-weight: 600; color: var(--el-text-color-primary); }
-.stat-val.money { color: #d9534f; font-size: 18px; }
+.stat { display: inline-flex; align-items: baseline; gap: 6px; }
+.stat-label { color: var(--el-text-color-secondary); }
+.stat-val { font-weight: 600; }
 
-.card-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.card-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .card-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 6px;
   background: #fafbfc;
 }
 .card-row.closed { background: #f5f5f5; opacity: 0.85; }
-.card-row.closed .card-no { color: #999; text-decoration: line-through; }
-.card-info { flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.card-line1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 16px; }
+.card-row.closed .card-no { text-decoration: line-through; color: var(--el-text-color-secondary); }
+.card-info { flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.card-line1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .card-no { font-weight: 600; }
-.card-stats { display: flex; gap: 20px; flex-wrap: wrap; }
-.card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-/* 主操作按钮稍大，确保点击/键盘焦点都好命中 */
-.card-actions :deep(.el-button) { min-width: 80px; font-size: 15px; }
-.head-actions :deep(.el-button) { font-size: 15px; }
+.card-stats { display: flex; gap: 16px; flex-wrap: wrap; }
+.card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* 文本+颜色双重传达状态（盲人无障碍约定：不靠纯颜色） */
 .badge {

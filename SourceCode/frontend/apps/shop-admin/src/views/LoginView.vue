@@ -1,5 +1,21 @@
 <template>
   <div class="login-bg">
+    <div
+      class="a11y-bar"
+      role="group"
+      aria-label="无障碍模式切换"
+    >
+      <span class="a11y-bar-label" aria-hidden="true">显示模式</span>
+      <el-radio-group
+        :model-value="prefs.a11yMode"
+        size="large"
+        aria-label="选择显示模式，无障碍模式会放大字号、加粗焦点、强化读屏支持"
+        @change="(v: string) => prefs.setA11yMode(v as 'normal' | 'a11y')"
+      >
+        <el-radio-button value="normal" aria-label="正常模式">正常模式</el-radio-button>
+        <el-radio-button value="a11y" aria-label="无障碍模式（盲人友好）">无障碍模式</el-radio-button>
+      </el-radio-group>
+    </div>
     <el-card class="login-card">
       <h1>按摩店管理系统</h1>
       <p class="subtitle">店主 / 店长 / 收银 / 技师 共用登录入口（手机号 + 密码）</p>
@@ -37,6 +53,9 @@ import { Lock, User } from '@element-plus/icons-vue';
 import { authApi } from '@/api/modules';
 import { useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
+import { usePrefsStore } from '@/stores/prefs';
+
+const prefs = usePrefsStore();
 
 const router = useRouter();
 const route = useRoute();
@@ -82,7 +101,20 @@ async function submit() {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+  position: relative;
 }
+.a11y-bar {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.a11y-bar-label { font-size: 13px; color: #2d6a4f; font-weight: 600; }
 .login-card {
   width: 380px;
   padding: 16px 8px;

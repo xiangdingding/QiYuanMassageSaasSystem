@@ -127,6 +127,15 @@
                                   SelectionChanged="StoreCombo_SelectionChanged"
                                   AutomationProperties.Name="切换门店"
                                   Visibility="{Binding Context.Stores.Count, Converter={StaticResource CountToVisible}, FallbackValue=Collapsed}" />
+
+                        <CheckBox x:Name="HeaderA11yToggle"
+                                  Content="无障碍模式"
+                                  VerticalAlignment="Center" Margin="12,0,0,0"
+                                  FontSize="13"
+                                  Checked="HeaderA11yToggle_Changed"
+                                  Unchecked="HeaderA11yToggle_Changed"
+                                  AutomationProperties.Name="无障碍模式开关"
+                                  AutomationProperties.HelpText="勾选切换到放大字号、加粗焦点的无障碍显示" />
                     </StackPanel>
                 </DockPanel>
             </Border>

@@ -69,10 +69,12 @@ import dayjs from 'dayjs';
 import { queueApi, staffApi } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
 import { useAuthStore } from '@/stores/auth';
+import { useAnnouncer } from '@/composables/useAnnouncer';
 import type { QueueRow, Staff } from '@/api/types';
 
 const appStore = useAppStore();
 const auth = useAuthStore();
+const announcer = useAnnouncer();
 
 const rows = ref<QueueRow[]>([]);
 const loading = ref(false);
@@ -129,6 +131,7 @@ async function callNext() {
   const result = await queueApi.callNext(appStore.activeStoreId);
   if (!result.technicianId) {
     ElMessage.warning('没有在岗的技师');
+    announcer.speak('目前无在岗技师');
     lastCalled.value = null;
   } else {
     lastCalled.value = {
@@ -136,6 +139,9 @@ async function callNext() {
       employeeNo: result.employeeNo ?? null
     };
     ElMessage.success(`已叫 ${result.employeeNo ?? ''} 号 · ${result.technicianName ?? ''}`);
+    // 叫号广播：连读两遍，让休息区盲人技师都能听清
+    const noTxt = result.employeeNo != null ? `${result.employeeNo} 号` : '';
+    announcer.speak(`请 ${noTxt}，${result.technicianName ?? ''} 技师上钟`, 2);
     await reload();
   }
 }
@@ -152,6 +158,8 @@ let timer: number | null = null;
 onMounted(async () => {
   await appStore.loadStores();
   await reload();
+  // 浏览器 voices 异步加载，先预热避免第一次叫号无声
+  announcer.prewarm();
   timer = window.setInterval(reload, 15000);
 });
 onUnmounted(() => {

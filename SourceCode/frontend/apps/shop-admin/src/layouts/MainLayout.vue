@@ -61,6 +61,9 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">个人设置</el-dropdown-item>
+                <el-dropdown-item command="toggleA11y" :aria-label="prefs.isA11y ? '关闭无障碍模式，回到正常显示' : '切换到无障碍模式（字号放大、焦点加粗、读屏优化）'">
+                  {{ prefs.isA11y ? '关闭无障碍模式' : '开启无障碍模式' }}
+                </el-dropdown-item>
                 <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -106,6 +109,7 @@ import {
 } from '@element-plus/icons-vue';
 import { canSee, useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
+import { usePrefsStore } from '@/stores/prefs';
 import { subscriptionsApi } from '@/api/modules';
 import type { UserRole } from '@/api/types';
 import ProfileDialog from '@/views/components/ProfileDialog.vue';
@@ -116,6 +120,7 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const appStore = useAppStore();
+const prefs = usePrefsStore();
 
 const subStore = reactive<{ daysToExpire: number | null; expired: boolean; status: string | null }>({
   daysToExpire: null,
@@ -174,6 +179,8 @@ function onCommand(cmd: string) {
     router.replace('/login');
   } else if (cmd === 'profile') {
     profileVisible.value = true;
+  } else if (cmd === 'toggleA11y') {
+    prefs.toggle();
   }
 }
 
