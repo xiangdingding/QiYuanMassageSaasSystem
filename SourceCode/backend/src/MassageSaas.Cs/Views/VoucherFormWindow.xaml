@@ -34,34 +34,52 @@
         </ComboBox>
 
         <TextBlock Grid.Row="2" Text="券码" Margin="0,0,0,4" />
-        <TextBox Grid.Row="3" x:Name="CodeBox" Padding="6" Margin="0,0,0,10" />
+        <Grid Grid.Row="3" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox Grid.Column="0" x:Name="CodeBox" Padding="6"
+                     AutomationProperties.Name="券码"
+                     AutomationProperties.HelpText="可手动录入团购券码，或点右侧生成按钮自动生成店内券码" />
+            <Button Grid.Column="1" Margin="8,0,0,0" Padding="14,4" Content="生成"
+                    Click="Generate_Click"
+                    AutomationProperties.Name="按当前类型生成无歧义字符的券码"
+                    AutomationProperties.HelpText="按当前选择的券类型生成 SC 或 GB 前缀的随机券码" />
+        </Grid>
 
         <TextBlock Grid.Row="4" Text="标题" Margin="0,0,0,4" />
         <TextBox Grid.Row="5" x:Name="TitleBox" Padding="6" Margin="0,0,0,10" />
 
-        <Grid Grid.Row="6" Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="12" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="面值" Margin="0,0,0,4" />
-                <TextBox x:Name="FaceBox" Padding="6" Text="0" />
-            </StackPanel>
-            <StackPanel Grid.Column="2">
-                <TextBlock Text="最低消费" Margin="0,0,0,4" />
-                <TextBox x:Name="MinBox" Padding="6" Text="0" />
-            </StackPanel>
-        </Grid>
+        <!-- 抵扣方式互斥：满减面值 / 折扣率 二选一 -->
+        <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="抵扣方式：" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <RadioButton x:Name="ModeFaceRadio" Content="满减面值" GroupName="DiscountMode" IsChecked="True"
+                         VerticalAlignment="Center" Margin="0,0,12,0"
+                         AutomationProperties.Name="按满减面值抵扣" />
+            <RadioButton x:Name="ModePercentRadio" Content="折扣率" GroupName="DiscountMode"
+                         VerticalAlignment="Center"
+                         AutomationProperties.Name="按折扣率抵扣" />
+        </StackPanel>
 
-        <TextBlock Grid.Row="8" Text="折扣百分比（可空，如 88 表示 8.8 折）" Margin="0,0,0,4" />
-        <TextBox Grid.Row="9" x:Name="DiscountBox" Padding="6" Margin="0,0,0,10" />
+        <StackPanel Grid.Row="7" Margin="0,0,0,10"
+                    Visibility="{Binding ElementName=ModeFaceRadio, Path=IsChecked, Converter={StaticResource BoolToVisible}}">
+            <TextBlock Text="面值（元，结账时直接抵扣此金额）" Margin="0,0,0,4" />
+            <TextBox x:Name="FaceBox" Padding="6" Text="0" />
+        </StackPanel>
+        <StackPanel Grid.Row="8" Margin="0,0,0,10"
+                    Visibility="{Binding ElementName=ModePercentRadio, Path=IsChecked, Converter={StaticResource BoolToVisible}}">
+            <TextBlock Text="折扣率（0.9 表示 9 折，0-1 之间）" Margin="0,0,0,4" />
+            <TextBox x:Name="DiscountBox" Padding="6" Text="0" />
+        </StackPanel>
 
-        <TextBlock Grid.Row="10" Text="来源平台（可空，如 美团）" Margin="0,0,0,4" />
-        <TextBox Grid.Row="11" x:Name="PlatformBox" Padding="6" Margin="0,0,0,10" />
+        <TextBlock Grid.Row="9" Text="最低订单额（元，订单需达到才能用）" Margin="0,0,0,4" />
+        <TextBox Grid.Row="10" x:Name="MinBox" Padding="6" Text="0" Margin="0,0,0,10" />
 
-        <Grid Grid.Row="12" Margin="0,0,0,10">
+        <TextBlock Grid.Row="11" Text="来源平台（可空，如 美团）" Margin="0,0,0,4" />
+        <TextBox Grid.Row="12" x:Name="PlatformBox" Padding="6" Margin="0,0,0,10" />
+
+        <Grid Grid.Row="13" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="12" />

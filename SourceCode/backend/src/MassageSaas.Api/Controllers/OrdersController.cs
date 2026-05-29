@@ -356,6 +356,20 @@ public class OrdersController : ControllerBase
             order.Member.TotalConsumed -= order.PaidAmount;
             if (order.Member.TotalConsumed < 0) order.Member.TotalConsumed = 0;
         }
+        // 反结账时把券回滚到 Active，并清掉订单上的绑定。否则券会永远停留在 Redeemed,
+        // 且 RedeemedOrderId 指向已撤销订单。GroupBuy 在外部平台已核销也一并回滚 —— 单店反
+        // 结账频率低，店端再次核销同一码相当于"复用合法 IOU"；外部已核销若不允复用，由收银员手工跟外部平台对账即可。
+        if (order.VoucherId.HasValue)
+        {
+            var voucher = await _db.Vouchers.FirstOrDefaultAsync(v => v.Id == order.VoucherId.Value, ct);
+            if (voucher is not null && voucher.RedeemedOrderId == order.Id)
+            {
+                voucher.Status = VoucherStatus.Active;
+                voucher.RedeemedAt = null;
+                voucher.RedeemedOrderId = null;
+            }
+            order.VoucherId = null;
+        }
         foreach (var it in order.Items) it.CommissionAmount = 0m;
         order.PaidAmount = 0m;
         order.DiscountAmount = 0m;

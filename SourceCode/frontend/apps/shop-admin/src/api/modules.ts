@@ -410,12 +410,34 @@ export interface VoucherDto {
 }
 
 export const vouchersApi = {
-  list: (params?: { status?: string; keyword?: string }) =>
-    http().get<VoucherDto[]>('/vouchers', { params }).then((r) => r.data),
+  list: (params?: { status?: string; keyword?: string; page?: number; pageSize?: number }) =>
+    http().get<{ items: VoucherDto[]; total: number; page: number; pageSize: number }>('/vouchers', { params }).then((r) => r.data),
   create: (body: Partial<VoucherDto>) => http().post<VoucherDto>('/vouchers', body).then((r) => r.data),
+  /** 批量生成：服务端按 SC/GB 前缀生成 N 个无歧义码，返回 codes 数组 */
+  batch: (body: {
+    kind: string; count: number; title: string;
+    faceValue: number; minOrderAmount: number; discountPercent: number | null;
+    validFrom: string | null; expiresAt: string | null;
+    platform: string | null; remark: string | null;
+  }) => http().post<{ created: number; codes: string[] }>('/vouchers/batch', body).then((r) => r.data),
+  /** 收银台 redeem 之前预览：按 code 精确取券详情，不改状态 */
+  byCode: (code: string) =>
+    http().get<VoucherDto>(`/vouchers/by-code/${encodeURIComponent(code)}`).then((r) => r.data),
   redeem: (body: { code: string; orderId: number }) =>
     http().post<VoucherDto>('/vouchers/redeem', body).then((r) => r.data),
-  cancel: (id: number) => http().post(`/vouchers/${id}/cancel`)
+  cancel: (id: number) => http().post(`/vouchers/${id}/cancel`),
+  /** 批量作废：仅对 Active 生效；返回 { affected, skipped: [{ id, code, status, reason }] } */
+  bulkCancel: (ids: number[]) =>
+    http().post<{
+      affected: number;
+      skipped: { id: number; code: string | null; status: string; reason: string }[];
+    }>('/vouchers/bulk-cancel', { ids }).then((r) => r.data),
+  /** 批量删除（物理）：仅对 Cancelled 生效；其它状态会被跳过 */
+  bulkDelete: (ids: number[]) =>
+    http().post<{
+      affected: number;
+      skipped: { id: number; code: string | null; status: string; reason: string }[];
+    }>('/vouchers/bulk-delete', { ids }).then((r) => r.data)
 };
 
 export interface InventoryItemDto {

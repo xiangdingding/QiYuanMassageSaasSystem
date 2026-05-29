@@ -173,6 +173,50 @@
 
                 <Border Grid.Row="4" Padding="0,8,0,8" BorderBrush="#E5E7EB" BorderThickness="0,1,0,1">
                     <StackPanel>
+                        <!-- 优惠券：未应用→输入区；已应用→展示券码+抵扣+移除按钮 -->
+                        <Grid Margin="0,0,0,6" Visibility="{Binding AppliedVoucher, Converter={StaticResource InverseNullToCollapsed}}"
+                              AutomationProperties.Name="优惠券">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="60" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="优惠券" VerticalAlignment="Center" FontSize="13" Foreground="#666" />
+                            <TextBox Grid.Column="1" Text="{Binding VoucherCode, UpdateSourceTrigger=PropertyChanged}"
+                                     VerticalContentAlignment="Center" Padding="6,0"
+                                     AutomationProperties.Name="优惠券券码"
+                                     AutomationProperties.HelpText="录入券码后按应用">
+                                <TextBox.InputBindings>
+                                    <KeyBinding Key="Enter" Command="{Binding ApplyVoucherCommand}" />
+                                </TextBox.InputBindings>
+                            </TextBox>
+                            <Button Grid.Column="2" Margin="6,0,0,0" Padding="10,4"
+                                    Content="应用"
+                                    Command="{Binding ApplyVoucherCommand}"
+                                    IsEnabled="{Binding VoucherApplying, Converter={StaticResource BoolInverse}}"
+                                    AutomationProperties.Name="应用优惠券" />
+                        </Grid>
+                        <Grid Margin="0,0,0,6" Visibility="{Binding AppliedVoucher, Converter={StaticResource NullToCollapsed}}"
+                              AutomationProperties.Name="已应用优惠券">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="60" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="优惠券" VerticalAlignment="Center" FontSize="13" Foreground="#666" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Background="#E6F4EA" CornerRadius="3" Padding="6,2" Margin="0,0,6,0">
+                                    <TextBlock Text="{Binding AppliedVoucher.Code}" Foreground="#2D6A4F" FontSize="12" />
+                                </Border>
+                                <TextBlock Text="{Binding AppliedVoucher.Title}" Foreground="#444" FontSize="12"
+                                           TextTrimming="CharacterEllipsis" MaxWidth="140" />
+                            </StackPanel>
+                            <Button Grid.Column="2" Margin="6,0,0,0" Padding="10,4"
+                                    Content="移除" Background="Transparent" BorderBrush="#D9534F" Foreground="#D9534F"
+                                    Command="{Binding RemoveVoucherCommand}"
+                                    AutomationProperties.Name="移除优惠券" />
+                        </Grid>
+
                         <DockPanel>
                             <TextBlock DockPanel.Dock="Left" Text="合计" FontSize="13" />
                             <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right">
@@ -186,6 +230,14 @@
                             <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" Foreground="#888">
                                 <Run Text="-¥" />
                                 <Run Text="{Binding MemberDiscount, StringFormat='F2'}" />
+                            </TextBlock>
+                        </DockPanel>
+                        <DockPanel Margin="0,4,0,0"
+                                   Visibility="{Binding VoucherDiscount, Converter={StaticResource DecimalToVisible}}">
+                            <TextBlock DockPanel.Dock="Left" Text="券抵扣" FontSize="12" Foreground="#2D6A4F" />
+                            <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" Foreground="#2D6A4F">
+                                <Run Text="-¥" />
+                                <Run Text="{Binding VoucherDiscount, StringFormat='F2'}" />
                             </TextBlock>
                         </DockPanel>
                         <DockPanel Margin="0,4,0,0">

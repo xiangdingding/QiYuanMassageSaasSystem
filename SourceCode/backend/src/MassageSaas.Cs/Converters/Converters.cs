@@ -17,6 +17,20 @@ public class NullToCollapsedConverter : IValueConverter
         => throw new NotImplementedException();
 }
 
+/// <summary>NullToCollapsed 的反向：值为 null/空时可见，有值时折叠。用于"未应用券→显示输入区"。</summary>
+public class InverseNullToCollapsedConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is null) return Visibility.Visible;
+        if (value is string s && string.IsNullOrEmpty(s)) return Visibility.Visible;
+        return Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
 public class CountToVisibleConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

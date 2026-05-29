@@ -319,6 +319,43 @@
         </div>
 
         <div class="cart-footer" role="group" aria-label="结算操作">
+          <div class="voucher-row" role="group" aria-label="优惠券">
+            <span class="voucher-label">优惠券</span>
+            <template v-if="!appliedVoucher">
+              <el-input
+                v-model="voucherCodeInput"
+                placeholder="录入券码（团购券/店内券）"
+                size="default"
+                clearable
+                style="flex: 1; min-width: 0"
+                aria-label="优惠券券码，回车校验后应用"
+                @keyup.enter="applyVoucher"
+              />
+              <el-button
+                size="default"
+                :loading="voucherApplying"
+                :disabled="!voucherCodeInput.trim() || cart.length === 0"
+                aria-label="校验并应用优惠券"
+                @click="applyVoucher"
+              >应用</el-button>
+            </template>
+            <template v-else>
+              <span
+                class="voucher-applied"
+                :aria-label="`已应用券 ${appliedVoucher.title}，抵扣 ${yuanReadable(voucherDiscount)}`"
+              >
+                <el-tag type="success" size="small">{{ appliedVoucher.code }}</el-tag>
+                <span class="voucher-title">{{ appliedVoucher.title }}</span>
+                <span class="voucher-cut">-¥{{ voucherDiscount.toFixed(2) }}</span>
+              </span>
+              <el-button
+                link
+                type="danger"
+                aria-label="移除已应用的优惠券"
+                @click="removeVoucher"
+              >移除</el-button>
+            </template>
+          </div>
           <div class="totals" role="group" aria-label="订单金额汇总">
             <div class="total-line">
               <span>合计</span>
@@ -326,6 +363,13 @@
                 class="total-amount"
                 :aria-label="`合计 ${yuanReadable(total)}`"
               >¥ {{ total.toFixed(2) }}</span>
+            </div>
+            <div v-if="voucherDiscount > 0" class="total-line">
+              <span>券抵扣</span>
+              <span
+                class="total-amount voucher-cut"
+                :aria-label="`券抵扣 ${yuanReadable(voucherDiscount)}`"
+              >- ¥ {{ voucherDiscount.toFixed(2) }}</span>
             </div>
             <div class="total-line">
               <span>应收</span>
@@ -372,6 +416,8 @@
       :has-member="!!primaryMember"
       :member-balance="selectedBalance"
       :loading="checkingOut"
+      :voucher-code="appliedVoucher?.code ?? null"
+      :voucher-discount="voucherDiscount"
       @submit="doCheckout"
     />
 
@@ -501,7 +547,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 defineOptions({ name: 'PosView' });
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Search, User } from '@element-plus/icons-vue';
-import { membersApi, ordersApi, roomsApi, servicesApi, staffApi, timedRoomsApi, type TimedRoomSessionDto } from '@/api/modules';
+import { membersApi, ordersApi, roomsApi, servicesApi, staffApi, timedRoomsApi, vouchersApi, type TimedRoomSessionDto, type VoucherDto } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
 import { useShortcuts } from '@/composables/useShortcuts';
 import type { Member, MemberPhoneGroup, Order, OrderItem, OrderRoomCharge, Room, ServiceItem, Staff } from '@/api/types';
@@ -866,8 +912,28 @@ const total = computed(() =>
   cart.reduce((sum, c) => sum + c.unitPrice * (c.kind === 'service' ? c.quantity : 1), 0)
 );
 
-// 折扣已在充值/开卡时兑现（按"现金价 × 折扣"收的现金），结账时按服务的会员价/标准价直接结算
-const payable = computed(() => total.value);
+/// 收银员预先扫码/录入的优惠券；本地仅做"预览 + 校验"，真正核销在 doCheckout 创建订单后才发起。
+/// 选中后用于计算 voucherDiscount 并显示在结账区。
+const voucherCodeInput = ref('');
+const appliedVoucher = ref<VoucherDto | null>(null);
+const voucherApplying = ref(false);
+
+/// 券抵扣：折扣率优先（与后端 OrdersController checkout 行为一致），其次满减面值；
+/// 折扣不会超过订单合计。
+const voucherDiscount = computed(() => {
+  const v = appliedVoucher.value;
+  if (!v) return 0;
+  const t = total.value;
+  if (t <= 0) return 0;
+  const raw = v.discountPercent != null && v.discountPercent > 0
+    ? Math.round(t * (1 - v.discountPercent) * 100) / 100
+    : v.faceValue;
+  return Math.min(raw, t);
+});
+
+// 折扣已在充值/开卡时兑现（按"现金价 × 折扣"收的现金），结账时按服务的会员价/标准价直接结算；
+// 券抵扣是独立维度，从合计中直接减出
+const payable = computed(() => Math.max(0, total.value - voucherDiscount.value));
 
 const canCheckout = computed(() => {
   if (cart.length === 0) return false;
@@ -1030,6 +1096,46 @@ async function lookupMember() {
   );
 }
 
+/// 输券码后从后端拉详情、做本地预校验：状态可用 / 在有效期内 / 满最低额。
+/// 真正核销在 doCheckout 创建订单后调用 vouchersApi.redeem 落库。
+async function applyVoucher() {
+  const code = voucherCodeInput.value.trim();
+  if (!code) {
+    ElMessage.warning('请填写券码');
+    return;
+  }
+  voucherApplying.value = true;
+  try {
+    const v = await vouchersApi.byCode(code);
+    if (v.status !== 'Active') {
+      ElMessage.error(v.status === 'Redeemed' ? '该券已被核销' :
+        v.status === 'Expired' ? '该券已过期' : '该券已作废');
+      return;
+    }
+    const now = Date.now();
+    if (v.validFrom && now < new Date(v.validFrom).getTime()) {
+      ElMessage.error('该券尚未生效'); return;
+    }
+    if (v.expiresAt && now > new Date(v.expiresAt).getTime()) {
+      ElMessage.error('该券已过期'); return;
+    }
+    if (v.minOrderAmount > 0 && total.value < v.minOrderAmount) {
+      ElMessage.error(`订单不足 ¥${v.minOrderAmount.toFixed(2)}，未达到券使用门槛`); return;
+    }
+    appliedVoucher.value = v;
+    ElMessage.success(`券「${v.title}」已应用，抵扣 ¥${voucherDiscount.value.toFixed(2)}`);
+  } catch {
+    /* http 拦截器已弹 404/InvalidCode 错误 */
+  } finally {
+    voucherApplying.value = false;
+  }
+}
+
+function removeVoucher() {
+  appliedVoucher.value = null;
+  voucherCodeInput.value = '';
+}
+
 function openCheckout() {
   if (cart.length === 0) { ElMessage.warning('请先添加项目或计时房费'); return; }
   if (!cart.every((c) => c.kind !== 'service' || c.technicianId != null)) {
@@ -1080,6 +1186,16 @@ async function doCheckout(payload: { payMethod: string; paidAmount: number | nul
       remark: null,
       roomSessionIds: roomCharges.map((r) => r.sessionId)
     });
+    // 如果先前已应用券，订单落库后立刻 redeem 把券挂上去；redeem 失败就中断结账，
+    // 让收银员决定是去掉券再结、还是修订单。订单已经存在但未结账，无需回滚。
+    if (appliedVoucher.value) {
+      try {
+        await vouchersApi.redeem({ code: appliedVoucher.value.code, orderId: created.id });
+      } catch {
+        ElMessage.error('优惠券核销失败，订单已创建但未结账，可在订单流水里继续处理');
+        return;
+      }
+    }
     // 合并结算：主卡之外勾选的卡走 secondaryMemberIds（仅 MemberCard 支付时后端会用）
     const secondary = selectedCardIds.value.slice(1);
     const checkedOrder = await ordersApi.checkout(created.id, {
@@ -1109,6 +1225,8 @@ async function resetAll() {
   clearMember();
   mode.value = 'member';
   lastOrder.value = null;
+  appliedVoucher.value = null;
+  voucherCodeInput.value = '';
   // 结账后刷新计时 session（已结算的 session 会消失）
   reloadTimedSessions();
 }
@@ -1365,6 +1483,21 @@ useShortcuts({
 .total-line { display: flex; justify-content: space-between; padding: 4px 0; }
 .total-line.muted { color: var(--el-text-color-secondary); font-size: 12px; }
 .total-amount { font-size: 18px; font-weight: 700; color: #d9534f; }
+.voucher-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0 10px;
+  border-bottom: 1px dashed var(--el-border-color-lighter);
+  margin-bottom: 6px;
+}
+.voucher-label { flex: 0 0 56px; font-size: 13px; color: var(--el-text-color-regular); }
+.voucher-applied { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow: hidden; }
+.voucher-title {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 13px; color: var(--el-text-color-regular);
+}
+.voucher-cut { color: #2D6A4F; font-weight: 600; }
 .hint { font-size: 12px; color: var(--el-text-color-secondary); margin-top: 6px; min-height: 18px; }
 .hint-danger { color: #d9534f; font-weight: 600; }
 </style>

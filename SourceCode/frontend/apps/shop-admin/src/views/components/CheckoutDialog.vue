@@ -20,6 +20,15 @@
           （合计 ¥{{ total.toFixed(2) }}）
         </span>
       </el-form-item>
+      <el-form-item v-if="voucherDiscount > 0" label="优惠券">
+        <span
+          class="voucher-cut"
+          :aria-label="`优惠券 ${voucherCode ?? ''} 抵扣 ${yuanReadable(voucherDiscount)}`"
+        >
+          <el-tag v-if="voucherCode" type="success" size="small">{{ voucherCode }}</el-tag>
+          <span style="margin-left:6px">-¥ {{ voucherDiscount.toFixed(2) }}</span>
+        </span>
+      </el-form-item>
       <el-form-item label="支付方式">
         <el-radio-group
           v-model="form.payMethod"
@@ -99,14 +108,19 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   modelValue: boolean;
   total: number;
   payable: number;
   hasMember: boolean;
   memberBalance: number;
   loading: boolean;
-}>();
+  voucherCode?: string | null;
+  voucherDiscount?: number;
+}>(), {
+  voucherCode: null,
+  voucherDiscount: 0
+});
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void;
@@ -209,4 +223,5 @@ function submit() {
 .payable { font-size: 24px; font-weight: 700; color: #d9534f; }
 .muted { color: var(--el-text-color-secondary); font-size: 13px; }
 .insufficient { color: #f56c6c; font-weight: 700; font-size: 18px; }
+.voucher-cut { color: #2D6A4F; font-weight: 600; display: inline-flex; align-items: center; }
 </style>

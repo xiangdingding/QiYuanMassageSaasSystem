@@ -8,6 +8,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <conv:NullToCollapsedConverter x:Key="NullToCollapsed" />
+            <conv:InverseNullToCollapsedConverter x:Key="InverseNullToCollapsed" />
             <conv:CountToVisibleConverter x:Key="CountToVisible" />
             <conv:BoolInverseConverter x:Key="BoolInverse" />
             <conv:BoolToVisibilityConverter x:Key="BoolToVisible" />

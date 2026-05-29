@@ -283,18 +283,32 @@ public interface IApiClient
     Task<OrderDto> SetOrderTipAsync(long id, [Body] SetTipRequest req);
 
     [Get("/vouchers")]
-    Task<List<VoucherDto>> GetVouchersAsync(
+    Task<PagedResult<VoucherDto>> GetVouchersAsync(
         [Query] string? status = null,
-        [Query] string? keyword = null);
+        [Query] string? keyword = null,
+        [Query] int page = 1,
+        [Query] int pageSize = 20);
 
     [Post("/vouchers")]
     Task<VoucherDto> CreateVoucherAsync([Body] CreateVoucherRequest req);
+
+    [Post("/vouchers/batch")]
+    Task<BatchCreateVoucherResponse> BatchCreateVouchersAsync([Body] BatchCreateVoucherRequest req);
+
+    [Get("/vouchers/by-code/{code}")]
+    Task<VoucherDto> GetVoucherByCodeAsync(string code);
 
     [Post("/vouchers/redeem")]
     Task<VoucherDto> RedeemVoucherAsync([Body] VoucherRedeemRequest req);
 
     [Post("/vouchers/{id}/cancel")]
     Task CancelVoucherAsync(long id);
+
+    [Post("/vouchers/bulk-cancel")]
+    Task<BulkVoucherActionResponse> BulkCancelVouchersAsync([Body] BulkVoucherActionRequest req);
+
+    [Post("/vouchers/bulk-delete")]
+    Task<BulkVoucherActionResponse> BulkDeleteVouchersAsync([Body] BulkVoucherActionRequest req);
 
     [Get("/member-packages")]
     Task<List<MemberPackageDto>> GetMemberPackagesAsync(

@@ -9,6 +9,7 @@ using MassageSaas.Shared.Orders;
 using MassageSaas.Shared.Rooms;
 using MassageSaas.Shared.Services;
 using MassageSaas.Shared.Staff;
+using MassageSaas.Shared.Vouchers;
 
 namespace MassageSaas.Cs.ViewModels.Pos;
 
@@ -71,12 +72,38 @@ public partial class PosViewModel : ObservableObject
     [ObservableProperty]
     private bool isBusy;
 
+    /// <summary>收银员录入的券码（应用前的输入态）。</summary>
+    [ObservableProperty]
+    private string voucherCode = string.Empty;
+
+    /// <summary>已应用的券（仅本地预览，doCheckout 才真正核销落库）。</summary>
+    [ObservableProperty]
+    private VoucherDto? appliedVoucher;
+
+    [ObservableProperty]
+    private bool voucherApplying;
+
     public decimal Total => Cart.Sum(c => c.LineTotal);
 
     public decimal MemberDiscount =>
         ActiveMember is { Discount: < 1 } m ? Math.Round(Total * (1 - m.Discount), 2) : 0m;
 
-    public decimal Payable => Math.Max(0, Total - MemberDiscount);
+    /// <summary>
+    /// 券抵扣：折扣率优先（与后端 OrdersController.Checkout 行为一致），不会超过订单合计。
+    /// </summary>
+    public decimal VoucherDiscount
+    {
+        get
+        {
+            if (AppliedVoucher is null || Total <= 0) return 0m;
+            var raw = AppliedVoucher.DiscountPercent is > 0 and < 1
+                ? Math.Round(Total * (1m - AppliedVoucher.DiscountPercent.Value), 2)
+                : AppliedVoucher.FaceValue;
+            return Math.Min(raw, Total);
+        }
+    }
+
+    public decimal Payable => Math.Max(0, Total - MemberDiscount - VoucherDiscount);
 
     public decimal Change => PayMethod == "Cash" && CashReceived > Payable ? CashReceived - Payable : 0m;
 
@@ -221,13 +248,15 @@ public partial class PosViewModel : ObservableObject
     [RelayCommand]
     private void Clear()
     {
-        if (Cart.Count == 0 && ActiveMember is null) return;
+        if (Cart.Count == 0 && ActiveMember is null && AppliedVoucher is null) return;
         if (MessageBox.Show("确认清空当前订单？", "提示",
                 MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         Cart.Clear();
         ActiveMember = null;
         MemberKeyword = string.Empty;
         Remark = null;
+        AppliedVoucher = null;
+        VoucherCode = string.Empty;
         Recompute();
     }
 
@@ -290,6 +319,22 @@ public partial class PosViewModel : ObservableObject
                     RoomId: c.Room?.Id)).ToList(),
                 Remark: null));
 
+            // 订单已落库；如果先前应用了券，这里 redeem 把券挂上去再 checkout。
+            // redeem 失败就中断，订单留在 Pending 让收银员决定移除券或在订单流水里继续处理。
+            if (AppliedVoucher is not null)
+            {
+                try
+                {
+                    await _api.RedeemVoucherAsync(new VoucherRedeemRequest(AppliedVoucher.Code, created.Id));
+                }
+                catch (Exception ex)
+                {
+                    ErrorReporter.Show(ex);
+                    _speech.SayAsync("优惠券核销失败，订单已创建但未结账");
+                    return;
+                }
+            }
+
             var checkedOut = await _api.CheckoutAsync(created.Id, new CheckoutRequest(
                 PayMethod: PayMethod,
                 PaidAmount: PayMethod == "Cash" ? CashReceived : null,
@@ -302,6 +347,8 @@ public partial class PosViewModel : ObservableObject
             MemberKeyword = string.Empty;
             Remark = null;
             CashReceived = 0;
+            AppliedVoucher = null;
+            VoucherCode = string.Empty;
             Recompute();
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
@@ -381,9 +428,76 @@ public partial class PosViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(MemberDiscount));
+        OnPropertyChanged(nameof(VoucherDiscount));
         OnPropertyChanged(nameof(Payable));
         OnPropertyChanged(nameof(Change));
         if (PayMethod == "Cash" && CashReceived < Payable) CashReceived = Payable;
         _display.ShowAmount("应付", Payable);
+    }
+
+    partial void OnAppliedVoucherChanged(VoucherDto? value) => Recompute();
+
+    /// <summary>
+    /// 录入券码 → 拉详情 → 本地校验状态/有效期/最低额 → 暂存。CheckoutAsync 创建订单后才真正 redeem。
+    /// </summary>
+    [RelayCommand]
+    private async Task ApplyVoucherAsync()
+    {
+        var code = (VoucherCode ?? string.Empty).Trim();
+        if (string.IsNullOrEmpty(code))
+        {
+            MessageBox.Show("请填写券码", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        if (Cart.Count == 0)
+        {
+            MessageBox.Show("请先添加订单项", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        VoucherApplying = true;
+        try
+        {
+            var v = await _api.GetVoucherByCodeAsync(code);
+            if (!string.Equals(v.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            {
+                var msg = v.Status switch
+                {
+                    "Redeemed" => "该券已被核销",
+                    "Expired" => "该券已过期",
+                    "Cancelled" => "该券已作废",
+                    _ => $"该券状态不可用：{v.Status}"
+                };
+                MessageBox.Show(msg, "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                _speech.SayAsync(msg);
+                return;
+            }
+            var now = DateTime.UtcNow;
+            if (v.ValidFrom.HasValue && now < v.ValidFrom.Value)
+            {
+                MessageBox.Show("该券尚未生效", "提示");
+                return;
+            }
+            if (v.ExpiresAt.HasValue && now > v.ExpiresAt.Value)
+            {
+                MessageBox.Show("该券已过期", "提示");
+                return;
+            }
+            if (v.MinOrderAmount > 0 && Total < v.MinOrderAmount)
+            {
+                MessageBox.Show($"订单不足 ¥{v.MinOrderAmount:F2}，未达到券使用门槛", "提示");
+                return;
+            }
+            AppliedVoucher = v;
+            _speech.SayAsync($"已应用券，抵扣 {YuanToReadable(VoucherDiscount)}");
+        }
+        catch (Exception ex) { ErrorReporter.Show(ex); }
+        finally { VoucherApplying = false; }
+    }
+
+    [RelayCommand]
+    private void RemoveVoucher()
+    {
+        AppliedVoucher = null;
+        VoucherCode = string.Empty;
     }
 }

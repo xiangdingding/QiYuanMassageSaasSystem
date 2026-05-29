@@ -6,6 +6,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <DockPanel Grid.Row="0" Margin="0,0,0,12">
@@ -24,15 +25,35 @@
                         <ComboBoxItem Content="已作废" />
                     </ComboBox>
                     <Button Content="录入券" Padding="12,6" Margin="12,0,0,0" Background="#2D6A4F" Foreground="White" BorderThickness="0" Command="{Binding CreateCommand}" />
+                    <Button Content="批量生成" Padding="12,6" Margin="8,0,0,0" Command="{Binding BatchCreateCommand}"
+                            AutomationProperties.Name="批量生成同规格优惠券"
+                            AutomationProperties.HelpText="一次生成多张同规格券，服务端自动出码" />
+                    <Button Content="批量作废" Padding="12,6" Margin="8,0,0,0" Command="{Binding BulkCancelCommand}"
+                            AutomationProperties.Name="批量作废勾选的券"
+                            AutomationProperties.HelpText="只作废勾选中状态为生效中的券" />
+                    <Button Content="批量删除" Padding="12,6" Margin="8,0,0,0"
+                            Background="#D9534F" Foreground="White" BorderThickness="0"
+                            Command="{Binding BulkDeleteCommand}"
+                            AutomationProperties.Name="批量删除勾选的已作废券"
+                            AutomationProperties.HelpText="物理删除，仅对已作废券生效，不可恢复" />
                     <Button Content="刷新" Padding="12,6" Margin="8,0,0,0" Command="{Binding ReloadCommand}" />
                 </StackPanel>
             </DockPanel>
 
-            <DataGrid Grid.Row="1" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
+            <DataGrid Grid.Row="1" Margin="0,0,0,8" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
                       CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
                       HeadersVisibility="Column" GridLinesVisibility="Horizontal"
                       AlternatingRowBackground="#FAFAFA">
                 <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="选择" Width="50" CanUserResize="False" CanUserReorder="False">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
+                                          AutomationProperties.Name="勾选此券参与批量操作" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                     <DataGridTextColumn Header="券码" Binding="{Binding Code}" Width="140" />
                     <DataGridTextColumn Header="标题" Binding="{Binding Title}" Width="160" />
                     <DataGridTextColumn Header="类型" Binding="{Binding Kind}" Width="90" />
@@ -53,6 +74,27 @@
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
+
+            <DockPanel Grid.Row="2" Margin="0,4,0,0">
+                <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" Foreground="#666"
+                           Text="{Binding PageDisplay}"
+                           AutomationProperties.Name="分页状态" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <TextBlock Text="每页" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#666" />
+                    <ComboBox SelectedItem="{Binding PageSize, Mode=TwoWay}"
+                              ItemsSource="{Binding PageSizeOptions}"
+                              Width="70" Height="28"
+                              AutomationProperties.Name="每页条数" />
+                    <Button Content="上一页" Padding="10,4" Margin="8,0,0,0"
+                            Command="{Binding PrevPageAsyncCommand}"
+                            IsEnabled="{Binding CanGoPrev}"
+                            AutomationProperties.Name="上一页" />
+                    <Button Content="下一页" Padding="10,4" Margin="6,0,0,0"
+                            Command="{Binding NextPageAsyncCommand}"
+                            IsEnabled="{Binding CanGoNext}"
+                            AutomationProperties.Name="下一页" />
+                </StackPanel>
+            </DockPanel>
         </Grid>
     </Border>
 </UserControl>
