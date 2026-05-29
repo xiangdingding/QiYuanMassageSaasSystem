@@ -9,9 +9,12 @@
           format="YYYY-MM-DD"
           value-format="YYYY-MM-DD"
           :disabled-date="disableFuture"
-          @change="loadPreview"
+          @change="(v: string) => loadPreviewForDate(v)"
         />
         <el-button :icon="Refresh" @click="loadPreview">刷新</el-button>
+        <span v-if="preview && preview.dayCloseCutoffMinutes > 0" class="cutoff-hint">
+          营业日切日 {{ formatCutoff(preview.dayCloseCutoffMinutes) }}
+        </span>
       </div>
 
       <div v-if="preview" class="preview">
@@ -101,21 +104,29 @@
         </el-table-column>
         <el-table-column label="操作员" width="120" prop="operatorName" />
         <el-table-column label="备注" min-width="160" prop="remark" show-overflow-tooltip />
+        <el-table-column v-if="canRevoke" label="操作" width="100" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="danger" @click="revoke(row)">撤销</el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
 import dayjs from 'dayjs';
 import { dayClosesApi } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
+import { useAuthStore } from '@/stores/auth';
 import type { DayClose, DayClosePreview } from '@/api/types';
 
 const appStore = useAppStore();
+const authStore = useAuthStore();
+const canRevoke = computed(() => authStore.isOwner || authStore.isManager);
 const businessDate = ref(dayjs().format('YYYY-MM-DD'));
 const preview = ref<DayClosePreview | null>(null);
 const actualCash = ref(0);
@@ -135,7 +146,17 @@ function disableFuture(d: Date): boolean {
 
 async function loadPreview() {
   if (!appStore.activeStoreId) return;
-  preview.value = await dayClosesApi.preview(appStore.activeStoreId, businessDate.value);
+  // 不显式传 date：让后端按门店切日时间返回"当前业务日"；前端再把它显示出来，
+  // 避免页面跨午夜停留导致 businessDate 仍指向昨天。
+  preview.value = await dayClosesApi.preview(appStore.activeStoreId);
+  businessDate.value = dayjs(preview.value.businessDate).format('YYYY-MM-DD');
+  actualCash.value = preview.value.expectedCash;
+  remark.value = '';
+}
+
+async function loadPreviewForDate(date: string) {
+  if (!appStore.activeStoreId) return;
+  preview.value = await dayClosesApi.preview(appStore.activeStoreId, date);
   actualCash.value = preview.value.expectedCash;
   remark.value = '';
 }
@@ -171,6 +192,40 @@ async function submit() {
   }
 }
 
+async function revoke(row: DayClose) {
+  const dateLabel = dayjs(row.businessDate).format('YYYY-MM-DD');
+  const confirmed = await ElMessageBox.prompt(
+    `将撤销 ${dateLabel} 的日结记录（营业额 ¥${row.revenueTotal.toFixed(2)}）。撤销后可重新提交。请填写撤销原因：`,
+    '撤销日结',
+    {
+      confirmButtonText: '确认撤销',
+      cancelButtonText: '取消',
+      type: 'warning',
+      inputPattern: /.+/,
+      inputErrorMessage: '请填写撤销原因'
+    }
+  ).catch(() => null);
+  if (!confirmed) return;
+  try {
+    await dayClosesApi.revoke(row.id, confirmed.value);
+    ElMessage.success('已撤销');
+    await Promise.all([loadPreview(), loadHistory()]);
+  } catch {
+    /* http 已弹错 */
+  }
+}
+
+function formatCutoff(m: number): string {
+  const h = Math.floor(m / 60).toString().padStart(2, '0');
+  const mm = (m % 60).toString().padStart(2, '0');
+  return `${h}:${mm}`;
+}
+
+let refreshTimer: ReturnType<typeof setInterval> | null = null;
+function onVisibility() {
+  if (document.visibilityState === 'visible') loadPreview();
+}
+
 watch(() => appStore.activeStoreId, () => {
   loadPreview();
   loadHistory();
@@ -179,6 +234,14 @@ watch(() => appStore.activeStoreId, () => {
 onMounted(async () => {
   await appStore.loadStores();
   await Promise.all([loadPreview(), loadHistory()]);
+  document.addEventListener('visibilitychange', onVisibility);
+  // 每 5 分钟自动跟当前业务日同步一次，避免页面停留跨切日点
+  refreshTimer = setInterval(() => { loadPreview(); }, 5 * 60 * 1000);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', onVisibility);
+  if (refreshTimer) clearInterval(refreshTimer);
 });
 </script>
 
@@ -191,4 +254,5 @@ onMounted(async () => {
 .variance.ok { color: #67c23a; }
 .variance.short { color: #f56c6c; }
 .variance.over { color: #e6a23c; }
+.cutoff-hint { color: #909399; font-size: 12px; margin-left: 8px; }
 </style>

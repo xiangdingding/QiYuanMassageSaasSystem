@@ -23,7 +23,9 @@
                     <DataGridTextColumn Header="服务" Binding="{Binding ServiceName}" Width="180" />
                     <DataGridTextColumn Header="技师" Binding="{Binding TechnicianName}" Width="140" />
                     <DataGridTextColumn Header="规则类型" Binding="{Binding RuleType}" Width="110" />
-                    <DataGridTextColumn Header="数值" Binding="{Binding Amount, StringFormat='F4'}" Width="100" />
+                    <DataGridTextColumn Header="兜底金额" Binding="{Binding Amount, StringFormat='F4'}" Width="100" />
+                    <DataGridTextColumn Header="轮钟金额" Binding="{Binding RotationAmount, StringFormat='F4'}" Width="100" />
+                    <DataGridTextColumn Header="点钟金额" Binding="{Binding DesignationAmount, StringFormat='F4'}" Width="100" />
                     <DataGridTextColumn Header="优先级" Binding="{Binding Priority}" Width="80" />
                     <DataGridTextColumn Header="启用" Binding="{Binding IsActive}" Width="60" />
                     <DataGridTemplateColumn Header="操作" Width="180">

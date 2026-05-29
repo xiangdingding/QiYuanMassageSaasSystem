@@ -19,6 +19,7 @@
           @change="reload"
         />
         <div class="spacer" />
+        <el-button type="primary" @click="openCreate">登记投诉</el-button>
         <el-button :icon="Refresh" @click="reload">刷新</el-button>
       </div>
 
@@ -78,43 +79,99 @@
       />
     </el-card>
 
-    <el-card shadow="never" style="margin-top:12px">
-      <template #header>
-        <div class="ck-header">
-          <span>新增投诉</span>
-          <span class="muted">从订单流水点投诉时会自动带入订单项；这里手工输入订单项 ID 也可。</span>
-        </div>
-      </template>
-      <el-form :model="createForm" inline>
-        <el-form-item label="订单项 ID">
-          <el-input-number v-model="createForm.orderItemId" :min="1" />
+    <el-dialog v-model="createOpen" title="登记投诉" width="820px">
+      <el-form :model="createForm" label-width="100px">
+        <el-form-item label="不指定项目">
+          <el-switch v-model="createForm.anonymous" />
+          <span class="muted hint" style="margin-left: 8px">
+            打开后无需选具体订单项，仅记录文字内容（处理时只能道歉/补偿或不予处理）
+          </span>
+        </el-form-item>
+        <el-form-item label="被投诉技师" :required="createForm.anonymous ? false : true">
+          <el-select v-model="createForm.technicianId" placeholder="选择被投诉的技师" filterable clearable
+                     style="width: 260px" @change="onTechChanged">
+            <el-option v-for="t in techList" :key="t.id"
+                       :label="`${t.realName || t.username}（工号 ${t.employeeNo ?? '—'}）`" :value="t.id" />
+          </el-select>
+          <template v-if="!createForm.anonymous">
+            <el-date-picker v-model="createForm.date" type="date" format="YYYY-MM-DD" value-format="YYYY-MM-DD"
+                            :disabled-date="disableFuture" style="margin-left: 8px; width: 160px"
+                            @change="lookupItems" />
+            <el-button :loading="lookingUp" :disabled="!createForm.technicianId || !createForm.date"
+                       style="margin-left: 8px" @click="lookupItems">查询订单</el-button>
+          </template>
+        </el-form-item>
+        <el-form-item v-if="!createForm.anonymous" label="选择项目" required>
+          <div v-if="!lookedUp" class="muted hint">请先选择技师与日期，再点"查询订单"。</div>
+          <el-alert v-else-if="itemCandidates.length === 0" type="info" :closable="false" show-icon>
+            该技师在该日没有已完成的服务项目。
+          </el-alert>
+          <el-table v-else :data="itemCandidates" v-loading="lookingUp" stripe size="small"
+                    highlight-current-row max-height="260" @current-change="onPickItem">
+            <el-table-column width="50">
+              <template #default="{ row }">
+                <el-radio v-model="createForm.orderItemId" :value="row.itemId" :disabled="row.hasPendingComplaint" />
+              </template>
+            </el-table-column>
+            <el-table-column prop="orderNo" label="订单号" width="160" />
+            <el-table-column prop="serviceName" label="服务" min-width="120" />
+            <el-table-column label="完成时间" width="140">
+              <template #default="{ row }">{{ formatTime(row.completedAt) }}</template>
+            </el-table-column>
+            <el-table-column label="会员" min-width="100">
+              <template #default="{ row }">
+                <span v-if="row.memberName">{{ row.memberName }}</span>
+                <span v-else-if="row.memberCardNo">{{ row.memberCardNo }}</span>
+                <span v-else class="muted">散客</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="金额" width="90">
+              <template #default="{ row }">¥{{ row.amount.toFixed(2) }}</template>
+            </el-table-column>
+            <el-table-column label="状态" width="90">
+              <template #default="{ row }">
+                <el-tag v-if="row.hasPendingComplaint" type="warning" size="small">已投诉</el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
         </el-form-item>
         <el-form-item label="标签">
-          <el-input v-model="createForm.tags" placeholder="逗号分隔，如：态度差,力度不合适" style="width:240px" />
+          <el-input v-model="createForm.tags" placeholder="逗号分隔，如：态度差,力度不合适" />
         </el-form-item>
         <el-form-item label="描述">
-          <el-input v-model="createForm.comment" placeholder="客户原话/补充" style="width:300px" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :loading="creating" @click="submitCreate">登记投诉</el-button>
+          <el-input v-model="createForm.comment" type="textarea" :rows="3" placeholder="客户原话/补充" maxlength="500" show-word-limit />
         </el-form-item>
       </el-form>
-    </el-card>
+      <template #footer>
+        <el-button @click="createOpen = false">取消</el-button>
+        <el-button type="primary" :loading="creating" :disabled="!canSubmitCreate" @click="submitCreate">登记投诉</el-button>
+      </template>
+    </el-dialog>
 
     <el-dialog v-model="resolveOpen" :title="`处理投诉 #${resolving?.id}`" width="480px">
       <div v-if="resolving" class="resolve-detail">
-        <p><strong>{{ resolving.serviceName }}</strong> · 技师 {{ resolving.originalTechnicianName }}</p>
+        <p v-if="resolving.orderItemId">
+          <strong>{{ resolving.serviceName }}</strong> · 技师 {{ resolving.originalTechnicianName }}
+        </p>
+        <p v-else>
+          <el-tag type="info" size="small" style="margin-right: 6px">匿名</el-tag>
+          <span v-if="resolving.originalTechnicianName">被投诉技师：{{ resolving.originalTechnicianName }}</span>
+          <span v-else class="muted">未指定订单项与技师</span>
+        </p>
         <p v-if="resolving.tags" class="muted">{{ resolving.tags }}</p>
         <p v-if="resolving.comment" class="muted">{{ resolving.comment }}</p>
       </div>
       <el-form :model="resolveForm" label-width="100px">
         <el-form-item label="处理方式">
           <el-radio-group v-model="resolveForm.resolution">
-            <el-radio value="Reassigned">改派</el-radio>
-            <el-radio value="Refunded">退款</el-radio>
+            <el-radio v-if="resolving?.orderItemId" value="Reassigned">改派</el-radio>
+            <el-radio v-if="resolving?.orderItemId" value="Refunded">退款</el-radio>
             <el-radio value="Apologized">道歉/补偿</el-radio>
             <el-radio value="NoAction">不予处理</el-radio>
           </el-radio-group>
+          <div v-if="!resolving?.orderItemId" class="muted hint">
+            该投诉未指定具体订单项，仅可选择 道歉/补偿 或 不予处理。
+          </div>
         </el-form-item>
         <el-form-item v-if="resolveForm.resolution === 'Reassigned'" label="改派给">
           <el-select v-model="resolveForm.reassignedToTechnicianId" placeholder="请选择新技师" style="width:240px" filterable>
@@ -140,11 +197,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Refresh } from '@element-plus/icons-vue';
 import dayjs from 'dayjs';
-import { complaintsApi, staffApi, type ComplaintDto } from '@/api/modules';
+import { complaintsApi, ordersApi, staffApi, type ComplaintDto, type TechnicianServedItemDto } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
 import type { Staff } from '@/api/types';
 
@@ -159,7 +216,58 @@ const filter = reactive<{ status: string; range: string[] | null; page: number; 
   { status: 'Pending', range: null, page: 1, pageSize: 20 }
 );
 
-const createForm = reactive({ orderItemId: 0, tags: '', comment: '' });
+const createOpen = ref(false);
+const createForm = reactive({
+  anonymous: false,
+  technicianId: null as number | null,
+  date: dayjs().format('YYYY-MM-DD'),
+  orderItemId: 0,
+  tags: '',
+  comment: ''
+});
+const itemCandidates = ref<TechnicianServedItemDto[]>([]);
+const lookingUp = ref(false);
+const lookedUp = ref(false);
+
+const canSubmitCreate = computed(() => {
+  if (createForm.anonymous) return true;
+  return createForm.orderItemId > 0;
+});
+
+function disableFuture(d: Date) { return d.getTime() > Date.now(); }
+
+function openCreate() {
+  createForm.anonymous = false;
+  createForm.technicianId = null;
+  createForm.date = dayjs().format('YYYY-MM-DD');
+  createForm.orderItemId = 0;
+  createForm.tags = '';
+  createForm.comment = '';
+  itemCandidates.value = [];
+  lookedUp.value = false;
+  createOpen.value = true;
+}
+
+function onTechChanged() {
+  if (!createForm.anonymous) lookupItems();
+}
+
+async function lookupItems() {
+  if (!appStore.activeStoreId || !createForm.technicianId || !createForm.date) return;
+  lookingUp.value = true;
+  createForm.orderItemId = 0;
+  try {
+    itemCandidates.value = await ordersApi.itemsByTechnician(
+      appStore.activeStoreId, createForm.technicianId, createForm.date);
+    lookedUp.value = true;
+  } finally {
+    lookingUp.value = false;
+  }
+}
+
+function onPickItem(row: TechnicianServedItemDto | null) {
+  if (row && !row.hasPendingComplaint) createForm.orderItemId = row.itemId;
+}
 
 const resolveOpen = ref(false);
 const resolving = ref<ComplaintDto | null>(null);
@@ -206,21 +314,31 @@ async function loadTechList() {
 }
 
 async function submitCreate() {
-  if (createForm.orderItemId <= 0) {
-    ElMessage.warning('请填订单项 ID');
+  if (!createForm.anonymous && createForm.orderItemId <= 0) {
+    ElMessage.warning('请先选择被投诉的服务项');
+    return;
+  }
+  if (createForm.anonymous && !appStore.activeStoreId) {
+    ElMessage.warning('未选择门店');
     return;
   }
   creating.value = true;
   try {
-    await complaintsApi.create({
-      orderItemId: createForm.orderItemId,
-      tags: createForm.tags.trim() || null,
-      comment: createForm.comment.trim() || null
-    });
+    await complaintsApi.create(createForm.anonymous
+      ? {
+          orderItemId: null,
+          storeId: appStore.activeStoreId,
+          technicianId: createForm.technicianId,
+          tags: createForm.tags.trim() || null,
+          comment: createForm.comment.trim() || null
+        }
+      : {
+          orderItemId: createForm.orderItemId,
+          tags: createForm.tags.trim() || null,
+          comment: createForm.comment.trim() || null
+        });
     ElMessage.success('已登记投诉');
-    createForm.orderItemId = 0;
-    createForm.tags = '';
-    createForm.comment = '';
+    createOpen.value = false;
     reload();
   } finally {
     creating.value = false;
@@ -229,7 +347,8 @@ async function submitCreate() {
 
 function openResolve(row: ComplaintDto) {
   resolving.value = row;
-  resolveForm.resolution = 'Reassigned';
+  // 没挂订单项的投诉不能改派/退款，默认选道歉/补偿
+  resolveForm.resolution = row.orderItemId ? 'Reassigned' : 'Apologized';
   resolveForm.reassignedToTechnicianId = null;
   resolveForm.resolutionNote = '';
   resolveOpen.value = true;
@@ -282,4 +401,5 @@ onMounted(async () => {
 .ck-header { display: flex; justify-content: space-between; align-items: baseline; }
 .resolve-detail { background: #f5f7fa; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
 .resolve-detail p { margin: 4px 0; }
+.hint { margin-top: 4px; line-height: 1.4; }
 </style>

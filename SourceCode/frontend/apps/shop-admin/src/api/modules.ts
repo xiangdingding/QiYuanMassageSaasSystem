@@ -68,9 +68,9 @@ export const tenantsApi = {
 
 export const storesApi = {
   list: () => http().get<Store[]>('/stores').then((r) => r.data),
-  create: (body: { name: string; address?: string | null; phone?: string | null; parentStoreId?: number | null }) =>
+  create: (body: { name: string; address?: string | null; phone?: string | null; parentStoreId?: number | null; dayCloseCutoffMinutes?: number }) =>
     http().post<Store>('/stores', body).then((r) => r.data),
-  update: (id: number, body: { name: string; address?: string | null; phone?: string | null; isActive: boolean }) =>
+  update: (id: number, body: { name: string; address?: string | null; phone?: string | null; isActive: boolean; dayCloseCutoffMinutes: number }) =>
     http().put<Store>(`/stores/${id}`, body).then((r) => r.data)
 };
 
@@ -177,8 +177,25 @@ export const ordersApi = {
   create: (body: CreateOrderRequest) => http().post<Order>('/orders', body).then((r) => r.data),
   checkout: (id: number, body: CheckoutRequest) => http().post<Order>(`/orders/${id}/checkout`, body).then((r) => r.data),
   refund: (id: number, reason?: string | null) => http().post<Order>(`/orders/${id}/refund`, { reason }).then((r) => r.data),
-  cancel: (id: number) => http().post(`/orders/${id}/cancel`)
+  cancel: (id: number) => http().post(`/orders/${id}/cancel`),
+  itemsByTechnician: (storeId: number, technicianId: number, date: string) =>
+    http().get<TechnicianServedItemDto[]>('/orders/items/by-technician',
+      { params: { storeId, technicianId, date } }).then((r) => r.data)
 };
+
+export interface TechnicianServedItemDto {
+  itemId: number;
+  orderId: number;
+  orderNo: string;
+  serviceId: number;
+  serviceName: string;
+  completedAt: string | null;
+  amount: number;
+  memberId: number | null;
+  memberName: string | null;
+  memberCardNo: string | null;
+  hasPendingComplaint: boolean;
+}
 
 export const queueApi = {
   list: (storeId: number) => http().get<QueueRow[]>('/queue', { params: { storeId } }).then((r) => r.data),
@@ -219,7 +236,9 @@ export const commissionsApi = {
     http().get<CommissionRule[]>('/commission-rules', { params: { serviceId, technicianId } }).then((r) => r.data),
   create: (body: any) => http().post<CommissionRule>('/commission-rules', body).then((r) => r.data),
   update: (id: number, body: any) => http().put<CommissionRule>(`/commission-rules/${id}`, body).then((r) => r.data),
-  remove: (id: number) => http().delete(`/commission-rules/${id}`)
+  remove: (id: number) => http().delete(`/commission-rules/${id}`),
+  bulk: (body: any) =>
+    http().post<{ created: number; updated: number; skipped: number }>('/commission-rules/bulk', body).then((r) => r.data)
 };
 
 export interface MonthlyReportPoint { day: string; orderCount: number; revenue: number; rounds: number; }
@@ -366,7 +385,9 @@ export const dayClosesApi = {
   submit: (body: { storeId: number; businessDate: string; actualCash: number; remark?: string | null }) =>
     http().post<DayClose>('/day-closes', body).then((r) => r.data),
   history: (storeId: number, from?: string, to?: string) =>
-    http().get<DayClose[]>('/day-closes', { params: { storeId, from, to } }).then((r) => r.data)
+    http().get<DayClose[]>('/day-closes', { params: { storeId, from, to } }).then((r) => r.data),
+  revoke: (id: number, reason?: string | null) =>
+    http().post<void>(`/day-closes/${id}/revoke`, { reason: reason || null }).then((r) => r.data)
 };
 
 export const ordersTransferApi = {
@@ -530,9 +551,9 @@ export const payrollApi = {
 
 export interface ComplaintDto {
   id: number; storeId: number;
-  orderId: number; orderNo: string;
-  orderItemId: number; serviceName: string;
-  originalTechnicianId: number; originalTechnicianName: string;
+  orderId: number | null; orderNo: string | null;
+  orderItemId: number | null; serviceName: string | null;
+  originalTechnicianId: number | null; originalTechnicianName: string | null;
   memberId: number | null; memberName: string | null;
   tags: string | null; comment: string | null;
   status: string;
@@ -550,7 +571,7 @@ export const complaintsApi = {
   list: (params: { storeId?: number; technicianId?: number; status?: string; from?: string; to?: string; page?: number; pageSize?: number }) =>
     http().get<PagedResult<ComplaintDto>>('/complaints', { params }).then((r) => r.data),
   get: (id: number) => http().get<ComplaintDto>(`/complaints/${id}`).then((r) => r.data),
-  create: (body: { orderItemId: number; tags?: string | null; comment?: string | null }) =>
+  create: (body: { orderItemId?: number | null; storeId?: number | null; technicianId?: number | null; tags?: string | null; comment?: string | null }) =>
     http().post<ComplaintDto>('/complaints', body).then((r) => r.data),
   resolve: (id: number, body: { resolution: string; reassignedToTechnicianId?: number | null; resolutionNote?: string | null }) =>
     http().patch<ComplaintDto>(`/complaints/${id}/resolve`, body).then((r) => r.data),

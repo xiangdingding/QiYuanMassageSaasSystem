@@ -3,6 +3,8 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MassageSaas.Cs.Services;
+using MassageSaas.Cs.Views;
+using MassageSaas.Shared.Complaints;
 using MassageSaas.Shared.Orders;
 using MassageSaas.Shared.Staff;
 
@@ -104,6 +106,23 @@ public partial class OrdersViewModel : ObservableObject
             MessageBox.Show("已取消");
             SelectedDetail = null;
             await ReloadAsync();
+        }
+        catch (Exception ex) { ErrorReporter.Show(ex); }
+    }
+
+    [RelayCommand]
+    private async Task ComplaintAsync(OrderItemDto? item)
+    {
+        if (item is null) return;
+        var dlg = new ComplaintCreateDialog(item.ServiceName, item.TechnicianName ?? "—");
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            await _api.CreateComplaintAsync(new CreateComplaintRequest(
+                OrderItemId: item.Id,
+                Tags: string.IsNullOrWhiteSpace(dlg.Tags) ? null : dlg.Tags!.Trim(),
+                Comment: string.IsNullOrWhiteSpace(dlg.Comment) ? null : dlg.Comment!.Trim()));
+            MessageBox.Show("已登记投诉");
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
     }

@@ -73,6 +73,16 @@
                     <DataGridTextColumn Header="差额" Binding="{Binding Variance, StringFormat='¥{0:F2}'}" Width="100" />
                     <DataGridTextColumn Header="操作员" Binding="{Binding OperatorName}" Width="120" />
                     <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="240" />
+                    <DataGridTemplateColumn Header="操作" Width="80"
+                                            Visibility="{Binding DataContext.CanRevoke, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisible}}">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="撤销" Padding="6,2" Foreground="#D9534F" Background="Transparent" BorderThickness="0"
+                                        Command="{Binding DataContext.RevokeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>

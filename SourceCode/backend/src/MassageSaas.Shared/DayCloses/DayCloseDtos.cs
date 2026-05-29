@@ -12,13 +12,16 @@ public record DayClosePreviewDto(
     decimal AlipayAmount,
     decimal BankCardAmount,
     decimal RechargeAmount,
-    bool AlreadyClosed);
+    bool AlreadyClosed,
+    int DayCloseCutoffMinutes);
 
 public record SubmitDayCloseRequest(
     long StoreId,
     DateTime BusinessDate,
     decimal ActualCash,
     string? Remark);
+
+public record RevokeDayCloseRequest(string? Reason);
 
 public record DayCloseDto(
     long Id,

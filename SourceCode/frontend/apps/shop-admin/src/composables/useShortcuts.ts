@@ -1,4 +1,4 @@
-import { onMounted, onUnmounted } from 'vue';
+import { onActivated, onDeactivated, onMounted, onUnmounted } from 'vue';
 
 /**
  * 行业级全局快捷键。约定：
@@ -57,6 +57,21 @@ export function useShortcuts(handlers: ShortcutHandlers) {
     }
   }
 
-  onMounted(() => window.addEventListener('keydown', handle));
-  onUnmounted(() => window.removeEventListener('keydown', handle));
+  // keep-alive 视图（如收银台）切走时 onUnmounted 不触发，只走 onDeactivated；
+  // 不在 deactivated 里解绑就会出现切到别的页仍然抢 F2/F5/Ctrl+Enter 的 bug。
+  let bound = false;
+  function bind() {
+    if (bound) return;
+    bound = true;
+    window.addEventListener('keydown', handle);
+  }
+  function unbind() {
+    if (!bound) return;
+    bound = false;
+    window.removeEventListener('keydown', handle);
+  }
+  onMounted(bind);
+  onActivated(bind);
+  onDeactivated(unbind);
+  onUnmounted(unbind);
 }

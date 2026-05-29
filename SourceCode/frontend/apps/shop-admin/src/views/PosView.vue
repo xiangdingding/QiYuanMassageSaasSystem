@@ -495,6 +495,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
+
+// 给 keep-alive 用：MainLayout 的 <keep-alive :include="['PosView']"> 靠这个 name 命中，
+// 实现切走再切回时购物车 / 已选会员 / 模式都保留，不重新加载目录。
+defineOptions({ name: 'PosView' });
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Search, User } from '@element-plus/icons-vue';
 import { membersApi, ordersApi, roomsApi, servicesApi, staffApi, timedRoomsApi, type TimedRoomSessionDto } from '@/api/modules';
@@ -1180,7 +1184,20 @@ useShortcuts({
   flex: 1;
   min-height: 0;
 }
-.timed-card-item :deep(.el-card__body) { padding: 6px 8px; }
+/* 计时房卡身用 flex 列布局，按钮始终贴卡底；空闲卡的"开台"铺满整宽。
+   固定高度 116px：行数超出时由 .timed-grid 出滚动条 */
+.timed-card-item {
+  height: 116px;
+  display: flex;
+  flex-direction: column;
+}
+.timed-card-item :deep(.el-card__body) {
+  padding: 6px 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 .timed-card-item.open { border-color: var(--el-color-warning); }
 .timed-card-item.inCart { border-color: var(--el-color-success); background: #f6ffed; }
 .timed-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
@@ -1188,7 +1205,13 @@ useShortcuts({
 .timed-info { font-size: 12px; margin-bottom: 4px; }
 .timed-info .muted { font-size: 11px; }
 .timed-amount { color: #d9534f; font-weight: 600; margin-top: 2px; }
-.timed-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+/* 计时中状态的按钮组贴底 */
+.timed-actions { display: flex; gap: 4px; flex-wrap: wrap; margin-top: auto; }
+/* 空闲状态的"开台"按钮贴底 + 铺满整宽 */
+.timed-card-item :deep(.el-card__body) > .el-button {
+  margin-top: auto;
+  width: 100%;
+}
 .room-charge-meta { gap: 12px; }
 /* 服务卡：每排 3 个等宽（grid 1fr）+ 固定高度，所有卡视觉一致；
    高度不够时由 .services-grid 自身出滚动条 */

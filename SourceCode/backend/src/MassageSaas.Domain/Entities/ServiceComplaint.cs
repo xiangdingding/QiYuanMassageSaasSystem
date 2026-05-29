@@ -3,9 +3,10 @@ using MassageSaas.Domain.Common;
 namespace MassageSaas.Domain.Entities;
 
 /// <summary>
-/// 客户投诉。客户对某次服务（OrderItem）不满意时由收银员/店长录入，
-/// 后续由店长选择处理方式（改派/退款/道歉/不处理）。改派会调用转钟流程，
-/// 同时把 OrderItem.ComplaintTransferred 置 true，用于"投诉率"质量报表。
+/// 客户投诉。常规情况下挂在 OrderItem 上，由收银员/店长录入；
+/// 也允许"匿名投诉"——客人记不清单号或针对整体服务体验时 OrderItemId/OrderId/OriginalTechnicianId 为空。
+/// 后续由店长选择处理方式（改派/退款/道歉/不处理）。
+/// 仅当 OrderItem 存在时，改派会调用转钟流程并把 OrderItem.ComplaintTransferred 置 true。
 /// </summary>
 public class ServiceComplaint : BaseEntity, ITenantScoped
 {
@@ -13,14 +14,14 @@ public class ServiceComplaint : BaseEntity, ITenantScoped
     public long StoreId { get; set; }
     public Store Store { get; set; } = null!;
 
-    public long OrderId { get; set; }
-    public Order Order { get; set; } = null!;
-    public long OrderItemId { get; set; }
-    public OrderItem OrderItem { get; set; } = null!;
+    public long? OrderId { get; set; }
+    public Order? Order { get; set; }
+    public long? OrderItemId { get; set; }
+    public OrderItem? OrderItem { get; set; }
 
-    /// <summary>被投诉的技师（投诉发生时 OrderItem.TechnicianId 的快照）。改派后 OrderItem 会指向新技师，但本字段不变。</summary>
-    public long OriginalTechnicianId { get; set; }
-    public User OriginalTechnician { get; set; } = null!;
+    /// <summary>被投诉的技师（投诉发生时 OrderItem.TechnicianId 的快照）。匿名投诉时为空。</summary>
+    public long? OriginalTechnicianId { get; set; }
+    public User? OriginalTechnician { get; set; }
 
     public long? MemberId { get; set; }
     public Member? Member { get; set; }

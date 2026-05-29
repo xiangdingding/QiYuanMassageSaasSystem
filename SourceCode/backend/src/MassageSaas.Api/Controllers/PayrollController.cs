@@ -138,10 +138,11 @@ public class PayrollController : ControllerBase
         var store = await _db.Stores.FirstOrDefaultAsync(s => s.Id == req.StoreId, ct);
         if (store is null) return BadRequest(new { code = "StoreNotFound", message = "门店不存在" });
 
-        var monthStart = new DateTime(req.Year, req.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var monthEnd = monthStart.AddMonths(1);
-        var dateFrom = DateOnly.FromDateTime(monthStart);
-        var dateTo = DateOnly.FromDateTime(monthEnd).AddDays(-1);
+        // 业务月 = 业务日 1 号的 cutoff 时刻 ~ 次月 1 号 cutoff 时刻
+        var (monthStart, monthEnd) = MassageSaas.Domain.Common.BusinessDayCalculator
+            .MonthRangeOf(req.Year, req.Month, store.DayCloseCutoffMinutes);
+        var dateFrom = new DateOnly(req.Year, req.Month, 1);
+        var dateTo = dateFrom.AddMonths(1).AddDays(-1);
 
         // 该店所有"按摩店员工"（排除平台管理员）。投影到匿名类型，避免 User 实体反过来挂到图里
         var staffList = await _db.Users.AsNoTracking()

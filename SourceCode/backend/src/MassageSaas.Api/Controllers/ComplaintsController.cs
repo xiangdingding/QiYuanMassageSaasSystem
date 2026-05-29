@@ -85,22 +85,68 @@ public class ComplaintsController : ControllerBase
     public async Task<ActionResult<ComplaintDto>> Create(
         [FromBody] CreateComplaintRequest req, CancellationToken ct)
     {
-        var item = await _db.OrderItems
-            .Include(i => i.Order)
-            .FirstOrDefaultAsync(i => i.Id == req.OrderItemId, ct);
-        if (item is null) return NotFound(new { code = "OrderItemNotFound", message = "订单项不存在" });
+        long storeId;
+        long? orderId = null;
+        long? orderItemId = null;
+        long? technicianId = null;
+        long? memberId = null;
+        string notifyDedupKey;
+        string notifyBody;
+        long? notifyRelatedId = null;
 
-        var existing = await _db.ServiceComplaints.AnyAsync(c =>
-            c.OrderItemId == req.OrderItemId && c.Status == ComplaintStatus.Pending, ct);
-        if (existing) return Conflict(new { code = "AlreadyPending", message = "该订单项已有未处理投诉" });
+        if (req.OrderItemId is long itemId)
+        {
+            var item = await _db.OrderItems
+                .Include(i => i.Order)
+                .FirstOrDefaultAsync(i => i.Id == itemId, ct);
+            if (item is null) return NotFound(new { code = "OrderItemNotFound", message = "订单项不存在" });
+
+            var existing = await _db.ServiceComplaints.AnyAsync(c =>
+                c.OrderItemId == itemId && c.Status == ComplaintStatus.Pending, ct);
+            if (existing) return Conflict(new { code = "AlreadyPending", message = "该订单项已有未处理投诉" });
+
+            storeId = item.Order.StoreId;
+            orderId = item.OrderId;
+            orderItemId = item.Id;
+            technicianId = item.TechnicianId;
+            memberId = item.Order.MemberId;
+            notifyDedupKey = $"Complaint:{item.Id}:{DateTime.UtcNow.Ticks}";
+            notifyRelatedId = item.Id;
+            var techName = (await _db.Users.AsNoTracking()
+                .Where(u => u.Id == item.TechnicianId)
+                .Select(u => u.RealName ?? u.Username)
+                .FirstOrDefaultAsync(ct)) ?? "技师";
+            notifyBody = $"订单 {item.Order.OrderNo} 投诉技师 {techName}"
+                + (string.IsNullOrWhiteSpace(req.Tags) ? "" : $"（{req.Tags}）");
+        }
+        else
+        {
+            // 匿名投诉：客人记不清单号或针对整体服务
+            if (req.StoreId is not long sid)
+                return BadRequest(new { code = "StoreRequired", message = "匿名投诉需指定门店" });
+            storeId = sid;
+            if (req.TechnicianId is long tid)
+            {
+                var techValid = await _db.Users.AnyAsync(u =>
+                    u.Id == tid && u.Role == UserRole.Technician, ct);
+                if (!techValid) return BadRequest(new { code = "TechnicianNotFound", message = "被投诉技师不存在" });
+                technicianId = tid;
+            }
+            notifyDedupKey = $"ComplaintAnon:{storeId}:{DateTime.UtcNow.Ticks}";
+            notifyBody = technicianId.HasValue
+                ? $"匿名投诉，针对技师 #{technicianId}"
+                + (string.IsNullOrWhiteSpace(req.Tags) ? "" : $"（{req.Tags}）")
+                : "匿名投诉（未指定项目）"
+                + (string.IsNullOrWhiteSpace(req.Tags) ? "" : $"（{req.Tags}）");
+        }
 
         var complaint = new ServiceComplaint
         {
-            StoreId = item.Order.StoreId,
-            OrderId = item.OrderId,
-            OrderItemId = item.Id,
-            OriginalTechnicianId = item.TechnicianId,
-            MemberId = item.Order.MemberId,
+            StoreId = storeId,
+            OrderId = orderId,
+            OrderItemId = orderItemId,
+            OriginalTechnicianId = technicianId,
+            MemberId = memberId,
             Tags = string.IsNullOrWhiteSpace(req.Tags) ? null : req.Tags.Trim(),
             Comment = string.IsNullOrWhiteSpace(req.Comment) ? null : req.Comment.Trim(),
             Status = ComplaintStatus.Pending,
@@ -108,31 +154,24 @@ public class ComplaintsController : ControllerBase
         };
         _db.ServiceComplaints.Add(complaint);
 
-        // 投诉登记同时通知店长
-        var techName = (await _db.Users.AsNoTracking()
-            .Where(u => u.Id == item.TechnicianId)
-            .Select(u => u.RealName ?? u.Username)
-            .FirstOrDefaultAsync(ct)) ?? "技师";
-        var nowTicks = DateTime.UtcNow.Ticks;
         _db.NotificationOutbox.Add(new NotificationOutbox
         {
             TenantId = _tenantContext.TenantId,
             Kind = NotificationKind.ServiceComplaintAlert,
             Status = NotificationStatus.Pending,
-            DedupKey = $"Complaint:{item.Id}:{nowTicks}",
-            MemberId = item.Order.MemberId,
+            DedupKey = notifyDedupKey,
+            MemberId = memberId,
             Title = "客户投诉登记",
-            Body = $"订单 {item.Order.OrderNo} 投诉技师 {techName}"
-                   + (string.IsNullOrWhiteSpace(req.Tags) ? "" : $"（{req.Tags}）"),
-            RelatedEntityId = item.Id,
+            Body = notifyBody,
+            RelatedEntityId = notifyRelatedId,
             ScheduledAt = DateTime.UtcNow
         });
 
         await _db.SaveChangesAsync(ct);
 
         _logger.LogInformation(
-            "Complaint created complaint={ComplaintId} order={OrderId} item={ItemId} tech={Tech}",
-            complaint.Id, item.OrderId, item.Id, item.TechnicianId);
+            "Complaint created complaint={ComplaintId} order={OrderId} item={ItemId} tech={Tech} anon={Anon}",
+            complaint.Id, orderId, orderItemId, technicianId, orderItemId is null);
 
         return Ok(await GetDtoAsync(complaint.Id, ct));
     }
@@ -145,11 +184,16 @@ public class ComplaintsController : ControllerBase
             return BadRequest(new { code = "InvalidResolution", message = "处理方式不合法" });
 
         var complaint = await _db.ServiceComplaints
-            .Include(c => c.OrderItem).ThenInclude(i => i.Order)
+            .Include(c => c.OrderItem!).ThenInclude(i => i.Order)
             .FirstOrDefaultAsync(c => c.Id == id, ct);
         if (complaint is null) return NotFound();
         if (complaint.Status != ComplaintStatus.Pending)
             return Conflict(new { code = "AlreadyResolved", message = "该投诉已处理或已取消" });
+
+        // 匿名投诉（没挂订单项）不能走改派/退款
+        if (complaint.OrderItemId is null
+            && (resolution == ComplaintResolution.Reassigned || resolution == ComplaintResolution.Refunded))
+            return BadRequest(new { code = "NoOrderItem", message = "该投诉未指定具体订单项，只能选择道歉/补偿 或 不予处理" });
 
         if (resolution == ComplaintResolution.Reassigned)
         {
@@ -158,7 +202,7 @@ public class ComplaintsController : ControllerBase
             if (newTechId == complaint.OriginalTechnicianId)
                 return BadRequest(new { code = "SameTechnician", message = "新技师与原技师相同" });
 
-            var item = complaint.OrderItem;
+            var item = complaint.OrderItem!; // 上面已校验 OrderItemId != null
             if (item.Order.Status != OrderStatus.Pending && item.Order.Status != OrderStatus.InProgress)
                 return Conflict(new { code = "InvalidOrderState", message = "订单已结账或已取消，无法改派" });
 
@@ -222,10 +266,10 @@ public class ComplaintsController : ControllerBase
 
     private static ComplaintDto MapDto(ServiceComplaint c) => new(
         c.Id, c.StoreId,
-        c.OrderId, c.Order?.OrderNo ?? string.Empty,
-        c.OrderItemId, c.OrderItem?.ServiceName ?? string.Empty,
+        c.OrderId, c.Order?.OrderNo,
+        c.OrderItemId, c.OrderItem?.ServiceName,
         c.OriginalTechnicianId,
-        c.OriginalTechnician?.RealName ?? c.OriginalTechnician?.Username ?? string.Empty,
+        c.OriginalTechnician?.RealName ?? c.OriginalTechnician?.Username,
         c.MemberId, c.Member?.Name ?? c.Member?.CardNo,
         c.Tags, c.Comment,
         c.Status.ToString(),

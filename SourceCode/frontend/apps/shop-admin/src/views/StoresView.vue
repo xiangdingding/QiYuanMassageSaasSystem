@@ -14,6 +14,9 @@
         </el-table-column>
         <el-table-column prop="address" label="地址" min-width="200" />
         <el-table-column prop="phone" label="电话" width="140" />
+        <el-table-column label="营业日切日" width="120">
+          <template #default="{ row }">{{ formatCutoff(row.dayCloseCutoffMinutes) }}</template>
+        </el-table-column>
         <el-table-column label="状态" width="100">
           <template #default="{ row }">
             <el-tag :type="row.isActive ? 'success' : 'info'">{{ row.isActive ? '营业中' : '已停' }}</el-tag>
@@ -46,6 +49,20 @@
         <el-form-item v-if="formMode === 'edit'" label="状态">
           <el-switch v-model="form.isActive" active-text="营业中" inactive-text="停业" />
         </el-form-item>
+        <el-form-item label="营业日切日">
+          <el-time-picker
+            v-model="cutoffPickerValue"
+            format="HH:mm"
+            value-format="HH:mm"
+            placeholder="00:00 = 自然日切日"
+            style="width: 100%"
+            :clearable="false"
+          />
+          <div class="hint">
+            北京时间。营业到凌晨的门店请把切日点设在停业后（如 06:00），
+            该时刻之前完成的订单仍归到前一个营业日。
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="formOpen = false">取消</el-button>
@@ -76,8 +93,29 @@ const form = reactive({
   address: '',
   phone: '',
   parentStoreId: null as number | null,
-  isActive: true
+  isActive: true,
+  dayCloseCutoffMinutes: 0
 });
+
+const cutoffPickerValue = computed<string>({
+  get: () => minutesToHHmm(form.dayCloseCutoffMinutes),
+  set: (v: string) => { form.dayCloseCutoffMinutes = hhmmToMinutes(v); }
+});
+
+function minutesToHHmm(m: number): string {
+  const safe = Math.max(0, Math.min(1439, m || 0));
+  const h = Math.floor(safe / 60).toString().padStart(2, '0');
+  const mm = (safe % 60).toString().padStart(2, '0');
+  return `${h}:${mm}`;
+}
+function hhmmToMinutes(s: string): number {
+  if (!s) return 0;
+  const [h, m] = s.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+function formatCutoff(m: number): string {
+  return m > 0 ? `${minutesToHHmm(m)} 切日` : '自然日';
+}
 const rules: FormRules = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }]
 };
@@ -99,7 +137,8 @@ function openCreate() {
   Object.assign(form, {
     name: '', address: '', phone: '',
     parentStoreId: headquarters.value[0]?.id ?? null,
-    isActive: true
+    isActive: true,
+    dayCloseCutoffMinutes: 0
   });
   formOpen.value = true;
 }
@@ -112,7 +151,8 @@ function openEdit(row: Store) {
     address: row.address ?? '',
     phone: row.phone ?? '',
     parentStoreId: row.parentStoreId ?? null,
-    isActive: row.isActive
+    isActive: row.isActive,
+    dayCloseCutoffMinutes: row.dayCloseCutoffMinutes ?? 0
   });
   formOpen.value = true;
 }
@@ -128,14 +168,16 @@ async function save() {
         name: form.name,
         address: form.address || null,
         phone: form.phone || null,
-        parentStoreId: form.parentStoreId
+        parentStoreId: form.parentStoreId,
+        dayCloseCutoffMinutes: form.dayCloseCutoffMinutes
       });
     } else if (editingId.value != null) {
       await storesApi.update(editingId.value, {
         name: form.name,
         address: form.address || null,
         phone: form.phone || null,
-        isActive: form.isActive
+        isActive: form.isActive,
+        dayCloseCutoffMinutes: form.dayCloseCutoffMinutes
       });
     }
     ElMessage.success('已保存');
@@ -157,4 +199,5 @@ onMounted(async () => {
 .page { padding-bottom: 24px; }
 .toolbar { display: flex; gap: 12px; align-items: center; }
 .title { font-weight: 600; font-size: 16px; }
+.hint { color: #909399; font-size: 12px; margin-top: 4px; line-height: 1.5; }
 </style>

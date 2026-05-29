@@ -22,6 +22,12 @@ public class ReportsController : ControllerBase
         _tenantContext = tenantContext;
     }
 
+    private async Task<int> GetCutoffAsync(long storeId, CancellationToken ct) =>
+        await _db.Stores.AsNoTracking()
+            .Where(s => s.Id == storeId)
+            .Select(s => (int?)s.DayCloseCutoffMinutes)
+            .FirstOrDefaultAsync(ct) ?? 0;
+
     [HttpGet("daily")]
     [Authorize(Policy = "ShopStaff")]
     public async Task<ActionResult<DailyReportDto>> Daily(
@@ -29,9 +35,12 @@ public class ReportsController : ControllerBase
         [FromQuery] DateTime? date = null,
         CancellationToken ct = default)
     {
-        var d = (date ?? DateTime.UtcNow).Date;
-        var start = DateTime.SpecifyKind(d, DateTimeKind.Utc);
-        var end = start.AddDays(1);
+        var cutoff = await GetCutoffAsync(storeId, ct);
+        var businessDate = date.HasValue
+            ? DateOnly.FromDateTime(date.Value)
+            : BusinessDayCalculator.TodayBusinessDate(cutoff);
+        var (start, end) = BusinessDayCalculator.RangeOf(businessDate, cutoff);
+        var d = businessDate.ToDateTime(TimeOnly.MinValue);
 
         var orders = _db.Orders.AsNoTracking()
             .Where(o => o.StoreId == storeId && o.CreatedAt >= start && o.CreatedAt < end);
@@ -85,40 +94,47 @@ public class ReportsController : ControllerBase
     {
         if (to <= from) return BadRequest(new { code = "InvalidRange", message = "结束时间必须大于开始时间" });
 
-        // 先 materialize 一份带 source 拆分的中间结构，再 C# 端算指定率，避免 LINQ-to-SQL 上写复杂表达式
-        var raw = await _db.OrderItems.AsNoTracking()
+        // EF Core 8 + Pomelo 不能翻译"GroupBy + 多聚合 + Where(嵌套)"模式，
+        // 故先把命中行投影成扁平结构拉到内存，再在 C# 端分组。
+        var rows = await _db.OrderItems.AsNoTracking()
             .Where(oi =>
                 oi.Order.StoreId == storeId
                 && oi.Order.Status == OrderStatus.Completed
                 && oi.Order.CompletedAt >= from
                 && oi.Order.CompletedAt < to)
-            .GroupBy(oi => new { oi.TechnicianId, oi.Technician.RealName, oi.Technician.Username, oi.Technician.EmployeeNo })
-            .Select(g => new
+            .Select(oi => new
             {
-                g.Key.TechnicianId,
-                Name = g.Key.RealName ?? g.Key.Username,
-                g.Key.EmployeeNo,
-                Quantity = g.Sum(x => x.Quantity),
-                Amount = g.Sum(x => x.ItemTotal),
-                Commission = g.Sum(x => x.CommissionAmount),
-                Duration = g.Sum(x => x.DurationMinutes * x.Quantity),
-                Designation = g.Where(x => x.AssignmentSource == AssignmentSource.Designation).Sum(x => (int?)x.Quantity) ?? 0,
-                Rotation = g.Where(x => x.AssignmentSource == AssignmentSource.Rotation).Sum(x => (int?)x.Quantity) ?? 0
+                oi.TechnicianId,
+                oi.Technician.RealName,
+                oi.Technician.Username,
+                oi.Technician.EmployeeNo,
+                oi.Quantity,
+                oi.ItemTotal,
+                oi.CommissionAmount,
+                oi.DurationMinutes,
+                oi.AssignmentSource
             })
             .ToListAsync(ct);
 
-        var data = raw
-            .Select(r =>
+        var data = rows
+            .GroupBy(r => new { r.TechnicianId, r.RealName, r.Username, r.EmployeeNo })
+            .Select(g =>
             {
-                var denom = r.Designation + r.Rotation;
-                // 老 Unknown 行不进分母；分母 0 时返回 null 让前端显示 "—"
+                var designation = g.Where(x => x.AssignmentSource == AssignmentSource.Designation).Sum(x => x.Quantity);
+                var rotation = g.Where(x => x.AssignmentSource == AssignmentSource.Rotation).Sum(x => x.Quantity);
+                var denom = designation + rotation;
                 decimal? rate = denom == 0
                     ? null
-                    : Math.Round((decimal)r.Designation / denom, 4);
+                    : Math.Round((decimal)designation / denom, 4);
                 return new TechnicianPerformanceDto(
-                    r.TechnicianId, r.Name, r.EmployeeNo,
-                    r.Quantity, r.Amount, r.Commission, r.Duration,
-                    r.Designation, r.Rotation, rate);
+                    g.Key.TechnicianId,
+                    g.Key.RealName ?? g.Key.Username,
+                    g.Key.EmployeeNo,
+                    g.Sum(x => x.Quantity),
+                    g.Sum(x => x.ItemTotal),
+                    g.Sum(x => x.CommissionAmount),
+                    g.Sum(x => x.DurationMinutes * x.Quantity),
+                    designation, rotation, rate);
             })
             .OrderByDescending(d => d.TotalCommission)
             .ToList();
@@ -135,9 +151,13 @@ public class ReportsController : ControllerBase
         if (_tenantContext.UserId is not long uid)
             return Unauthorized();
 
-        var now = DateTime.UtcNow;
-        var todayStart = new DateTime(now.Year, now.Month, now.Day, 0, 0, 0, DateTimeKind.Utc);
-        var monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        // 技师的"今日"/"本月"按其所在门店的切日时间口径
+        var storeId = await _db.Users.AsNoTracking()
+            .Where(u => u.Id == uid).Select(u => u.StoreId).FirstOrDefaultAsync(ct);
+        var cutoff = storeId.HasValue ? await GetCutoffAsync(storeId.Value, ct) : 0;
+        var today = BusinessDayCalculator.TodayBusinessDate(cutoff);
+        var (todayStart, _) = BusinessDayCalculator.RangeOf(today, cutoff);
+        var (monthStart, _) = BusinessDayCalculator.MonthRangeOf(today.Year, today.Month, cutoff);
 
         var baseQ = _db.OrderItems.AsNoTracking()
             .Where(oi => oi.TechnicianId == uid
@@ -169,36 +189,43 @@ public class ReportsController : ControllerBase
         [FromQuery] int? month = null,
         CancellationToken ct = default)
     {
-        var now = DateTime.UtcNow;
-        var y = year ?? now.Year;
-        var m = month ?? now.Month;
+        var cutoff = await GetCutoffAsync(storeId, ct);
+        var today = BusinessDayCalculator.TodayBusinessDate(cutoff);
+        var y = year ?? today.Year;
+        var m = month ?? today.Month;
         if (m < 1 || m > 12) return BadRequest(new { code = "InvalidMonth", message = "月份不合法" });
 
-        var start = new DateTime(y, m, 1, 0, 0, 0, DateTimeKind.Utc);
-        var end = start.AddMonths(1);
+        var (start, end) = BusinessDayCalculator.MonthRangeOf(y, m, cutoff);
 
         var completed = _db.Orders.AsNoTracking()
             .Where(o => o.StoreId == storeId && o.Status == OrderStatus.Completed
                         && o.CompletedAt >= start && o.CompletedAt < end);
 
-        var daily = await completed
-            .GroupBy(o => o.CompletedAt!.Value.Date)
-            .Select(g => new MonthlyReportPointDto(
-                g.Key, g.Count(),
-                g.Sum(o => o.PaidAmount),
-                g.SelectMany(o => o.Items).Sum(i => i.Quantity)))
-            .OrderBy(p => p.Day)
+        // 按业务日分桶：先取出最小投影，再在 C# 端用切日计算分组
+        var orderRows = await completed
+            .Select(o => new { o.CompletedAt, o.PaidAmount, Rounds = o.Items.Sum(i => i.Quantity) })
             .ToListAsync(ct);
+        var daily = orderRows
+            .GroupBy(r => BusinessDayCalculator.BusinessDateOf(r.CompletedAt!.Value, cutoff))
+            .Select(g => new MonthlyReportPointDto(
+                g.Key.ToDateTime(TimeOnly.MinValue),
+                g.Count(),
+                g.Sum(r => r.PaidAmount),
+                g.Sum(r => r.Rounds)))
+            .OrderBy(p => p.Day)
+            .ToList();
 
-        // 计时房已结算收入按结算日并入对应日营业额（保持与日报/日结口径一致；
-        // 已挂订单的 session 跳过，避免与 Orders.PaidAmount 重算）
-        var timedByDay = await _db.TimedRoomSessions.AsNoTracking()
+        // 计时房已结算收入按结算业务日并入（已挂订单的 session 跳过，避免与 Orders.PaidAmount 重算）
+        var timedRows = await _db.TimedRoomSessions.AsNoTracking()
             .Where(s => s.StoreId == storeId && s.Status == TimedRoomSessionStatus.Settled
                         && s.OrderId == null
                         && s.EndedAt != null && s.EndedAt >= start && s.EndedAt < end)
-            .GroupBy(s => s.EndedAt!.Value.Date)
-            .Select(g => new { Day = g.Key, Amount = g.Sum(s => s.Amount) })
+            .Select(s => new { s.EndedAt, s.Amount })
             .ToListAsync(ct);
+        var timedByDay = timedRows
+            .GroupBy(t => BusinessDayCalculator.BusinessDateOf(t.EndedAt!.Value, cutoff))
+            .Select(g => new { Day = g.Key.ToDateTime(TimeOnly.MinValue), Amount = g.Sum(x => x.Amount) })
+            .ToList();
         if (timedByDay.Count > 0)
         {
             var map = daily.ToDictionary(p => p.Day);
@@ -234,26 +261,33 @@ public class ReportsController : ControllerBase
         var start = new DateTime(y, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var end = start.AddYears(1);
 
-        var monthly = await _db.Orders.AsNoTracking()
+        // EF Core 8 + Pomelo 不能翻译 GroupBy 内嵌 SelectMany；先扁平化拉到内存再 C# 端 group
+        var orderRows = await _db.Orders.AsNoTracking()
             .Where(o => o.StoreId == storeId && o.Status == OrderStatus.Completed
                         && o.CompletedAt >= start && o.CompletedAt < end)
-            .GroupBy(o => new { o.CompletedAt!.Value.Year, o.CompletedAt!.Value.Month })
+            .Select(o => new { o.CompletedAt, o.PaidAmount, Rounds = o.Items.Sum(i => i.Quantity) })
+            .ToListAsync(ct);
+        var monthly = orderRows
+            .GroupBy(r => new { r.CompletedAt!.Value.Year, r.CompletedAt!.Value.Month })
             .Select(g => new MonthlyReportPointDto(
                 new DateTime(g.Key.Year, g.Key.Month, 1, 0, 0, 0, DateTimeKind.Utc),
                 g.Count(),
-                g.Sum(o => o.PaidAmount),
-                g.SelectMany(o => o.Items).Sum(i => i.Quantity)))
+                g.Sum(r => r.PaidAmount),
+                g.Sum(r => r.Rounds)))
             .OrderBy(p => p.Day)
-            .ToListAsync(ct);
+            .ToList();
 
         // 计时房已结算收入按结算月并入（已挂订单的 session 跳过，避免与 Orders.PaidAmount 重算）
-        var timedByMonth = await _db.TimedRoomSessions.AsNoTracking()
+        var timedRows = await _db.TimedRoomSessions.AsNoTracking()
             .Where(s => s.StoreId == storeId && s.Status == TimedRoomSessionStatus.Settled
                         && s.OrderId == null
                         && s.EndedAt != null && s.EndedAt >= start && s.EndedAt < end)
-            .GroupBy(s => new { s.EndedAt!.Value.Year, s.EndedAt!.Value.Month })
-            .Select(g => new { g.Key.Year, g.Key.Month, Amount = g.Sum(s => s.Amount) })
+            .Select(s => new { s.EndedAt, s.Amount })
             .ToListAsync(ct);
+        var timedByMonth = timedRows
+            .GroupBy(t => new { t.EndedAt!.Value.Year, t.EndedAt!.Value.Month })
+            .Select(g => new { g.Key.Year, g.Key.Month, Amount = g.Sum(t => t.Amount) })
+            .ToList();
         if (timedByMonth.Count > 0)
         {
             var map = monthly.ToDictionary(p => p.Day);
@@ -286,19 +320,22 @@ public class ReportsController : ControllerBase
     {
         if (to <= from) return BadRequest(new { code = "InvalidRange", message = "结束时间必须大于开始时间" });
 
-        var data = await _db.OrderItems.AsNoTracking()
+        var rows = await _db.OrderItems.AsNoTracking()
             .Where(oi => oi.Order.StoreId == storeId
                          && oi.Order.Status == OrderStatus.Completed
                          && oi.Order.CompletedAt >= from
                          && oi.Order.CompletedAt < to)
-            .GroupBy(oi => new { oi.ServiceId, oi.ServiceName })
+            .Select(oi => new { oi.ServiceId, oi.ServiceName, oi.Quantity, oi.ItemTotal })
+            .ToListAsync(ct);
+        var data = rows
+            .GroupBy(r => new { r.ServiceId, r.ServiceName })
             .Select(g => new ServicePopularityDto(
                 g.Key.ServiceId, g.Key.ServiceName,
                 g.Count(),
                 g.Sum(x => x.Quantity),
                 g.Sum(x => x.ItemTotal)))
             .OrderByDescending(s => s.RoundsCount)
-            .ToListAsync(ct);
+            .ToList();
         return Ok(data);
     }
 
@@ -313,18 +350,22 @@ public class ReportsController : ControllerBase
     {
         if (to <= from) return BadRequest(new { code = "InvalidRange", message = "结束时间必须大于开始时间" });
 
-        var data = await _db.Orders.AsNoTracking()
+        var cutoff = await GetCutoffAsync(storeId, ct);
+        var rows = await _db.Orders.AsNoTracking()
             .Where(o => o.StoreId == storeId
                         && o.Status == OrderStatus.Completed
                         && o.CompletedAt >= from
                         && o.CompletedAt < to)
-            .GroupBy(o => o.CompletedAt!.Value.Date)
-            .Select(g => new CustomerFlowPointDto(
-                g.Key,
-                g.Count(),
-                g.Select(o => o.MemberId ?? 0L).Distinct().Count()))
-            .OrderBy(p => p.Date)
+            .Select(o => new { o.CompletedAt, o.MemberId })
             .ToListAsync(ct);
+        var data = rows
+            .GroupBy(r => BusinessDayCalculator.BusinessDateOf(r.CompletedAt!.Value, cutoff))
+            .Select(g => new CustomerFlowPointDto(
+                g.Key.ToDateTime(TimeOnly.MinValue),
+                g.Count(),
+                g.Select(r => r.MemberId ?? 0L).Distinct().Count()))
+            .OrderBy(p => p.Date)
+            .ToList();
         return Ok(data);
     }
 
@@ -421,11 +462,21 @@ public class ReportsController : ControllerBase
     {
         if (to <= from) return BadRequest(new { code = "InvalidRange", message = "结束时间必须大于开始时间" });
 
-        var rounds = await _db.OrderItems.AsNoTracking()
+        var roundRows = await _db.OrderItems.AsNoTracking()
             .Where(oi => oi.Order.StoreId == storeId
                          && oi.Order.Status == OrderStatus.Completed
                          && oi.Order.CompletedAt >= from && oi.Order.CompletedAt < to)
-            .GroupBy(oi => new { oi.TechnicianId, oi.Technician.RealName, oi.Technician.Username, oi.Technician.EmployeeNo })
+            .Select(oi => new
+            {
+                oi.TechnicianId,
+                oi.Technician.RealName,
+                oi.Technician.Username,
+                oi.Technician.EmployeeNo,
+                oi.Quantity
+            })
+            .ToListAsync(ct);
+        var rounds = roundRows
+            .GroupBy(r => new { r.TechnicianId, r.RealName, r.Username, r.EmployeeNo })
             .Select(g => new
             {
                 g.Key.TechnicianId,
@@ -433,12 +484,14 @@ public class ReportsController : ControllerBase
                 g.Key.EmployeeNo,
                 Rounds = g.Sum(x => x.Quantity)
             })
-            .ToListAsync(ct);
+            .ToList();
 
+        // 匿名投诉 (OriginalTechnicianId == null) 不计入任何技师；只统计有具体技师的投诉
         var complaintMap = (await _db.ServiceComplaints.AsNoTracking()
             .Where(c => c.StoreId == storeId && c.Status != ComplaintStatus.Cancelled
+                        && c.OriginalTechnicianId != null
                         && c.CreatedAt >= from && c.CreatedAt < to)
-            .GroupBy(c => c.OriginalTechnicianId)
+            .GroupBy(c => c.OriginalTechnicianId!.Value)
             .Select(g => new { TechnicianId = g.Key, Count = g.Count() })
             .ToListAsync(ct))
             .ToDictionary(x => x.TechnicianId, x => x.Count);

@@ -63,6 +63,44 @@ public class OrdersController : ControllerBase
         return Ok(new PagedResult<OrderListItemDto>(items, total, pq.SafePage, pq.SafePageSize));
     }
 
+    /// <summary>
+    /// 按技师 + 业务日列出他在该日已完成的订单项，供"登记投诉"弹窗选择。
+    /// 业务日按门店切日时间换算；只返回 Order.Status = Completed 的项。
+    /// HasPendingComplaint 字段供 UI 把已存在未处理投诉的行禁选。
+    /// </summary>
+    [HttpGet("items/by-technician")]
+    public async Task<ActionResult<IReadOnlyList<TechnicianServedItemDto>>> ItemsByTechnician(
+        [FromQuery] long storeId,
+        [FromQuery] long technicianId,
+        [FromQuery] DateTime date,
+        CancellationToken ct = default)
+    {
+        var cutoff = await _db.Stores.AsNoTracking()
+            .Where(s => s.Id == storeId)
+            .Select(s => (int?)s.DayCloseCutoffMinutes)
+            .FirstOrDefaultAsync(ct) ?? 0;
+        var bizDate = DateOnly.FromDateTime(date);
+        var (start, end) = MassageSaas.Domain.Common.BusinessDayCalculator.RangeOf(bizDate, cutoff);
+
+        var rows = await _db.OrderItems.AsNoTracking()
+            .Where(oi => oi.Order.StoreId == storeId
+                         && oi.TechnicianId == technicianId
+                         && oi.Order.Status == OrderStatus.Completed
+                         && oi.Order.CompletedAt >= start && oi.Order.CompletedAt < end)
+            .OrderByDescending(oi => oi.Order.CompletedAt)
+            .Select(oi => new TechnicianServedItemDto(
+                oi.Id, oi.OrderId, oi.Order.OrderNo,
+                oi.ServiceId, oi.ServiceName,
+                oi.Order.CompletedAt, oi.ItemTotal,
+                oi.Order.MemberId,
+                oi.Order.Member != null ? oi.Order.Member.Name : null,
+                oi.Order.Member != null ? oi.Order.Member.CardNo : null,
+                _db.ServiceComplaints.Any(c => c.OrderItemId == oi.Id && c.Status == ComplaintStatus.Pending)))
+            .ToListAsync(ct);
+
+        return Ok(rows);
+    }
+
     [HttpGet("{id:long}")]
     public async Task<ActionResult<OrderDto>> Get(long id, CancellationToken ct)
     {
@@ -747,12 +785,17 @@ public class OrdersController : ControllerBase
     }
 
     /// <summary>
-    /// 判断目标日期是否已经做日结：已结过则不允许新增/修改/退款。
+    /// 判断目标时刻所属的业务日是否已经做日结：已结过则不允许新增/修改/退款。
+    /// 业务日按门店配置的切日分钟数（DayCloseCutoffMinutes）划分。
     /// </summary>
     private async Task<bool> IsDayClosedAsync(long storeId, DateTime when, CancellationToken ct)
     {
-        var date = DateOnly.FromDateTime(when);
-        return await _db.DayCloses.AnyAsync(d => d.StoreId == storeId && d.BusinessDate == date, ct);
+        var cutoff = await _db.Stores.AsNoTracking()
+            .Where(s => s.Id == storeId)
+            .Select(s => (int?)s.DayCloseCutoffMinutes)
+            .FirstOrDefaultAsync(ct) ?? 0;
+        var businessDate = MassageSaas.Domain.Common.BusinessDayCalculator.BusinessDateOf(when, cutoff);
+        return await _db.DayCloses.AnyAsync(d => d.StoreId == storeId && d.BusinessDate == businessDate, ct);
     }
 
     private async Task<Order?> LoadOrderAsync(long id, CancellationToken ct) =>

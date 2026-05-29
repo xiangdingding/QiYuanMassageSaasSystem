@@ -25,8 +25,8 @@
         <TextBlock Grid.Row="1" Text="处理方式" Margin="0,0,0,4" />
         <ComboBox Grid.Row="2" x:Name="ResolutionBox" Height="32" Margin="0,0,0,12"
                   SelectionChanged="ResolutionBox_SelectionChanged">
-            <ComboBoxItem Content="改派给其他技师" Tag="Reassigned" />
-            <ComboBoxItem Content="退款（记录用，退款另行操作）" Tag="Refunded" />
+            <ComboBoxItem x:Name="ReassignItem" Content="改派给其他技师" Tag="Reassigned" />
+            <ComboBoxItem x:Name="RefundItem" Content="退款（记录用，退款另行操作）" Tag="Refunded" />
             <ComboBoxItem Content="口头道歉 / 补偿" Tag="Apologized" />
             <ComboBoxItem Content="不予处理" Tag="NoAction" />
         </ComboBox>

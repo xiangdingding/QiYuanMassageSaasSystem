@@ -1,4 +1,5 @@
 using MassageSaas.Application.Abstractions;
+using MassageSaas.Domain.Common;
 using MassageSaas.Domain.Entities;
 using MassageSaas.Infrastructure.Persistence;
 using MassageSaas.Shared.Stores;
@@ -30,7 +31,7 @@ public class StoresController : ControllerBase
             .ThenBy(s => s.Id)
             .Select(s => new StoreDto(
                 s.Id, s.Name, s.Address, s.Phone, s.IsActive,
-                s.ParentStoreId == null, s.ParentStoreId, s.CreatedAt))
+                s.ParentStoreId == null, s.ParentStoreId, s.DayCloseCutoffMinutes, s.CreatedAt))
             .ToListAsync(ct);
         return Ok(data);
     }
@@ -41,6 +42,10 @@ public class StoresController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(req.Name))
             return BadRequest(new { code = "InvalidInput", message = "门店名必填" });
+
+        if (req.DayCloseCutoffMinutes < BusinessDayCalculator.MinCutoff
+            || req.DayCloseCutoffMinutes > BusinessDayCalculator.MaxCutoff)
+            return BadRequest(new { code = "InvalidCutoff", message = "营业日切换点必须在 0-1439 分钟之间" });
 
         if (req.ParentStoreId.HasValue)
         {
@@ -61,20 +66,25 @@ public class StoresController : ControllerBase
             Address = req.Address?.Trim(),
             Phone = req.Phone?.Trim(),
             ParentStoreId = req.ParentStoreId,
-            IsActive = true
+            IsActive = true,
+            DayCloseCutoffMinutes = req.DayCloseCutoffMinutes
         };
         _db.Stores.Add(store);
         await _db.SaveChangesAsync(ct);
 
         return CreatedAtAction(nameof(List), null,
             new StoreDto(store.Id, store.Name, store.Address, store.Phone, store.IsActive,
-                store.ParentStoreId == null, store.ParentStoreId, store.CreatedAt));
+                store.ParentStoreId == null, store.ParentStoreId, store.DayCloseCutoffMinutes, store.CreatedAt));
     }
 
     [HttpPut("{id:long}")]
     [Authorize(Policy = "ShopStaff")]
     public async Task<ActionResult<StoreDto>> Update(long id, [FromBody] UpdateStoreRequest req, CancellationToken ct)
     {
+        if (req.DayCloseCutoffMinutes < BusinessDayCalculator.MinCutoff
+            || req.DayCloseCutoffMinutes > BusinessDayCalculator.MaxCutoff)
+            return BadRequest(new { code = "InvalidCutoff", message = "营业日切换点必须在 0-1439 分钟之间" });
+
         var store = await _db.Stores.FirstOrDefaultAsync(s => s.Id == id, ct);
         if (store is null) return NotFound();
 
@@ -82,9 +92,10 @@ public class StoresController : ControllerBase
         store.Address = req.Address?.Trim();
         store.Phone = req.Phone?.Trim();
         store.IsActive = req.IsActive;
+        store.DayCloseCutoffMinutes = req.DayCloseCutoffMinutes;
         await _db.SaveChangesAsync(ct);
 
         return Ok(new StoreDto(store.Id, store.Name, store.Address, store.Phone, store.IsActive,
-            store.ParentStoreId == null, store.ParentStoreId, store.CreatedAt));
+            store.ParentStoreId == null, store.ParentStoreId, store.DayCloseCutoffMinutes, store.CreatedAt));
     }
 }

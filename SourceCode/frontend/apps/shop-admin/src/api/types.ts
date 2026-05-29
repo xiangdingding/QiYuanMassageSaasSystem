@@ -37,6 +37,8 @@ export interface Store {
   isActive: boolean;
   isHeadquarters: boolean;
   parentStoreId?: number | null;
+  /** 营业日切日时间（分钟）。0=自然日；360=06:00 BJ。 */
+  dayCloseCutoffMinutes: number;
   createdAt: string;
 }
 
@@ -255,6 +257,10 @@ export interface CommissionRule {
   isActive: boolean;
   /** 适用来源：'Rotation' 仅轮钟 / 'Designation' 仅点钟 / null 通配两种 */
   assignmentSource?: 'Rotation' | 'Designation' | null;
+  /** 轮钟专用金额（FixedAmount/Percentage 适用）。null = 回退到 amount */
+  rotationAmount?: number | null;
+  /** 点钟专用金额（FixedAmount/Percentage 适用）。null = 回退到 amount */
+  designationAmount?: number | null;
 }
 
 export interface DailyReport {
@@ -346,6 +352,8 @@ export interface DayClosePreview {
   bankCardAmount: number;
   rechargeAmount: number;
   alreadyClosed: boolean;
+  /** 门店当前的营业日切日时间（分钟）。 */
+  dayCloseCutoffMinutes: number;
 }
 
 export interface DayClose {

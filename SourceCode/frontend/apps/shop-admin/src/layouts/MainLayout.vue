@@ -68,7 +68,11 @@
         </div>
       </el-header>
       <el-main class="main" role="main" id="main-content" tabindex="-1">
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <keep-alive :include="['PosView']">
+            <component :is="Component" />
+          </keep-alive>
+        </router-view>
       </el-main>
     </el-container>
     <ProfileDialog v-model="profileVisible" />

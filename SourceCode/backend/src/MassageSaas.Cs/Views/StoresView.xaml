@@ -34,6 +34,8 @@
                     <DataGridTextColumn Header="地址" Binding="{Binding Address}" Width="240" />
                     <DataGridTextColumn Header="电话" Binding="{Binding Phone}" Width="140" />
                     <DataGridTextColumn Header="启用" Binding="{Binding IsActive}" Width="60" />
+                    <DataGridTextColumn Header="切日"
+                        Binding="{Binding DayCloseCutoffMinutes, StringFormat='切{0}min'}" Width="80" />
                     <DataGridTemplateColumn Header="操作" Width="120">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>

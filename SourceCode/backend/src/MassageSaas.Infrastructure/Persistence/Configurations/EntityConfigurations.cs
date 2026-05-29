@@ -75,6 +75,7 @@ public class StoreConfiguration : IEntityTypeConfiguration<Store>
         b.Property(x => x.Name).HasMaxLength(200).IsRequired();
         b.Property(x => x.Address).HasMaxLength(500);
         b.Property(x => x.Phone).HasMaxLength(32);
+        b.Property(x => x.DayCloseCutoffMinutes).HasDefaultValue(0);
         b.Ignore(x => x.IsHeadquarters);
         b.HasOne(x => x.Tenant).WithMany(t => t.Stores).HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.ParentStore).WithMany(p => p.Branches).HasForeignKey(x => x.ParentStoreId).OnDelete(DeleteBehavior.Restrict);
@@ -437,9 +438,9 @@ public class ServiceComplaintConfiguration : IEntityTypeConfiguration<ServiceCom
         b.Property(x => x.Comment).HasMaxLength(1000);
         b.Property(x => x.ResolutionNote).HasMaxLength(500);
         b.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Restrict);
-        b.HasOne(x => x.Order).WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Cascade);
-        b.HasOne(x => x.OrderItem).WithMany().HasForeignKey(x => x.OrderItemId).OnDelete(DeleteBehavior.Cascade);
-        b.HasOne(x => x.OriginalTechnician).WithMany().HasForeignKey(x => x.OriginalTechnicianId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Order).WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne(x => x.OrderItem).WithMany().HasForeignKey(x => x.OrderItemId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne(x => x.OriginalTechnician).WithMany().HasForeignKey(x => x.OriginalTechnicianId).OnDelete(DeleteBehavior.SetNull);
         b.HasOne(x => x.Member).WithMany().HasForeignKey(x => x.MemberId).OnDelete(DeleteBehavior.SetNull);
         b.HasOne(x => x.ReassignedToTechnician).WithMany().HasForeignKey(x => x.ReassignedToTechnicianId).OnDelete(DeleteBehavior.SetNull);
         b.HasOne(x => x.RecordedByUser).WithMany().HasForeignKey(x => x.RecordedByUserId).OnDelete(DeleteBehavior.SetNull);
@@ -603,6 +604,8 @@ public class CommissionRuleConfiguration : IEntityTypeConfiguration<CommissionRu
         b.ToTable("commission_rules");
         b.HasKey(x => x.Id);
         b.Property(x => x.Amount).HasPrecision(18, 4);
+        b.Property(x => x.RotationAmount).HasPrecision(18, 4);
+        b.Property(x => x.DesignationAmount).HasPrecision(18, 4);
         b.Property(x => x.TieredRulesJson).HasColumnType("json");
         // null = 通配两种来源；非 null = 仅适用于该来源的 OrderItem
         b.Property(x => x.AssignmentSource).HasConversion<int?>();

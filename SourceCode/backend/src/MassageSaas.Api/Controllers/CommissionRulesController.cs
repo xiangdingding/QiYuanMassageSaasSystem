@@ -26,6 +26,19 @@ public class CommissionRulesController : ControllerBase
             ? v
             : (AssignmentSource?)null;
 
+    private static bool SupportsDualAmount(CommissionRuleType rt) =>
+        rt is CommissionRuleType.FixedAmount or CommissionRuleType.Percentage;
+
+    /// <summary>校验双金额字段：仅 FixedAmount/Percentage 允许填，并不能为负。</summary>
+    private static string? ValidateDualAmount(CommissionRuleType rt, decimal? rotation, decimal? designation)
+    {
+        if ((rotation.HasValue || designation.HasValue) && !SupportsDualAmount(rt))
+            return "轮钟/点钟独立金额仅 固定金额、百分比 类型支持。阶梯/按时计费请用单一金额。";
+        if (rotation is < 0 || designation is < 0)
+            return "金额不能为负。";
+        return null;
+    }
+
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<CommissionRuleDto>>> List(
         [FromQuery] long? serviceId,
@@ -53,7 +66,9 @@ public class CommissionRulesController : ControllerBase
                 r.TieredRulesJson,
                 r.Priority,
                 r.IsActive,
-                r.AssignmentSource.HasValue ? r.AssignmentSource.Value.ToString() : null))
+                r.AssignmentSource.HasValue ? r.AssignmentSource.Value.ToString() : null,
+                r.RotationAmount,
+                r.DesignationAmount))
             .ToListAsync(ct);
 
         return Ok(data);
@@ -64,6 +79,8 @@ public class CommissionRulesController : ControllerBase
     {
         if (!Enum.TryParse<CommissionRuleType>(req.RuleType, true, out var rt))
             return BadRequest(new { code = "InvalidRuleType", message = "规则类型不合法" });
+        var err = ValidateDualAmount(rt, req.RotationAmount, req.DesignationAmount);
+        if (err != null) return BadRequest(new { code = "InvalidDualAmount", message = err });
 
         var entity = new CommissionRule
         {
@@ -74,7 +91,9 @@ public class CommissionRulesController : ControllerBase
             TieredRulesJson = req.TieredRulesJson,
             Priority = req.Priority,
             IsActive = req.IsActive,
-            AssignmentSource = ParseRuleSource(req.AssignmentSource)
+            AssignmentSource = ParseRuleSource(req.AssignmentSource),
+            RotationAmount = SupportsDualAmount(rt) ? req.RotationAmount : null,
+            DesignationAmount = SupportsDualAmount(rt) ? req.DesignationAmount : null
         };
         _db.CommissionRules.Add(entity);
         await _db.SaveChangesAsync(ct);
@@ -83,7 +102,8 @@ public class CommissionRulesController : ControllerBase
             entity.Id, entity.ServiceId, null, entity.TechnicianId, null,
             entity.RuleType.ToString(), entity.Amount, entity.TieredRulesJson,
             entity.Priority, entity.IsActive,
-            entity.AssignmentSource.HasValue ? entity.AssignmentSource.Value.ToString() : null));
+            entity.AssignmentSource.HasValue ? entity.AssignmentSource.Value.ToString() : null,
+            entity.RotationAmount, entity.DesignationAmount));
     }
 
     [HttpPut("{id:long}")]
@@ -93,6 +113,8 @@ public class CommissionRulesController : ControllerBase
         if (rule is null) return NotFound();
         if (!Enum.TryParse<CommissionRuleType>(req.RuleType, true, out var rt))
             return BadRequest(new { code = "InvalidRuleType", message = "规则类型不合法" });
+        var err = ValidateDualAmount(rt, req.RotationAmount, req.DesignationAmount);
+        if (err != null) return BadRequest(new { code = "InvalidDualAmount", message = err });
 
         rule.RuleType = rt;
         rule.Amount = req.Amount;
@@ -100,12 +122,15 @@ public class CommissionRulesController : ControllerBase
         rule.Priority = req.Priority;
         rule.IsActive = req.IsActive;
         rule.AssignmentSource = ParseRuleSource(req.AssignmentSource);
+        rule.RotationAmount = SupportsDualAmount(rt) ? req.RotationAmount : null;
+        rule.DesignationAmount = SupportsDualAmount(rt) ? req.DesignationAmount : null;
         await _db.SaveChangesAsync(ct);
         return Ok(new CommissionRuleDto(
             rule.Id, rule.ServiceId, null, rule.TechnicianId, null,
             rule.RuleType.ToString(), rule.Amount, rule.TieredRulesJson,
             rule.Priority, rule.IsActive,
-            rule.AssignmentSource.HasValue ? rule.AssignmentSource.Value.ToString() : null));
+            rule.AssignmentSource.HasValue ? rule.AssignmentSource.Value.ToString() : null,
+            rule.RotationAmount, rule.DesignationAmount));
     }
 
     [HttpDelete("{id:long}")]
@@ -116,5 +141,87 @@ public class CommissionRulesController : ControllerBase
         rule.IsDeleted = true;
         await _db.SaveChangesAsync(ct);
         return NoContent();
+    }
+
+    /// <summary>
+    /// 批量配置：对 ServiceIds × TechnicianIds 的笛卡尔积，按同一份模板生成/更新通用规则
+    /// （仅匹配 AssignmentSource == null 的旧规则，避免误覆盖 source-specific 规则）。
+    /// </summary>
+    [HttpPost("bulk")]
+    public async Task<ActionResult<BulkCommissionRuleResult>> Bulk(
+        [FromBody] BulkCommissionRuleRequest req, CancellationToken ct)
+    {
+        if (req.ServiceIds is null || req.ServiceIds.Length == 0)
+            return BadRequest(new { code = "NoServices", message = "请至少选择一个服务项目" });
+        if (req.TechnicianIds is null || req.TechnicianIds.Length == 0)
+            return BadRequest(new { code = "NoTechnicians", message = "请至少选择一个技师" });
+        if (!Enum.TryParse<CommissionRuleType>(req.RuleType, true, out var rt))
+            return BadRequest(new { code = "InvalidRuleType", message = "规则类型不合法" });
+        var err = ValidateDualAmount(rt, req.RotationAmount, req.DesignationAmount);
+        if (err != null) return BadRequest(new { code = "InvalidDualAmount", message = err });
+
+        var validServiceIds = await _db.ServiceItems.AsNoTracking()
+            .Where(s => req.ServiceIds.Contains(s.Id))
+            .Select(s => s.Id).ToListAsync(ct);
+        var validTechnicianIds = await _db.Users.AsNoTracking()
+            .Where(u => req.TechnicianIds.Contains(u.Id) && u.Role == UserRole.Technician)
+            .Select(u => u.Id).ToListAsync(ct);
+
+        var pairs = validServiceIds
+            .SelectMany(sid => validTechnicianIds.Select(tid => new { Sid = sid, Tid = tid }))
+            .ToList();
+        if (pairs.Count == 0)
+            return BadRequest(new { code = "NoValidPair", message = "选中的服务/技师在当前租户下不存在" });
+
+        var sidSet = validServiceIds.ToHashSet();
+        var tidSet = validTechnicianIds.ToHashSet();
+        var existing = await _db.CommissionRules
+            .Where(r => r.ServiceId != null && r.TechnicianId != null
+                        && r.AssignmentSource == null
+                        && sidSet.Contains(r.ServiceId!.Value)
+                        && tidSet.Contains(r.TechnicianId!.Value))
+            .ToListAsync(ct);
+        var existingMap = existing.ToDictionary(
+            r => (r.ServiceId!.Value, r.TechnicianId!.Value));
+
+        int created = 0, updated = 0, skipped = 0;
+        var supportsDual = SupportsDualAmount(rt);
+
+        foreach (var p in pairs)
+        {
+            var sid = p.Sid; var tid = p.Tid;
+            if (existingMap.TryGetValue((sid, tid), out var existRule))
+            {
+                if (!req.OverwriteExisting) { skipped++; continue; }
+                existRule.RuleType = rt;
+                existRule.Amount = req.Amount;
+                existRule.TieredRulesJson = req.TieredRulesJson;
+                existRule.Priority = req.Priority;
+                existRule.IsActive = req.IsActive;
+                existRule.RotationAmount = supportsDual ? req.RotationAmount : null;
+                existRule.DesignationAmount = supportsDual ? req.DesignationAmount : null;
+                existRule.IsDeleted = false;
+                updated++;
+            }
+            else
+            {
+                _db.CommissionRules.Add(new CommissionRule
+                {
+                    ServiceId = sid,
+                    TechnicianId = tid,
+                    RuleType = rt,
+                    Amount = req.Amount,
+                    TieredRulesJson = req.TieredRulesJson,
+                    Priority = req.Priority,
+                    IsActive = req.IsActive,
+                    AssignmentSource = null,
+                    RotationAmount = supportsDual ? req.RotationAmount : null,
+                    DesignationAmount = supportsDual ? req.DesignationAmount : null
+                });
+                created++;
+            }
+        }
+        await _db.SaveChangesAsync(ct);
+        return Ok(new BulkCommissionRuleResult(created, updated, skipped));
     }
 }

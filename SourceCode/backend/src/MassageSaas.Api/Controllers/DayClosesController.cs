@@ -26,7 +26,8 @@ public class DayClosesController : ControllerBase
     }
 
     /// <summary>
-    /// 日结预览：计算指定日期的应收/各支付方式分布。
+    /// 日结预览：计算指定业务日的应收/各支付方式分布。
+    /// 业务日依据门店配置的切日分钟数（DayCloseCutoffMinutes）划分。
     /// </summary>
     [HttpGet("preview")]
     public async Task<ActionResult<DayClosePreviewDto>> Preview(
@@ -34,12 +35,18 @@ public class DayClosesController : ControllerBase
         [FromQuery] DateTime? date = null,
         CancellationToken ct = default)
     {
-        var d = (date ?? DateTime.UtcNow).Date;
-        var dateOnly = DateOnly.FromDateTime(d);
-        var start = DateTime.SpecifyKind(d, DateTimeKind.Utc);
-        var end = start.AddDays(1);
+        var cutoff = await _db.Stores.AsNoTracking()
+            .Where(s => s.Id == storeId)
+            .Select(s => (int?)s.DayCloseCutoffMinutes)
+            .FirstOrDefaultAsync(ct) ?? 0;
 
-        var alreadyClosed = await _db.DayCloses.AnyAsync(x => x.StoreId == storeId && x.BusinessDate == dateOnly, ct);
+        var businessDate = date.HasValue
+            ? DateOnly.FromDateTime(date.Value)
+            : BusinessDayCalculator.TodayBusinessDate(cutoff);
+        var (start, end) = BusinessDayCalculator.RangeOf(businessDate, cutoff);
+
+        var alreadyClosed = await _db.DayCloses.AnyAsync(
+            x => x.StoreId == storeId && x.BusinessDate == businessDate, ct);
 
         var orders = _db.Orders.AsNoTracking()
             .Where(o => o.StoreId == storeId
@@ -54,8 +61,7 @@ public class DayClosesController : ControllerBase
         var alipay = await orders.Where(o => o.PayMethod == PayMethod.Alipay).SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
         var bank = await orders.Where(o => o.PayMethod == PayMethod.BankCard).SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
 
-        // 计时房已结算收入：按结算时间（EndedAt）归当日，并入各支付方式与营业额。
-        // 已挂到订单（OrderId != null）的 session 不再重复计入：其金额已包含在 Orders.PaidAmount 中。
+        // 计时房已结算收入：按 EndedAt 归当日，OrderId == null 表示未挂到订单上（已挂到订单的金额包含在 Orders.PaidAmount 中）。
         var timed = _db.TimedRoomSessions.AsNoTracking()
             .Where(s => s.StoreId == storeId
                         && s.Status == TimedRoomSessionStatus.Settled
@@ -77,17 +83,18 @@ public class DayClosesController : ControllerBase
             .SumAsync(r => (decimal?)r.Amount, ct) ?? 0m;
 
         return Ok(new DayClosePreviewDto(
-            d, storeId, orderCount, revenue,
+            businessDate.ToDateTime(TimeOnly.MinValue),
+            storeId, orderCount, revenue,
             ExpectedCash: cash + rechargeCash,
-            cash, card, wechat, alipay, bank, rechargeAll, alreadyClosed));
+            cash, card, wechat, alipay, bank, rechargeAll, alreadyClosed, cutoff));
     }
 
     [HttpPost]
     public async Task<ActionResult<DayCloseDto>> Submit([FromBody] SubmitDayCloseRequest req, CancellationToken ct)
     {
-        var date = DateOnly.FromDateTime(req.BusinessDate);
-        if (await _db.DayCloses.AnyAsync(x => x.StoreId == req.StoreId && x.BusinessDate == date, ct))
-            return Conflict(new { code = "AlreadyClosed", message = "该日已日结，不能重复提交" });
+        var businessDate = DateOnly.FromDateTime(req.BusinessDate);
+        if (await _db.DayCloses.AnyAsync(x => x.StoreId == req.StoreId && x.BusinessDate == businessDate, ct))
+            return Conflict(new { code = "AlreadyClosed", message = "该日已日结，不能重复提交。如需重做，请先撤销该日的日结。" });
 
         var preview = await Preview(req.StoreId, req.BusinessDate, ct);
         if (preview.Result is not OkObjectResult ok || ok.Value is not DayClosePreviewDto p)
@@ -96,7 +103,7 @@ public class DayClosesController : ControllerBase
         var entity = new DayClose
         {
             StoreId = req.StoreId,
-            BusinessDate = date,
+            BusinessDate = businessDate,
             ExpectedCash = p.ExpectedCash,
             ActualCash = req.ActualCash,
             Variance = req.ActualCash - p.ExpectedCash,
@@ -116,9 +123,37 @@ public class DayClosesController : ControllerBase
 
         _logger.LogInformation(
             "DayClose submitted store={StoreId} date={Date:yyyy-MM-dd} expected={Expected} actual={Actual} variance={Variance}",
-            req.StoreId, date, entity.ExpectedCash, entity.ActualCash, entity.Variance);
+            req.StoreId, businessDate, entity.ExpectedCash, entity.ActualCash, entity.Variance);
 
         return Ok(await ToDtoAsync(entity, ct));
+    }
+
+    /// <summary>
+    /// 撤销日结：硬删除该 DayClose 记录，使该业务日可再次提交。仅店主/店长可操作，记日志审计。
+    /// </summary>
+    [HttpPost("{id:long}/revoke")]
+    [Authorize(Policy = "ShopLeadership")]
+    public async Task<IActionResult> Revoke(long id, [FromBody] RevokeDayCloseRequest? req, CancellationToken ct)
+    {
+        var entity = await _db.DayCloses.FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (entity is null) return NotFound();
+
+        var snapshot = new
+        {
+            entity.Id, entity.StoreId, entity.BusinessDate,
+            entity.RevenueTotal, entity.OrderCount,
+            entity.ExpectedCash, entity.ActualCash, entity.Variance,
+            entity.OperatorUserId
+        };
+
+        _db.DayCloses.Remove(entity);
+        await _db.SaveChangesAsync(ct);
+
+        _logger.LogWarning(
+            "DayClose REVOKED id={Id} store={StoreId} date={Date:yyyy-MM-dd} by user={UserId} reason={Reason} snapshot={@Snapshot}",
+            id, entity.StoreId, entity.BusinessDate, _tenantContext.UserId, req?.Reason, snapshot);
+
+        return NoContent();
     }
 
     [HttpGet]

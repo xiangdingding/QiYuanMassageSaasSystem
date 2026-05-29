@@ -62,6 +62,10 @@ public partial class MainViewModel : ObservableObject
     public AppContextService Context { get; }
     public NavigationService Navigation { get; }
 
+    // 收银台 VM 需要跨导航复用，否则购物车 / 已选会员 / 模式在切走再切回时会丢失。
+    // 其它视图仍按 transient 重建以拿到最新数据；切换门店时清空此缓存。
+    private PosViewModel? _cachedPosVm;
+
     [ObservableProperty]
     private ObservableCollection<NavItem> navItems = new();
 
@@ -163,7 +167,17 @@ public partial class MainViewModel : ObservableObject
         foreach (var n in NavItems) n.IsSelected = false;
         item.IsSelected = true;
         SelectedNavItem = item;
-        Navigation.NavigateTo(item.Factory());
+
+        object vm;
+        if (item.Key == "pos")
+        {
+            vm = _cachedPosVm ??= (PosViewModel)item.Factory();
+        }
+        else
+        {
+            vm = item.Factory();
+        }
+        Navigation.NavigateTo(vm);
     }
 
     [RelayCommand]
@@ -171,6 +185,8 @@ public partial class MainViewModel : ObservableObject
     {
         if (store is null) return;
         Context.ActiveStore = store;
+        // 换店即换数据上下文，收银台缓存里残留的服务/技师/房间/购物车都得作废
+        _cachedPosVm = null;
         if (SelectedNavItem is { } cur) Select(cur);
     }
 

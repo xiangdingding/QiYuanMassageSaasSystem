@@ -13,6 +13,11 @@ public class Store : BaseEntity, ITenantScoped
     public string? Phone { get; set; }
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// 营业日切日时间（分钟，0-1439）。0=自然日；360=06:00 BJ。详见 BusinessDayCalculator。
+    /// </summary>
+    public int DayCloseCutoffMinutes { get; set; }
+
     public bool IsHeadquarters => ParentStoreId == null;
 
     public ICollection<Store> Branches { get; set; } = new List<Store>();

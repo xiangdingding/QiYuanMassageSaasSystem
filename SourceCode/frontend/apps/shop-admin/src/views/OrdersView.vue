@@ -192,16 +192,25 @@
             </template>
           </el-table-column>
           <el-table-column
-            v-if="detail.status === 'Pending' || detail.status === 'InProgress'"
+            v-if="detail.status === 'Pending' || detail.status === 'InProgress' || detail.status === 'Completed'"
             label="操作"
-            width="110"
+            width="120"
+            fixed="right"
           >
             <template #default="{ row }">
               <el-button
+                v-if="detail!.status === 'Pending' || detail!.status === 'InProgress'"
                 size="large"
                 :aria-label="`转钟，把 ${row.serviceName} 的技师 ${row.technicianName ?? ''} 换成其他人`"
                 @click="openTransfer(row)"
               >转钟</el-button>
+              <el-button
+                v-else
+                size="large"
+                type="warning"
+                :aria-label="`登记投诉，针对 ${row.serviceName} 的技师 ${row.technicianName ?? ''}`"
+                @click="openComplaint(row)"
+              >投诉</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -319,6 +328,42 @@
         >确认转钟</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="complaintOpen"
+      title="登记投诉"
+      width="520px"
+    >
+      <el-form label-width="100px" size="large">
+        <el-form-item label="项目">
+          <span>{{ complaintTarget?.serviceName }}</span>
+        </el-form-item>
+        <el-form-item label="技师">
+          <span>{{ complaintTarget?.technicianName }}</span>
+        </el-form-item>
+        <el-form-item label="标签">
+          <el-input
+            v-model="complaintForm.tags"
+            placeholder="逗号分隔，如：态度差,力度不合适"
+            maxlength="200"
+          />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input
+            v-model="complaintForm.comment"
+            type="textarea"
+            :rows="3"
+            maxlength="500"
+            show-word-limit
+            placeholder="客户原话/补充"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button size="large" @click="complaintOpen = false">取消</el-button>
+        <el-button type="warning" size="large" :loading="complainting" @click="doComplaint">登记投诉</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -326,7 +371,7 @@
 import { onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import dayjs from 'dayjs';
-import { ordersApi, ordersTransferApi, staffApi } from '@/api/modules';
+import { complaintsApi, ordersApi, ordersTransferApi, staffApi } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
 import type { Order, OrderItem, OrderListItem, Staff } from '@/api/types';
 
@@ -370,6 +415,36 @@ async function doTransfer() {
     /* http 已弹错 */
   } finally {
     transferring.value = false;
+  }
+}
+
+const complaintOpen = ref(false);
+const complaintTarget = ref<OrderItem | null>(null);
+const complaintForm = reactive({ tags: '', comment: '' });
+const complainting = ref(false);
+
+function openComplaint(row: OrderItem) {
+  complaintTarget.value = row;
+  complaintForm.tags = '';
+  complaintForm.comment = '';
+  complaintOpen.value = true;
+}
+
+async function doComplaint() {
+  if (!complaintTarget.value) return;
+  complainting.value = true;
+  try {
+    await complaintsApi.create({
+      orderItemId: complaintTarget.value.id,
+      tags: complaintForm.tags.trim() || null,
+      comment: complaintForm.comment.trim() || null
+    });
+    ElMessage.success('已登记投诉');
+    complaintOpen.value = false;
+  } catch {
+    /* http 已弹错 */
+  } finally {
+    complainting.value = false;
   }
 }
 

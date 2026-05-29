@@ -8,16 +8,19 @@ public record StoreDto(
     bool IsActive,
     bool IsHeadquarters,
     long? ParentStoreId,
+    int DayCloseCutoffMinutes,
     DateTime CreatedAt);
 
 public record CreateStoreRequest(
     string Name,
     string? Address,
     string? Phone,
-    long? ParentStoreId);
+    long? ParentStoreId,
+    int DayCloseCutoffMinutes = 0);
 
 public record UpdateStoreRequest(
     string Name,
     string? Address,
     string? Phone,
-    bool IsActive);
+    bool IsActive,
+    int DayCloseCutoffMinutes = 0);

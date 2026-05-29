@@ -46,15 +46,27 @@ public static class CommissionCalculator
 
         if (rule is null) return 0m;
 
+        // FixedAmount / Percentage 支持"一条规则双金额"：按 itemSource 选 RotationAmount/DesignationAmount；
+        // 缺失则回退到 Amount。Timed / Tiered 维持原口径，不参与双金额（阶梯本身已是多档结构）。
+        var pickedAmount = PickAmountBySource(rule, itemSource);
+
         return rule.RuleType switch
         {
-            CommissionRuleType.FixedAmount => rule.Amount,
-            CommissionRuleType.Percentage => Round(itemTotal * (rule.Amount / 100m)),
+            CommissionRuleType.FixedAmount => pickedAmount,
+            CommissionRuleType.Percentage => Round(itemTotal * (pickedAmount / 100m)),
             CommissionRuleType.Timed => Round(rule.Amount * durationMinutes / 60m),
             CommissionRuleType.Tiered => ComputeTiered(rule, monthCompletedQuantityIncludingThis),
             _ => 0m
         };
     }
+
+    private static decimal PickAmountBySource(CommissionRule rule, AssignmentSource itemSource) =>
+        itemSource switch
+        {
+            AssignmentSource.Rotation => rule.RotationAmount ?? rule.Amount,
+            AssignmentSource.Designation => rule.DesignationAmount ?? rule.Amount,
+            _ => rule.Amount
+        };
 
     private static CommissionRule? FindBest(
         IEnumerable<CommissionRule> rules,

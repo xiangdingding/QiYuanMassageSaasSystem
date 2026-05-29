@@ -11,28 +11,53 @@ public partial class ComplaintResolveWindow : Window
 {
     public record TechPick(long Id, string Name);
 
-    private readonly long _originalTechnicianId;
+    private readonly long? _originalTechnicianId;
+    private readonly bool _hasOrderItem;
 
     public ComplaintResolveWindow(ComplaintDto complaint, IEnumerable<StaffDto> technicians)
     {
         InitializeComponent();
         _originalTechnicianId = complaint.OriginalTechnicianId;
-        SummaryText.Text =
-            $"订单 {complaint.OrderNo} · {complaint.ServiceName}\n" +
-            $"被投诉技师：{complaint.OriginalTechnicianName}\n" +
-            $"投诉内容：{complaint.Comment}";
+        _hasOrderItem = complaint.OrderItemId.HasValue;
+
+        if (_hasOrderItem)
+        {
+            SummaryText.Text =
+                $"订单 {complaint.OrderNo} · {complaint.ServiceName}\n" +
+                $"被投诉技师：{complaint.OriginalTechnicianName}\n" +
+                $"投诉内容：{complaint.Comment}";
+        }
+        else
+        {
+            SummaryText.Text =
+                "【匿名投诉，未指定订单项】\n" +
+                (string.IsNullOrEmpty(complaint.OriginalTechnicianName)
+                    ? "未指定技师\n"
+                    : $"被投诉技师：{complaint.OriginalTechnicianName}\n") +
+                $"投诉内容：{complaint.Comment}";
+        }
 
         // 改派候选不含被投诉本人
         TechBox.ItemsSource = technicians
-            .Where(t => t.Id != complaint.OriginalTechnicianId)
+            .Where(t => !_originalTechnicianId.HasValue || t.Id != _originalTechnicianId.Value)
             .Select(t => new TechPick(t.Id, t.RealName ?? t.Username))
             .ToList();
 
-        ResolutionBox.SelectedIndex = 0;
+        // 匿名投诉不允许改派/退款；隐藏对应选项并默认选道歉
+        if (!_hasOrderItem)
+        {
+            ReassignItem.Visibility = Visibility.Collapsed;
+            RefundItem.Visibility = Visibility.Collapsed;
+            ResolutionBox.SelectedIndex = 2; // Apologized
+        }
+        else
+        {
+            ResolutionBox.SelectedIndex = 0;
+        }
     }
 
     private string SelectedResolution() =>
-        (ResolutionBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "Reassigned";
+        (ResolutionBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "Apologized";
 
     private void ResolutionBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {

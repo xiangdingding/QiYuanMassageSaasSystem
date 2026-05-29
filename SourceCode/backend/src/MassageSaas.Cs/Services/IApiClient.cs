@@ -270,6 +270,9 @@ public interface IApiClient
         [Query] DateTime? from = null,
         [Query] DateTime? to = null);
 
+    [Post("/day-closes/{id}/revoke")]
+    Task RevokeDayCloseAsync(long id, [Body] RevokeDayCloseRequest req);
+
     [Post("/orders/{id}/items")]
     Task<OrderDto> AddOrderItemsAsync(long id, [Body] AddOrderItemsRequest req);
 

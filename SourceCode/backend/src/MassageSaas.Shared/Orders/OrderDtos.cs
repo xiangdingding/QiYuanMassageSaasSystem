@@ -127,3 +127,17 @@ public record OrderListItemDto(
     string? MemberPhone = null);
 
 public record RefundRequest(string? Reason);
+
+/// <summary>用于"按技师 + 日期"列出已完成订单项，供投诉登记 UI 选择。</summary>
+public record TechnicianServedItemDto(
+    long ItemId,
+    long OrderId,
+    string OrderNo,
+    long ServiceId,
+    string ServiceName,
+    DateTime? CompletedAt,
+    decimal Amount,
+    long? MemberId,
+    string? MemberName,
+    string? MemberCardNo,
+    bool HasPendingComplaint);

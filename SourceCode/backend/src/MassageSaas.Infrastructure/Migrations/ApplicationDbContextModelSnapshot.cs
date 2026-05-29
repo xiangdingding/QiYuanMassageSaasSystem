@@ -126,6 +126,10 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<decimal?>("DesignationAmount")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
 
@@ -134,6 +138,10 @@ namespace MassageSaas.Infrastructure.Migrations
 
                     b.Property<int>("Priority")
                         .HasColumnType("int");
+
+                    b.Property<decimal?>("RotationAmount")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<int>("RuleType")
                         .HasColumnType("int");
@@ -1494,13 +1502,13 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Property<long?>("MemberId")
                         .HasColumnType("bigint");
 
-                    b.Property<long>("OrderId")
+                    b.Property<long?>("OrderId")
                         .HasColumnType("bigint");
 
-                    b.Property<long>("OrderItemId")
+                    b.Property<long?>("OrderItemId")
                         .HasColumnType("bigint");
 
-                    b.Property<long>("OriginalTechnicianId")
+                    b.Property<long?>("OriginalTechnicianId")
                         .HasColumnType("bigint");
 
                     b.Property<long?>("ReassignedToTechnicianId")
@@ -1910,6 +1918,11 @@ namespace MassageSaas.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<int>("DayCloseCutoffMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("tinyint(1)");
@@ -2793,20 +2806,17 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.HasOne("MassageSaas.Domain.Entities.Order", "Order")
                         .WithMany()
                         .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("MassageSaas.Domain.Entities.OrderItem", "OrderItem")
                         .WithMany()
                         .HasForeignKey("OrderItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("MassageSaas.Domain.Entities.User", "OriginalTechnician")
                         .WithMany()
                         .HasForeignKey("OriginalTechnicianId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("MassageSaas.Domain.Entities.User", "ReassignedToTechnician")
                         .WithMany()

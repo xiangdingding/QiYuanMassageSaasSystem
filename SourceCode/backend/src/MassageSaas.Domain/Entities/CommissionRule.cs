@@ -23,4 +23,11 @@ public class CommissionRule : BaseEntity, ITenantScoped
     /// Rotation 仅适用于轮钟下的 OrderItem；Designation 仅适用于点钟下的 OrderItem。
     /// 历史数据全部为 null；新建规则可在前台 CommissionsView 里指定。</summary>
     public AssignmentSource? AssignmentSource { get; set; }
+
+    /// <summary>轮钟专用金额（FixedAmount / Percentage 类型可用）。null 时回退到 Amount。
+    /// 与 DesignationAmount 配合使用，可让一条规则同时表达"轮钟一个数 + 点钟另一个数"。</summary>
+    public decimal? RotationAmount { get; set; }
+
+    /// <summary>点钟专用金额（FixedAmount / Percentage 类型可用）。null 时回退到 Amount。</summary>
+    public decimal? DesignationAmount { get; set; }
 }
