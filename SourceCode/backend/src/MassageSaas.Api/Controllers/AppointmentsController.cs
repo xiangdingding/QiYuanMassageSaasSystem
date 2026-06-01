@@ -125,6 +125,7 @@ public class AppointmentsController : ControllerBase
         [FromQuery] string? status,
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to,
+        [FromQuery] string? keyword = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
@@ -139,6 +140,11 @@ public class AppointmentsController : ControllerBase
             q = q.Where(a => a.Status == s);
         if (from.HasValue) q = q.Where(a => a.ExpectedArriveAt >= from.Value);
         if (to.HasValue) q = q.Where(a => a.ExpectedArriveAt < to.Value);
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var k = keyword.Trim();
+            q = q.Where(a => a.CustomerName.Contains(k) || a.CustomerPhone.Contains(k));
+        }
 
         var pq = new PageQuery(page, pageSize, null);
         var total = await q.CountAsync(ct);

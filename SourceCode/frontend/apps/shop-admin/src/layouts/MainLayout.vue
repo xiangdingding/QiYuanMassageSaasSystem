@@ -326,6 +326,10 @@ onMounted(async () => {
   --el-main-padding: 16px;
   background: #f5f7fa;
   flex: 1 1 auto;
-  overflow: auto;
+  /* 视口锁定：.main 自己不滚，让 view 内部表格 / 列表自己出滚动条 */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 </style>

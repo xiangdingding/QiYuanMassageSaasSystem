@@ -96,7 +96,9 @@ async function submit() {
 
 <style scoped>
 .login-bg {
-  min-height: 100vh;
+  /* 外层 body 锁了滚动；登录页若超过 viewport，自己接管滚动 */
+  height: 100vh;
+  overflow: auto;
   display: flex;
   align-items: center;
   justify-content: center;

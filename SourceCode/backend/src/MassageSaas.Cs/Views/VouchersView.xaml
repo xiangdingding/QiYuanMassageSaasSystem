@@ -10,11 +10,24 @@
             </Grid.RowDefinitions>
 
             <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                <TextBlock DockPanel.Dock="Left" Text="优惠券" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <TextBox Width="150" Height="30" Margin="0,0,8,0"
+                    <TextBox Width="170" Height="30" Margin="0,0,8,0"
                              Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged}"
-                             AutomationProperties.Name="按券码或标题搜索" />
+                             AutomationProperties.Name="按券码、标题或平台搜索">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding SearchCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
+                    <Button Content="查询" Padding="12,6" Height="30" Margin="0,0,8,0"
+                            Command="{Binding SearchCommand}"
+                            AutomationProperties.Name="按当前关键字查询" />
+                    <TextBlock Text="类型" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <ComboBox SelectedIndex="{Binding KindFilter, Mode=TwoWay}" Width="100" Height="30" Margin="0,0,8,0"
+                              AutomationProperties.Name="按类型筛选">
+                        <ComboBoxItem Content="全部类型" />
+                        <ComboBoxItem Content="店内券" />
+                        <ComboBoxItem Content="团购券" />
+                    </ComboBox>
                     <TextBlock Text="状态" VerticalAlignment="Center" Margin="0,0,6,0" />
                     <ComboBox SelectedIndex="{Binding StatusFilter, Mode=TwoWay}" Width="110" Height="30"
                               AutomationProperties.Name="按状态筛选">

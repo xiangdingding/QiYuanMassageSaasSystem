@@ -51,17 +51,21 @@ public class ReviewsController : ControllerBase
         var isStaff = User.Identity?.IsAuthenticated == true;
         if (!isStaff)
         {
-            // 匿名提交：通过 openId 必须匹配同店同时间段的预约
+            // 匿名提交必须带 openId，且满足以下任一自证路径：
             if (string.IsNullOrWhiteSpace(openId))
                 return Forbid();
-            var matched = await _db.Appointments.AnyAsync(a =>
+            // 路径一：openId 已绑定到该订单的会员卡（小程序"我的-待评价"主流程）
+            var byMember = item.Order.MemberId.HasValue && await _db.Members.AnyAsync(
+                m => m.Id == item.Order.MemberId.Value && m.WechatOpenId == openId, ct);
+            // 路径二：openId 在同店有时间相近（±12h）的已完成预约（覆盖未绑卡但预约过的顾客）
+            var byAppointment = !byMember && await _db.Appointments.AnyAsync(a =>
                 a.StoreId == item.Order.StoreId
                 && a.CustomerOpenId == openId
                 && a.Status == AppointmentStatus.Completed
                 && a.ArrivedAt != null
                 && a.ArrivedAt >= item.Order.CreatedAt.AddHours(-12)
                 && a.ArrivedAt <= item.Order.CreatedAt.AddHours(12), ct);
-            if (!matched) return Forbid();
+            if (!byMember && !byAppointment) return Forbid();
         }
 
         var review = new ServiceReview

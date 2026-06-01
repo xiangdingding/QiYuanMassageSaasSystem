@@ -15,7 +15,8 @@
         刚叫到：<strong>{{ lastCalled.employeeNo ?? '-' }} 号 · {{ lastCalled.technicianName }}</strong>
       </div>
 
-      <el-table :data="rows" v-loading="loading" stripe style="margin-top: 12px">
+      <div class="table-wrap">
+      <el-table :data="rows" v-loading="loading" stripe height="100%">
         <el-table-column prop="employeeNo" label="工号" width="80" />
         <el-table-column prop="technicianName" label="姓名" min-width="120" />
         <el-table-column label="状态" width="120">
@@ -57,6 +58,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </el-card>
   </div>
 </template>

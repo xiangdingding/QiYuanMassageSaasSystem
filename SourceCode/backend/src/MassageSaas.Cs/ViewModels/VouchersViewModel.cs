@@ -25,6 +25,10 @@ public partial class VouchersViewModel : ObservableObject
     [ObservableProperty]
     private int statusFilter = 1;
 
+    /// <summary>类型筛选：0 全部类型，1 店内券，2 团购券。</summary>
+    [ObservableProperty]
+    private int kindFilter = 0;
+
     [ObservableProperty]
     private string keyword = string.Empty;
 
@@ -53,6 +57,12 @@ public partial class VouchersViewModel : ObservableObject
     public bool CanGoNext => Page < LastPage;
 
     partial void OnStatusFilterChanged(int value)
+    {
+        Page = 1;
+        _ = ReloadAsync();
+    }
+
+    partial void OnKindFilterChanged(int value)
     {
         Page = 1;
         _ = ReloadAsync();
@@ -97,8 +107,15 @@ public partial class VouchersViewModel : ObservableObject
                 4 => "Cancelled",
                 _ => null
             };
+            var kind = KindFilter switch
+            {
+                1 => "StoreCoupon",
+                2 => "GroupBuy",
+                _ => null
+            };
             var resp = await _api.GetVouchersAsync(
                 status,
+                kind,
                 string.IsNullOrWhiteSpace(Keyword) ? null : Keyword.Trim(),
                 Page, PageSize);
             Rows = new ObservableCollection<SelectableVoucher>(resp.Items.Select(d => new SelectableVoucher(d)));

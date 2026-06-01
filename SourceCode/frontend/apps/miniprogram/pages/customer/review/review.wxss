@@ -1,0 +1,61 @@
+.a11y-input {
+  display: block;
+  width: 100%;
+  min-height: 88rpx;
+  padding: 16rpx 20rpx;
+  margin-top: 12rpx;
+  border: 2rpx solid #888;
+  border-radius: 8rpx;
+  font-size: 36rpx;
+  background: #fafafa;
+  color: #000;
+}
+
+.a11y-textarea {
+  display: block;
+  width: 100%;
+  min-height: 140rpx;
+  padding: 16rpx 20rpx;
+  margin-top: 12rpx;
+  border: 2rpx solid #888;
+  border-radius: 8rpx;
+  font-size: 36rpx;
+  background: #fafafa;
+  color: #000;
+  box-sizing: border-box;
+}
+
+.a11y-card {
+  margin: 24rpx 0;
+  border: 2rpx solid #ddd;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+/* 星级：大号可点，已选填充蓝、未选灰，纯颜色之外文字标签已在 aria-label 朗读 */
+.stars {
+  display: flex;
+  margin-top: 12rpx;
+}
+
+.star {
+  min-width: 88rpx;
+  min-height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 56rpx;
+  margin-right: 12rpx;
+  border: 2rpx solid #bbb;
+  border-radius: 12rpx;
+}
+
+.star.on {
+  color: #fff;
+  background: #1677ff;
+  border-color: #1677ff;
+}
+
+.star.off {
+  color: #bbb;
+  background: #fff;
+}

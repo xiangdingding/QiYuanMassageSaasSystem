@@ -12,6 +12,10 @@
     查询我的预约
   </button>
 
+  <button class="a11y-btn-secondary" aria-label="给已完成的服务评价" bindtap="goReview">
+    服务评价
+  </button>
+
   <!-- 会员卡绑定：绑定后可在微信收到充值到账 / 生日祝福 / 会员卡到期提醒 -->
   <view class="a11y-section" aria-live="polite">
     <text class="a11y-label">会员卡微信通知</text>

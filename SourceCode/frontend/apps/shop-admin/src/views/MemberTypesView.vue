@@ -17,7 +17,8 @@
         <el-tab-pane label="计次卡" name="CountBased" />
       </el-tabs>
 
-      <el-table :data="rows" v-loading="loading" stripe>
+      <div class="table-wrap">
+      <el-table :data="rows" v-loading="loading" stripe height="100%">
         <el-table-column label="排序" width="70" prop="sort" />
         <el-table-column label="编码" width="120">
           <template #default="{ row }">
@@ -80,6 +81,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </el-card>
 
     <el-dialog v-model="formOpen" :title="formMode === 'create' ? '新增会员类型' : '编辑会员类型'" width="560px">

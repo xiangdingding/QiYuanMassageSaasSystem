@@ -12,10 +12,14 @@ onMounted(() => applyA11yModeToDom(prefs.a11yMode));
 </script>
 
 <style>
-/* ---- 视口锁定 ---- */
+/* ---- 视口锁定 ----
+   外层 html / body / #app 锁死不滚，浏览器滚动条永不出现；
+   主内容区（MainLayout 的 .main）自己 overflow:auto，超长内容由它内部的表格 / 卡片自滚。
+   登录 / 注册等独立页面通过 min-height:100vh 适配视口，不依赖外层滚。 */
 html, body, #app {
   height: 100%;
   margin: 0;
+  overflow: hidden;
 }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei',
@@ -84,6 +88,39 @@ body {
 .el-tag.el-tag--info { color: #4a5568; background: #f0f2f5; border-color: #e4e7eb; }
 
 /* ===================================================================
+   视口锁定全局规则
+   所有 view 的根容器统一 class="page"；这里给所有"经典布局" view 自动套：
+     .page 撑满 .main → el-card 撑满 .page → card-body flex column 不滚 →
+     view 内部的 .table-wrap / .scroll-area 用 flex:1 + overflow:auto 自滚
+   每个 view 只需保证根 div 是 .page，并把表格放在 .table-wrap 里即可。
+   =================================================================== */
+.main > .page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+}
+.main > .page > .el-card {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.main > .page > .el-card > .el-card__body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+/* 表格 wrapper：view 把 <el-table height="100%"> 放进 .table-wrap 即得到内滚 */
+.main .table-wrap { flex: 1 1 auto; min-height: 0; }
+/* 分页 / 底部操作栏永远贴底，不参与滚动 */
+.main .pager,
+.main .footer-actions { flex: 0 0 auto; }
+
+/* ===================================================================
    无障碍模式（data-a11y='a11y'）
    设计原则：
    - 字号 +2px，按钮 / 输入框最小 44px 触控目标（WCAG 2.5.5 AAA）
@@ -142,10 +179,7 @@ body {
 :root[data-a11y='a11y'] .menu :deep(.el-menu-item),
 :root[data-a11y='a11y'] .el-menu-item { height: 52px !important; line-height: 52px !important; font-size: 16px; }
 
-/* 强制外层不滚：之前已有 .layout 视口锁定，此处再兜底，
-   主内容区域出现的滚动条由各 view 内部表格 / 卡片自己出 */
-:root[data-a11y='a11y'] body { overflow: hidden; }
-:root[data-a11y='a11y'] #main-content { overflow: auto; }
+/* 视口锁定已经在外层 html/body/#app + .main 默认锁定，无障碍模式不再额外覆盖 */
 
 /* 装饰性动画：减弱，避免读屏伴随的视觉抖动分心 */
 :root[data-a11y='a11y'] *,

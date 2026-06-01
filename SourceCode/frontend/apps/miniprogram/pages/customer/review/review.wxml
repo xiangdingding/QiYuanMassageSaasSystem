@@ -1,0 +1,69 @@
+<view class="container" role="main">
+  <view class="a11y-section" role="heading" aria-level="1">
+    <text class="a11y-value">服务评价</text>
+    <text class="a11y-label">为已完成的服务打分，帮助技师改进</text>
+  </view>
+
+  <!-- 未绑卡：评价依赖会员卡绑定，引导去"我的"页绑定 -->
+  <view wx:if="{{noOpenId}}" class="a11y-card" role="article" aria-label="需要先绑定会员卡">
+    <view class="a11y-section">
+      <text class="a11y-value">还不能评价</text>
+      <text class="a11y-label">请先在"我的"页用会员卡预留手机号绑定会员卡，绑定后即可对消费过的服务评价。</text>
+    </view>
+    <button class="a11y-btn" aria-label="前往我的页面绑定会员卡" bindtap="goBind">去绑定会员卡</button>
+  </view>
+
+  <view wx:if="{{loading}}" class="a11y-section" aria-live="polite" aria-label="加载中">
+    <text class="a11y-value">加载中…</text>
+  </view>
+  <view wx:elif="{{!noOpenId && empty}}" class="a11y-section" aria-live="polite" aria-label="暂无可评价的服务">
+    <text class="a11y-value">暂无可评价的服务</text>
+    <text class="a11y-label">已完成且尚未评价的服务会出现在这里。</text>
+  </view>
+
+  <view wx:for="{{items}}" wx:key="orderItemId" wx:for-index="idx"
+        class="a11y-card" role="article"
+        aria-label="服务 {{item.serviceName}}，技师 {{item.technicianName}}，完成于 {{item.dateText}}，当前 {{item.ratingText}}">
+    <view class="a11y-section">
+      <text class="a11y-label">服务项目</text>
+      <text class="a11y-value">{{item.serviceName}}</text>
+    </view>
+    <view class="a11y-section">
+      <text class="a11y-label">服务技师</text>
+      <text class="a11y-value">{{item.technicianName}}</text>
+    </view>
+    <view class="a11y-section">
+      <text class="a11y-label">完成时间</text>
+      <text class="a11y-value">{{item.dateText}}</text>
+    </view>
+
+    <view class="a11y-section">
+      <text class="a11y-label">评分（点击星级，当前 {{item.ratingText}}）</text>
+      <view class="stars" role="group" aria-label="选择星级，当前 {{item.ratingText}}">
+        <view wx:for="{{starList}}" wx:for-item="star" wx:key="*this"
+              class="star {{star <= item.rating ? 'on' : 'off'}}"
+              data-index="{{idx}}" data-star="{{star}}" bindtap="setRating"
+              aria-label="{{star}} 星">★</view>
+      </view>
+    </view>
+
+    <view class="a11y-section">
+      <text class="a11y-label" id="lbl-tags-{{idx}}">标签（可选，逗号分隔，如：手法专业,态度好）</text>
+      <input class="a11y-input" type="text" maxlength="200"
+             aria-labelledby="lbl-tags-{{idx}}"
+             placeholder="可不填"
+             value="{{item.tags}}" data-index="{{idx}}" bindinput="onTags" />
+    </view>
+    <view class="a11y-section">
+      <text class="a11y-label" id="lbl-cmt-{{idx}}">评论（可选）</text>
+      <textarea class="a11y-textarea" maxlength="500"
+                aria-labelledby="lbl-cmt-{{idx}}"
+                placeholder="说说这次服务体验"
+                value="{{item.comment}}" data-index="{{idx}}" bindinput="onComment" />
+    </view>
+
+    <button class="a11y-btn" data-index="{{idx}}" bindtap="submit"
+            loading="{{item.submitting}}" disabled="{{item.submitting}}"
+            aria-label="提交对 {{item.serviceName}} 的评价">提交评价</button>
+  </view>
+</view>

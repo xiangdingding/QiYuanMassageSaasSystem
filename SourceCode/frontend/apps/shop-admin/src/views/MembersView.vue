@@ -2,21 +2,18 @@
   <div class="page">
     <el-card shadow="never">
       <div class="toolbar" role="search">
+        <el-checkbox v-model="query.includeClosed" @change="reload">显示已关闭会员</el-checkbox>
         <el-input
           v-model="query.keyword"
           placeholder="卡号 / 手机号 / 姓名"
           clearable
-          style="width: 240px"
+          style="width: 380px"
           aria-label="搜索会员，输入卡号、手机号或姓名后回车"
           @keyup.enter="reload"
         />
         <el-button type="primary" aria-label="执行会员搜索" @click="reload">查询</el-button>
         <el-button aria-label="重置搜索条件" @click="resetQuery">重置</el-button>
         <el-button type="primary" aria-label="开新会员卡" @click="openCreate">开卡</el-button>
-      </div>
-
-      <div class="toolbar" style="margin-top:8px">
-        <el-checkbox v-model="query.includeClosed" @change="reload">显示已关闭会员</el-checkbox>
       </div>
 
       <div
@@ -627,7 +624,9 @@
             <el-table-column prop="balanceAfter" label="后余额" width="100">
               <template #default="{ row }">¥{{ row.balanceAfter.toFixed(2) }}</template>
             </el-table-column>
-            <el-table-column prop="payMethod" label="支付" width="80" />
+            <el-table-column prop="payMethod" label="支付" width="80">
+              <template #default="{ row }">{{ payMethodLabel(row.payMethod) }}</template>
+            </el-table-column>
             <el-table-column label="对手会员" width="120">
               <template #default="{ row }">{{ row.counterpartyMemberName || '—' }}</template>
             </el-table-column>
@@ -642,7 +641,9 @@
             <el-table-column prop="paidAmount" label="实收" width="100">
               <template #default="{ row }">¥{{ row.paidAmount.toFixed(2) }}</template>
             </el-table-column>
-            <el-table-column prop="status" label="状态" width="80" />
+            <el-table-column prop="status" label="状态" width="80">
+              <template #default="{ row }">{{ orderStatusLabel(row.status) }}</template>
+            </el-table-column>
             <el-table-column label="时间" min-width="140">
               <template #default="{ row }">{{ dayjs(row.createdAt).format('YYYY-MM-DD HH:mm') }}</template>
             </el-table-column>
@@ -753,6 +754,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import dayjs from 'dayjs';
 import { memberTypesApi, membersApi, servicesApi, type MemberType, type ReferralSummaryDto } from '@/api/modules';
+import { orderStatusLabel, payMethodLabel } from '@/utils/enumLabels';
 import { useAppStore } from '@/stores/app';
 import type { Member, MemberPhoneGroup, ServiceItem } from '@/api/types';
 
@@ -1492,8 +1494,17 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page { padding-bottom: 24px; }
-.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+/* 视口锁定：.page 撑满 .main、el-card 撑满 .page、卡片体内部 toolbar 固定、member-list 自滚 */
+.page { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+.page > :deep(.el-card) { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.page > :deep(.el-card) > :deep(.el-card__body) {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: 0 0 auto; }
 .muted { color: var(--el-text-color-secondary); font-size: 12px; }
 .metric-row { display: flex; gap: 32px; align-items: center; font-size: 14px; }
 .opt-meta {
@@ -1511,18 +1522,26 @@ onMounted(async () => {
 .member-form :deep(.el-input-number) { width: 100%; }
 
 /* —— 会员列表：卡片布局 ——
-   字号 / 颜色全部走 Element Plus 默认，与其他列表页一致；
+   显式 font-size 14（el-table 同档），去掉所有 font-weight 强调，让视觉密度对齐表格行。
    只保留结构性属性（间距、边框、布局方向）。
    无障碍模式由 App.vue 全局规则统一放大关键文字与留白。 */
-.member-list { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; min-height: 120px; }
+.member-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  flex: 1 1 auto;
+  overflow: auto;
+  min-height: 0;
+}
 .empty-tip { text-align: center; color: var(--el-text-color-secondary); padding: 48px 0; }
 
 .member-card {
   border: 1px solid var(--el-border-color-light);
-  border-radius: 8px;
+  border-radius: 6px;
   background: #fff;
-  padding: 12px 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  padding: 10px 14px;
 }
 .member-head {
   display: flex;
@@ -1530,38 +1549,39 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  padding-bottom: 8px;
+  padding-bottom: 6px;
   border-bottom: 1px dashed var(--el-border-color-lighter);
 }
-.head-main { flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.head-main { flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .head-line1 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-/* 手机号是主键，仅用 font-weight 强调；不改字号 / 颜色 */
+/* 手机号 = 主键列，加粗强调（与其它列表里订单号 / 券码同款）；姓名走正常字重做对比 */
 .phone { font-weight: 600; }
-.head-stats { display: flex; gap: 20px; flex-wrap: wrap; }
+.head-stats { display: flex; gap: 16px; flex-wrap: wrap; }
 .head-actions { display: flex; gap: 6px; }
 
-.stat { display: inline-flex; align-items: baseline; gap: 6px; }
+.stat { display: inline-flex; align-items: baseline; gap: 4px; }
 .stat-label { color: var(--el-text-color-secondary); }
-.stat-val { font-weight: 600; }
+.stat-val { /* 与表格 cell 同字重 */ }
 
-.card-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.card-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .card-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: 1px solid var(--el-border-color-lighter);
-  border-radius: 6px;
+  border-radius: 4px;
   background: #fafbfc;
 }
 .card-row.closed { background: #f5f5f5; opacity: 0.85; }
 .card-row.closed .card-no { text-decoration: line-through; color: var(--el-text-color-secondary); }
-.card-info { flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.card-info { flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .card-line1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* 卡号 = 子卡的主键，加粗与手机号对齐 */
 .card-no { font-weight: 600; }
-.card-stats { display: flex; gap: 16px; flex-wrap: wrap; }
+.card-stats { display: flex; gap: 14px; flex-wrap: wrap; }
 .card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* 文本+颜色双重传达状态（盲人无障碍约定：不靠纯颜色） */

@@ -2,14 +2,18 @@
   <div class="page">
     <el-card shadow="never">
       <div class="toolbar">
-        <span class="title">优惠券 / 团购券</span>
+        <el-select v-model="kindFilter" placeholder="全部类型" clearable style="width:140px" @change="onFilterChange">
+          <el-option label="店内券" value="StoreCoupon" />
+          <el-option label="团购券" value="GroupBuy" />
+        </el-select>
         <el-select v-model="statusFilter" placeholder="全部状态" clearable style="width:140px" @change="onFilterChange">
           <el-option label="生效中" value="Active" />
           <el-option label="已核销" value="Redeemed" />
           <el-option label="已过期" value="Expired" />
           <el-option label="已作废" value="Cancelled" />
         </el-select>
-        <el-input v-model="keyword" placeholder="搜索券码/标题" style="width:220px" clearable @keydown.enter="onFilterChange" @clear="onFilterChange" />
+        <el-input v-model="keyword" placeholder="搜索券码/标题/平台" style="width:240px" clearable @keydown.enter="onFilterChange" @clear="onFilterChange" />
+        <el-button type="primary" @click="onFilterChange">查询</el-button>
         <div class="spacer" />
         <el-button type="primary" :icon="Plus" @click="openNew">新建券</el-button>
         <el-button :icon="DocumentCopy" @click="openBatch">批量生成</el-button>
@@ -34,11 +38,12 @@
         <el-button :icon="Refresh" @click="reload">刷新</el-button>
       </div>
 
+      <div class="table-wrap">
       <el-table
         :data="rows"
         v-loading="loading"
         stripe
-        style="margin-top:12px"
+        height="100%"
         @selection-change="(rows: VoucherDto[]) => (selected = rows)"
       >
         <el-table-column type="selection" width="44" />
@@ -73,6 +78,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
 
       <div class="pager">
         <el-pagination
@@ -228,6 +234,7 @@ import { vouchersApi, type VoucherDto } from '@/api/modules';
 const rows = ref<VoucherDto[]>([]);
 const loading = ref(false);
 const statusFilter = ref<string | undefined>(undefined);
+const kindFilter = ref<string | undefined>(undefined);
 const keyword = ref('');
 const formOpen = ref(false);
 const saving = ref(false);
@@ -284,6 +291,7 @@ async function reload() {
   try {
     const resp = await vouchersApi.list({
       status: statusFilter.value,
+      kind: kindFilter.value,
       keyword: keyword.value || undefined,
       page: page.value,
       pageSize: pageSize.value
@@ -453,9 +461,18 @@ onMounted(reload);
 </script>
 
 <style scoped>
-.page { padding-bottom: 24px; }
-.toolbar { display: flex; gap: 12px; align-items: center; }
-.toolbar .title { font-weight: 600; font-size: 16px; }
+/* 视口锁定：工具栏 / 分页固定，仅 .table-wrap 内的表格滚动 */
+.page { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+.page > :deep(.el-card) { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.page > :deep(.el-card) > :deep(.el-card__body) {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.toolbar { display: flex; gap: 12px; align-items: center; flex: 0 0 auto; }
+.table-wrap { flex: 1 1 auto; min-height: 0; margin-top: 12px; }
 .spacer { flex: 1; }
 .batch-result {
   padding: 12px;
@@ -482,5 +499,5 @@ onMounted(reload);
   font-size: 13px;
   color: #2D6A4F;
 }
-.pager { display: flex; justify-content: flex-end; padding: 12px 0 0; }
+.pager { display: flex; justify-content: flex-end; padding: 12px 0 0; flex: 0 0 auto; }
 </style>

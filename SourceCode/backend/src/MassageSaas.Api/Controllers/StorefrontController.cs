@@ -1,6 +1,7 @@
 using MassageSaas.Application.Abstractions;
 using MassageSaas.Domain.Common;
 using MassageSaas.Infrastructure.Persistence;
+using MassageSaas.Shared.Reviews;
 using MassageSaas.Shared.Storefront;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -98,6 +99,47 @@ public class StorefrontController : ControllerBase
         return Ok(new StorefrontMemberDto(
             member.Id, member.CardNo, member.Name, member.Balance,
             member.Level.ToString(), packages));
+    }
+
+    /// <summary>
+    /// 顾客"待评价"列表：按 openId 找到名下所有会员卡，返回这些卡消费过、
+    /// 已完成、且尚未评价的订单项（精确到技师 + 服务）。未绑卡返回空列表。
+    /// 只暴露顾客自己会员卡的记录，不会泄露他人消费。
+    /// </summary>
+    [HttpGet("reviewable")]
+    public async Task<ActionResult<IReadOnlyList<ReviewableItemDto>>> Reviewable(
+        [FromQuery] string? openId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(openId))
+            return BadRequest(new { code = "InvalidInput", message = "缺少 openId" });
+
+        _tenantContext.BypassTenantFilter();
+
+        // 一个微信可能在多家门店绑过卡，取其名下全部会员卡 id
+        var memberIds = await _db.Members.AsNoTracking()
+            .Where(m => m.WechatOpenId == openId)
+            .Select(m => m.Id)
+            .ToListAsync(ct);
+        if (memberIds.Count == 0)
+            return Ok(Array.Empty<ReviewableItemDto>());
+
+        var rows = await _db.OrderItems.AsNoTracking()
+            .Where(oi => oi.Order.MemberId != null
+                         && memberIds.Contains(oi.Order.MemberId.Value)
+                         && oi.Order.Status == OrderStatus.Completed
+                         && !_db.ServiceReviews.Any(r => r.OrderItemId == oi.Id))
+            .OrderByDescending(oi => oi.Order.CompletedAt)
+            .Take(100)
+            .Select(oi => new ReviewableItemDto(
+                oi.OrderId,
+                oi.Id,
+                oi.Order.OrderNo,
+                oi.TechnicianId,
+                oi.Technician != null ? (oi.Technician.RealName ?? oi.Technician.Username) : string.Empty,
+                oi.ServiceName,
+                oi.Order.CompletedAt))
+            .ToListAsync(ct);
+        return Ok(rows);
     }
 
     private async Task<long?> ResolveTenantAsync(long storeId, CancellationToken ct)

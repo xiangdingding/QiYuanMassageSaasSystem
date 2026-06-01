@@ -23,7 +23,8 @@
         <el-button :icon="Refresh" @click="reload">刷新</el-button>
       </div>
 
-      <el-table :data="rows" v-loading="loading" stripe style="margin-top:12px">
+      <div class="table-wrap">
+      <el-table :data="rows" v-loading="loading" stripe height="100%">
         <el-table-column prop="orderNo" label="订单号" width="160" />
         <el-table-column prop="serviceName" label="项目" width="160" />
         <el-table-column prop="originalTechnicianName" label="被投诉技师" width="120" />
@@ -66,8 +67,10 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
 
       <el-pagination
+        class="pager"
         style="margin-top: 12px; justify-content: flex-end; display: flex"
         :current-page="filter.page"
         :page-size="filter.pageSize"

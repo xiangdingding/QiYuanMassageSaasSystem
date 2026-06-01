@@ -285,6 +285,7 @@ public interface IApiClient
     [Get("/vouchers")]
     Task<PagedResult<VoucherDto>> GetVouchersAsync(
         [Query] string? status = null,
+        [Query] string? kind = null,
         [Query] string? keyword = null,
         [Query] int page = 1,
         [Query] int pageSize = 20);
@@ -364,6 +365,17 @@ public interface IApiClient
     Task<List<TechnicianReviewSummaryDto>> GetReviewSummaryAsync(
         [Query] DateTime? from = null,
         [Query] DateTime? to = null);
+
+    /// <summary>代客录入评价（已登录店员身份）。</summary>
+    [Post("/reviews")]
+    Task<ServiceReviewDto> SubmitReviewAsync([Body] SubmitReviewRequest req);
+
+    /// <summary>按技师 + 日期列出当日已完成的服务项，供投诉登记 / 代客评价选择。</summary>
+    [Get("/orders/items/by-technician")]
+    Task<List<TechnicianServedItemDto>> GetServedItemsByTechnicianAsync(
+        [Query] long storeId,
+        [Query] long technicianId,
+        [Query] DateTime date);
 
     [Get("/schedules")]
     Task<List<StaffScheduleDto>> GetSchedulesAsync(

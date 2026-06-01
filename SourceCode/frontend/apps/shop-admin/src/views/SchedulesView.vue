@@ -7,13 +7,14 @@
         <el-button :icon="Refresh" @click="reload">刷新</el-button>
       </div>
 
-      <el-tabs v-model="tab" @tab-change="reload" style="margin-top:8px">
+      <el-tabs v-model="tab" class="page-tabs" @tab-change="reload">
         <el-tab-pane label="排班" name="schedules">
           <div class="sub-toolbar">
             <el-date-picker v-model="range" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" />
             <el-button type="primary" :icon="Plus" @click="openSchedule">新增排班</el-button>
           </div>
-          <el-table :data="schedules" v-loading="loading" stripe style="margin-top:8px">
+          <div class="table-wrap">
+          <el-table :data="schedules" v-loading="loading" stripe height="100%">
             <el-table-column prop="workDate" label="日期" width="120">
               <template #default="{ row }">{{ formatDate(row.workDate) }}</template>
             </el-table-column>
@@ -28,17 +29,23 @@
               </template>
             </el-table-column>
           </el-table>
+          </div>
         </el-tab-pane>
 
         <el-tab-pane label="请假审批" name="leaves">
-          <el-table :data="leaves" v-loading="loading" stripe>
+          <div class="table-wrap">
+          <el-table :data="leaves" v-loading="loading" stripe height="100%">
             <el-table-column prop="userName" label="员工" width="120" />
-            <el-table-column prop="type" label="类型" width="100" />
+            <el-table-column prop="type" label="类型" width="100">
+              <template #default="{ row }">{{ leaveTypeLabel(row.type) }}</template>
+            </el-table-column>
             <el-table-column label="日期" width="220">
               <template #default="{ row }">{{ formatDate(row.fromDate) }} - {{ formatDate(row.toDate) }}</template>
             </el-table-column>
             <el-table-column prop="reason" label="原因" min-width="180" />
-            <el-table-column prop="status" label="状态" width="100" />
+            <el-table-column prop="status" label="状态" width="100">
+              <template #default="{ row }">{{ leaveStatusLabel(row.status) }}</template>
+            </el-table-column>
             <el-table-column prop="approverName" label="审批人" width="100" />
             <el-table-column label="操作" width="180" fixed="right">
               <template #default="{ row }">
@@ -47,6 +54,7 @@
               </template>
             </el-table-column>
           </el-table>
+          </div>
         </el-tab-pane>
       </el-tabs>
     </el-card>
@@ -81,6 +89,7 @@ import {
 } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
 import type { Staff } from '@/api/types';
+import { leaveStatusLabel, leaveTypeLabel } from '@/utils/enumLabels';
 
 const appStore = useAppStore();
 
@@ -163,9 +172,11 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page { padding-bottom: 24px; }
 .toolbar { display: flex; gap: 12px; align-items: center; }
 .toolbar .title { font-weight: 600; font-size: 16px; }
 .spacer { flex: 1; }
-.sub-toolbar { display: flex; gap: 12px; }
+.sub-toolbar { display: flex; gap: 12px; flex: 0 0 auto; padding-bottom: 8px; }
+.page-tabs { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; margin-top: 8px; }
+.page-tabs :deep(.el-tabs__content) { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.page-tabs :deep(.el-tab-pane) { height: 100%; display: flex; flex-direction: column; }
 </style>

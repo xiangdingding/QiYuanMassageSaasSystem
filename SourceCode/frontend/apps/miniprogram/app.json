@@ -8,7 +8,8 @@
     "pages/tech/timed-rooms/timed-rooms",
     "pages/auth/login/login",
     "pages/customer/book/book",
-    "pages/customer/my/my"
+    "pages/customer/my/my",
+    "pages/customer/review/review"
   ],
   "window": {
     "backgroundTextStyle": "light",

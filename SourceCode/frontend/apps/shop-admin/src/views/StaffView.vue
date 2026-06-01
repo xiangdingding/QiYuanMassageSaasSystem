@@ -23,7 +23,8 @@
         <el-button type="success" @click="openCreate">添加员工</el-button>
       </div>
 
-      <el-table :data="rows" v-loading="loading" stripe style="margin-top: 12px">
+      <div class="table-wrap">
+      <el-table :data="rows" v-loading="loading" stripe height="100%">
         <el-table-column prop="employeeNo" label="工号" width="80" />
         <el-table-column prop="username" label="账号" width="120" />
         <el-table-column prop="realName" label="姓名" width="100" />
@@ -53,8 +54,10 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
 
       <el-pagination
+        class="pager"
         style="margin-top: 12px; justify-content: flex-end; display: flex"
         :current-page="query.page"
         :page-size="query.pageSize"

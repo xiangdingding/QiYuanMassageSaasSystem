@@ -30,6 +30,7 @@ public class VouchersController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PagedResult<VoucherDto>>> List(
         [FromQuery] string? status = null,
+        [FromQuery] string? kind = null,
         [FromQuery] string? keyword = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -38,10 +39,14 @@ public class VouchersController : ControllerBase
         var q = _db.Vouchers.AsNoTracking().AsQueryable();
         if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<VoucherStatus>(status, true, out var s))
             q = q.Where(v => v.Status == s);
+        if (!string.IsNullOrWhiteSpace(kind) && Enum.TryParse<VoucherKind>(kind, true, out var k0))
+            q = q.Where(v => v.Kind == k0);
         if (!string.IsNullOrWhiteSpace(keyword))
         {
             var k = keyword.Trim();
-            q = q.Where(v => v.Code.Contains(k) || v.Title.Contains(k));
+            // 一个输入框覆盖券码 / 标题 / 来源平台
+            q = q.Where(v => v.Code.Contains(k) || v.Title.Contains(k)
+                || (v.Platform != null && v.Platform.Contains(k)));
         }
         var pq = new PageQuery(page, pageSize, null);
         var total = await q.CountAsync(ct);

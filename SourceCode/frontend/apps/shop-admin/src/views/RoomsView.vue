@@ -2,14 +2,14 @@
   <div class="page">
     <el-card shadow="never">
       <div class="toolbar">
-        <span class="title">房间/床位 — {{ activeStoreName }}</span>
         <el-checkbox v-model="includeInactive" @change="reload">含已停用</el-checkbox>
         <div class="spacer" />
         <el-button v-if="canManage" type="primary" :icon="Plus" @click="openNew">新建房间</el-button>
         <el-button :icon="Refresh" @click="reload">刷新</el-button>
       </div>
 
-      <el-table :data="rows" v-loading="loading" stripe style="margin-top: 12px">
+      <div class="table-wrap">
+      <el-table :data="rows" v-loading="loading" stripe height="100%">
         <el-table-column prop="roomNo" label="房间号" width="100" />
         <el-table-column prop="roomType" label="类型" width="120">
           <template #default="{ row }">
@@ -54,6 +54,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </el-card>
 
     <el-dialog v-model="formOpen" :title="form.id ? '编辑房间' : '新建房间'" width="460px">

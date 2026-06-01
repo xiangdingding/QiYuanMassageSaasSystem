@@ -5,7 +5,8 @@
         <span class="title">总店与分店管理</span>
         <el-button type="primary" @click="openCreate">新建分店</el-button>
       </div>
-      <el-table :data="rows" v-loading="loading" stripe style="margin-top: 12px">
+      <div class="table-wrap">
+      <el-table :data="rows" v-loading="loading" stripe height="100%">
         <el-table-column prop="name" label="名称" min-width="180">
           <template #default="{ row }">
             {{ row.name }}
@@ -28,6 +29,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </el-card>
 
     <el-dialog v-model="formOpen" :title="formMode === 'create' ? '新建分店' : '编辑门店'" width="480px">

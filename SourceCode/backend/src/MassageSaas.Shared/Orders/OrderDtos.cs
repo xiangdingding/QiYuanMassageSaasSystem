@@ -128,7 +128,7 @@ public record OrderListItemDto(
 
 public record RefundRequest(string? Reason);
 
-/// <summary>用于"按技师 + 日期"列出已完成订单项，供投诉登记 UI 选择。</summary>
+/// <summary>用于"按技师 + 日期"列出已完成订单项，供投诉登记 / 代客评价 UI 选择。</summary>
 public record TechnicianServedItemDto(
     long ItemId,
     long OrderId,
@@ -140,4 +140,6 @@ public record TechnicianServedItemDto(
     long? MemberId,
     string? MemberName,
     string? MemberCardNo,
-    bool HasPendingComplaint);
+    bool HasPendingComplaint,
+    /// <summary>该订单项是否已存在服务评价；代客录入评价时用于置灰，避免重复评价。</summary>
+    bool HasReview = false);

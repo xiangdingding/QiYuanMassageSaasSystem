@@ -213,6 +213,10 @@ Page({
     this.setData({ bound: null, packages: [] });
     wx.showToast({ title: '已解除显示', icon: 'none' });
   },
+  /** 跳转服务评价页（对已完成、未评价的服务打分）。 */
+  goReview() {
+    wx.navigateTo({ url: '/pages/customer/review/review' });
+  },
   cancel(e: WechatMiniprogram.TouchEvent) {
     const id = Number(e.currentTarget.dataset.id);
     wx.showModal({

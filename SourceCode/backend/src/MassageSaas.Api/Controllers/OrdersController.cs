@@ -35,6 +35,7 @@ public class OrdersController : ControllerBase
         [FromQuery] string? status = null,
         [FromQuery] DateTime? from = null,
         [FromQuery] DateTime? to = null,
+        [FromQuery] string? keyword = null,
         CancellationToken ct = default)
     {
         var pq = new PageQuery(page, pageSize, null);
@@ -45,6 +46,16 @@ public class OrdersController : ControllerBase
             q = q.Where(o => o.Status == s);
         if (from.HasValue) q = q.Where(o => o.CreatedAt >= from.Value);
         if (to.HasValue) q = q.Where(o => o.CreatedAt < to.Value);
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var k = keyword.Trim();
+            // 一个输入框覆盖 4 个字段：订单号 + 会员卡号 / 姓名 / 手机号
+            q = q.Where(o => o.OrderNo.Contains(k)
+                || (o.Member != null && (
+                    o.Member.CardNo.Contains(k)
+                    || o.Member.Phone.Contains(k)
+                    || (o.Member.Name != null && o.Member.Name.Contains(k)))));
+        }
 
         var total = await q.CountAsync(ct);
         var items = await q
@@ -95,7 +106,8 @@ public class OrdersController : ControllerBase
                 oi.Order.MemberId,
                 oi.Order.Member != null ? oi.Order.Member.Name : null,
                 oi.Order.Member != null ? oi.Order.Member.CardNo : null,
-                _db.ServiceComplaints.Any(c => c.OrderItemId == oi.Id && c.Status == ComplaintStatus.Pending)))
+                _db.ServiceComplaints.Any(c => c.OrderItemId == oi.Id && c.Status == ComplaintStatus.Pending),
+                _db.ServiceReviews.Any(r => r.OrderItemId == oi.Id)))
             .ToListAsync(ct);
 
         return Ok(rows);

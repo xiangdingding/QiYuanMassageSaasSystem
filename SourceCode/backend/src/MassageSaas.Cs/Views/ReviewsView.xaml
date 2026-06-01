@@ -25,7 +25,12 @@
                     <TextBlock Text="天数" VerticalAlignment="Center" Margin="12,0,6,0" />
                     <TextBox Text="{Binding Days, UpdateSourceTrigger=PropertyChanged}" Width="56" Height="30"
                              AutomationProperties.Name="统计天数" />
-                    <Button Content="刷新" Padding="12,6" Margin="12,0,0,0" Command="{Binding ReloadCommand}" />
+                    <Button Content="代客录入" Padding="12,6" Margin="12,0,0,0"
+                            Background="#2D6A4F" Foreground="White" BorderThickness="0"
+                            Command="{Binding CreateCommand}"
+                            AutomationProperties.Name="代客录入服务评价"
+                            AutomationProperties.HelpText="选技师和日期，挑出已完成的服务项打分" />
+                    <Button Content="刷新" Padding="12,6" Margin="8,0,0,0" Command="{Binding ReloadCommand}" />
                 </StackPanel>
             </DockPanel>
 

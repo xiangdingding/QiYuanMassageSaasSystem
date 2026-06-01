@@ -9,9 +9,9 @@
               ref="serviceFilterInput"
               v-model="serviceFilter"
               placeholder="按编码或名称过滤，回车快速加入第一项"
-              size="default"
+              size="large"
               clearable
-              style="width: 280px"
+              style="width: 380px"
               :prefix-icon="Search"
               aria-label="搜索服务项目，按回车快速添加第一项"
               @keyup.enter="quickAddFirst"

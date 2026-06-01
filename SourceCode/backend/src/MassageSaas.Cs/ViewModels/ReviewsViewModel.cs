@@ -10,10 +10,12 @@ namespace MassageSaas.Cs.ViewModels;
 public partial class ReviewsViewModel : ObservableObject
 {
     private readonly IApiClient _api;
+    private readonly AppContextService _context;
 
-    public ReviewsViewModel(IApiClient api)
+    public ReviewsViewModel(IApiClient api, AppContextService context)
     {
         _api = api;
+        _context = context;
         _ = ReloadAsync();
     }
 
@@ -35,6 +37,19 @@ public partial class ReviewsViewModel : ObservableObject
 
     partial void OnRatingFilterChanged(int value) => _ = ReloadAsync();
     partial void OnDaysChanged(int value) => _ = ReloadAsync();
+
+    /// <summary>代客录入评价：弹窗自带 IApiClient，提交成功后刷新列表。</summary>
+    [RelayCommand]
+    private async Task CreateAsync()
+    {
+        if (_context.ActiveStoreId is not long sid)
+        {
+            System.Windows.MessageBox.Show("请先选择门店");
+            return;
+        }
+        var dlg = new Views.ReviewCreateWindow(_api, sid);
+        if (dlg.ShowDialog() == true) await ReloadAsync();
+    }
 
     [RelayCommand]
     public async Task ReloadAsync()

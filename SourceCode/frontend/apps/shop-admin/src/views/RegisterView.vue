@@ -117,7 +117,9 @@ async function submit() {
 
 <style scoped>
 .register-bg {
-  min-height: 100vh;
+  /* 外层 body 锁了滚动；注册页可能超出 viewport，自己接管滚动 */
+  height: 100vh;
+  overflow: auto;
   display: flex;
   align-items: center;
   justify-content: center;

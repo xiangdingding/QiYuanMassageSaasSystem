@@ -9,7 +9,8 @@
         <el-button :icon="Refresh" @click="reload">刷新</el-button>
       </div>
 
-      <el-table :data="rows" v-loading="loading" stripe style="margin-top: 12px">
+      <div class="table-wrap">
+      <el-table :data="rows" v-loading="loading" stripe height="100%">
         <el-table-column prop="code" label="编码" width="120" />
         <el-table-column prop="name" label="名称" min-width="160" />
         <el-table-column prop="unit" label="单位" width="80" />
@@ -34,6 +35,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </el-card>
 
     <el-dialog v-model="formOpen" title="物品建档" width="460px">
@@ -69,7 +71,9 @@
 
     <el-dialog v-model="historyOpen" :title="`${historyItemName} 出入库流水`" width="640px">
       <el-table :data="movements" stripe>
-        <el-table-column prop="kind" label="类型" width="100" />
+        <el-table-column prop="kind" label="类型" width="100">
+          <template #default="{ row }">{{ inventoryKindLabel(row.kind) }}</template>
+        </el-table-column>
         <el-table-column prop="delta" label="变化" width="100" />
         <el-table-column prop="quantityAfter" label="结余" width="100" />
         <el-table-column prop="operatorName" label="操作人" width="120" />
@@ -85,6 +89,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Plus, Refresh } from '@element-plus/icons-vue';
 import { inventoryApi, type InventoryItemDto, type InventoryMovementDto } from '@/api/modules';
+import { inventoryKindLabel } from '@/utils/enumLabels';
 import { useAppStore } from '@/stores/app';
 
 const appStore = useAppStore();

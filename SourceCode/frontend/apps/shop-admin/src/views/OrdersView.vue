@@ -8,6 +8,15 @@
           <el-option label="已取消" value="Cancelled" />
           <el-option label="已退款" value="Refunded" />
         </el-select>
+        <el-input
+          v-model="query.keyword"
+          placeholder="订单号 / 会员卡号 / 姓名 / 手机号"
+          clearable
+          style="width: 320px"
+          aria-label="按订单号、会员卡号、姓名或手机号模糊查询，回车直接搜索"
+          @keyup.enter="onSearch"
+          @clear="onSearch"
+        />
         <el-date-picker
           v-model="dateRange"
           type="datetimerange"
@@ -17,11 +26,12 @@
           format="YYYY-MM-DD HH:mm"
           value-format="YYYY-MM-DDTHH:mm:ss[Z]"
         />
-        <el-button type="primary" @click="reload">查询</el-button>
+        <el-button type="primary" @click="onSearch">查询</el-button>
         <el-button @click="resetQuery">重置</el-button>
       </div>
 
-      <el-table :data="rows" v-loading="loading" stripe style="margin-top: 12px" @row-click="openDetail">
+      <div class="table-wrap">
+        <el-table :data="rows" v-loading="loading" stripe height="100%" @row-click="openDetail">
         <el-table-column prop="orderNo" label="订单号" min-width="180" />
         <el-table-column label="项数" width="60" prop="itemCount" />
         <el-table-column label="金额" width="100">
@@ -56,8 +66,10 @@
           <template #default="{ row }">{{ formatTime(row.completedAt ?? row.createdAt) }}</template>
         </el-table-column>
       </el-table>
+      </div>
 
       <el-pagination
+        class="pager"
         style="margin-top: 12px; justify-content: flex-end; display: flex"
         :current-page="query.page"
         :page-size="query.pageSize"
@@ -448,10 +460,11 @@ async function doComplaint() {
   }
 }
 
-const query = reactive<{ page: number; pageSize: number; status: string }>({
+const query = reactive<{ page: number; pageSize: number; status: string; keyword: string }>({
   page: 1,
   pageSize: 20,
-  status: ''
+  status: '',
+  keyword: ''
 });
 
 function payLabel(m: string) {
@@ -562,7 +575,8 @@ async function reload() {
       storeId: appStore.activeStoreId,
       status: query.status || undefined,
       from: dateRange.value?.[0],
-      to: dateRange.value?.[1]
+      to: dateRange.value?.[1],
+      keyword: query.keyword.trim() || undefined
     });
     rows.value = data.items;
     total.value = data.total;
@@ -571,8 +585,15 @@ async function reload() {
   }
 }
 
+/// 任何筛选条件改变后回到第 1 页再查
+function onSearch() {
+  query.page = 1;
+  reload();
+}
+
 function resetQuery() {
   query.status = '';
+  query.keyword = '';
   dateRange.value = null;
   query.page = 1;
   reload();
@@ -617,8 +638,19 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page { padding-bottom: 24px; }
-.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+/* 视口锁定：工具栏 / 分页固定，仅 .table-wrap 内的表格滚动 */
+.page { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+.page > :deep(.el-card) { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.page > :deep(.el-card) > :deep(.el-card__body) {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: 0 0 auto; }
+.table-wrap { flex: 1 1 auto; min-height: 0; margin-top: 12px; }
+.pager { flex: 0 0 auto; }
 .actions { margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end; }
 :deep(.el-table .el-table__row) { cursor: pointer; }
 

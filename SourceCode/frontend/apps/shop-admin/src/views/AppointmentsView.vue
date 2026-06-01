@@ -10,6 +10,15 @@
           <el-option label="已取消" value="Cancelled" />
           <el-option label="未到店" value="NoShow" />
         </el-select>
+        <el-input
+          v-model="query.keyword"
+          placeholder="会员姓名 / 电话"
+          clearable
+          style="width: 280px"
+          aria-label="按会员姓名或电话模糊查询，回车直接搜索"
+          @keyup.enter="onSearch"
+          @clear="onSearch"
+        />
         <el-date-picker
           v-model="dateRange"
           type="daterange"
@@ -19,7 +28,7 @@
           format="YYYY-MM-DD"
           value-format="YYYY-MM-DD"
         />
-        <el-button type="primary" @click="reload">查询</el-button>
+        <el-button type="primary" @click="onSearch">查询</el-button>
         <el-button @click="resetQuery">重置</el-button>
         <el-button
           type="success"
@@ -28,7 +37,8 @@
         >登记电话预约</el-button>
       </div>
 
-      <el-table :data="rows" v-loading="loading" stripe style="margin-top: 12px">
+      <div class="table-wrap">
+      <el-table :data="rows" v-loading="loading" stripe height="100%">
         <el-table-column label="到店时间" width="170">
           <template #default="{ row }">{{ dayjs(row.expectedArriveAt).format('YYYY-MM-DD HH:mm') }}</template>
         </el-table-column>
@@ -82,6 +92,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
 
       <div class="pager">
         <el-pagination
@@ -207,8 +218,8 @@ import type { Appointment, AppointmentStatus, ServiceItem, Staff } from '@/api/t
 
 const appStore = useAppStore();
 
-const query = reactive<{ page: number; pageSize: number; status: AppointmentStatus | ''; storeId?: number }>({
-  page: 1, pageSize: 20, status: ''
+const query = reactive<{ page: number; pageSize: number; status: AppointmentStatus | ''; keyword: string; storeId?: number }>({
+  page: 1, pageSize: 20, status: '', keyword: ''
 });
 const dateRange = ref<[string, string] | null>(null);
 const rows = ref<Appointment[]>([]);
@@ -235,6 +246,7 @@ async function reload() {
       status: query.status || undefined,
       from: dateRange.value?.[0],
       to: dateRange.value?.[1] ? dayjs(dateRange.value[1]).add(1, 'day').format('YYYY-MM-DD') : undefined,
+      keyword: query.keyword.trim() || undefined,
       page: query.page,
       pageSize: query.pageSize
     });
@@ -245,8 +257,15 @@ async function reload() {
   }
 }
 
+/// 任何筛选条件改变后回到第 1 页再查
+function onSearch() {
+  query.page = 1;
+  reload();
+}
+
 function resetQuery() {
   query.status = '';
+  query.keyword = '';
   dateRange.value = null;
   query.page = 1;
   reload();

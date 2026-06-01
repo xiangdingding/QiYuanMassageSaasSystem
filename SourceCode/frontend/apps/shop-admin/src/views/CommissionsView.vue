@@ -13,7 +13,8 @@
         <el-button type="warning" @click="openBulk">批量设置</el-button>
       </div>
 
-      <el-table :data="rows" v-loading="loading" stripe style="margin-top: 12px">
+      <div class="table-wrap">
+      <el-table :data="rows" v-loading="loading" stripe height="100%">
         <el-table-column label="规则类型" width="100">
           <template #default="{ row }">{{ ruleLabel(row.ruleType) }}</template>
         </el-table-column>
@@ -45,6 +46,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </el-card>
 
     <el-dialog v-model="formOpen" :title="formMode === 'create' ? '新建提成规则' : '编辑提成规则'" width="720px">

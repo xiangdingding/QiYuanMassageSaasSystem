@@ -5,7 +5,8 @@
         <el-checkbox v-model="includeInactive" @change="reload">显示已停用</el-checkbox>
         <el-button type="primary" @click="openCreate">新建项目</el-button>
       </div>
-      <el-table :data="rows" v-loading="loading" stripe style="margin-top: 12px">
+      <div class="table-wrap">
+      <el-table :data="rows" v-loading="loading" stripe height="100%">
         <el-table-column prop="sort" label="排序" width="80" sortable />
         <el-table-column prop="code" label="编码" width="100" sortable />
         <el-table-column prop="name" label="名称" min-width="180" sortable />
@@ -32,6 +33,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </el-card>
 
     <el-dialog v-model="formOpen" :title="formMode === 'create' ? '新建服务项目' : '编辑服务项目'" width="480px">
@@ -142,12 +144,16 @@ async function save() {
   if (!formRef.value) return;
   const ok = await formRef.value.validate().catch(() => false);
   if (!ok) return;
+  // 校验规则已保证原价/会员价必填为数字，这里收窄到非空 number 满足接口类型
+  const { price, memberPrice } = form;
+  if (price == null || memberPrice == null) return;
+  const payload = { ...form, price, memberPrice };
   saving.value = true;
   try {
     if (formMode.value === 'create') {
-      await servicesApi.create({ ...form });
+      await servicesApi.create(payload);
     } else if (editingId.value != null) {
-      await servicesApi.update(editingId.value, { ...form });
+      await servicesApi.update(editingId.value, payload);
     }
     ElMessage.success('已保存');
     formOpen.value = false;

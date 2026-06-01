@@ -1,0 +1,94 @@
+<Window x:Class="MassageSaas.Cs.Views.BatchVoucherWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="批量生成优惠券"
+        Height="720" Width="520"
+        MinHeight="560" MinWidth="480"
+        WindowStartupLocation="CenterOwner"
+        SizeToContent="Manual"
+        ResizeMode="CanResize">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <!-- 表单 / 结果 二选一占据中段；footer 永远贴底 -->
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- 表单区：未生成时显示；生成成功后整体折叠，窗口高度由内容自动收缩 -->
+        <StackPanel Grid.Row="0" x:Name="FormPanel">
+            <TextBlock Text="券类型" Margin="0,0,0,4" />
+            <ComboBox x:Name="KindBox" Height="32" Margin="0,0,0,10">
+                <ComboBoxItem Content="团购券（美团 / 点评 / 抖音）" Tag="GroupBuy" />
+                <ComboBoxItem Content="门店优惠券" Tag="StoreCoupon" />
+            </ComboBox>
+
+            <TextBlock Text="数量（1-500 张）" Margin="0,0,0,4" />
+            <TextBox x:Name="CountBox" Padding="6" Text="100" Margin="0,0,0,10"
+                     AutomationProperties.Name="生成数量，1 到 500" />
+
+            <TextBlock Text="标题" Margin="0,0,0,4" />
+            <TextBox x:Name="TitleBox" Padding="6" Margin="0,0,0,10"
+                     AutomationProperties.HelpText="如：团购 100 元抵扣券" />
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="抵扣方式：" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <RadioButton x:Name="ModeFaceRadio" Content="满减面值" GroupName="BatchMode" IsChecked="True"
+                             VerticalAlignment="Center" Margin="0,0,12,0" />
+                <RadioButton x:Name="ModePercentRadio" Content="折扣率" GroupName="BatchMode"
+                             VerticalAlignment="Center" />
+            </StackPanel>
+
+            <StackPanel Margin="0,0,0,10"
+                        Visibility="{Binding ElementName=ModeFaceRadio, Path=IsChecked, Converter={StaticResource BoolToVisible}}">
+                <TextBlock Text="面值（元，每张抵扣此金额）" Margin="0,0,0,4" />
+                <TextBox x:Name="FaceBox" Padding="6" Text="100" />
+            </StackPanel>
+            <StackPanel Margin="0,0,0,10"
+                        Visibility="{Binding ElementName=ModePercentRadio, Path=IsChecked, Converter={StaticResource BoolToVisible}}">
+                <TextBlock Text="折扣率（0.9 表示 9 折，0-1 之间）" Margin="0,0,0,4" />
+                <TextBox x:Name="DiscountBox" Padding="6" Text="0.9" />
+            </StackPanel>
+
+            <TextBlock Text="最低订单额（元）" Margin="0,0,0,4" />
+            <TextBox x:Name="MinBox" Padding="6" Text="100" Margin="0,0,0,10" />
+
+            <TextBlock Text="来源平台（可空，仅团购券）" Margin="0,0,0,4" />
+            <TextBox x:Name="PlatformBox" Padding="6" Margin="0,0,0,10" />
+        </StackPanel>
+
+        <!-- 结果区：未生成时折叠不占空间；生成后撑满 Row=0 的 * 高度 -->
+        <Border Grid.Row="0" x:Name="ResultPanel" Visibility="Collapsed"
+                BorderBrush="#D4E9D8" BorderThickness="1" Background="#F6FBF7"
+                CornerRadius="4" Padding="10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <DockPanel Grid.Row="0" Margin="0,0,0,6">
+                    <TextBlock DockPanel.Dock="Left" x:Name="ResultHeader"
+                               FontSize="13" Foreground="#2D6A4F" VerticalAlignment="Center" />
+                    <Button DockPanel.Dock="Right" Content="复制全部" Padding="10,4"
+                            Background="#2D6A4F" Foreground="White" BorderThickness="0"
+                            Click="Copy_Click"
+                            AutomationProperties.Name="复制全部生成的券码到剪贴板" />
+                </DockPanel>
+                <TextBox Grid.Row="1" x:Name="CodesBox" IsReadOnly="True"
+                         MinHeight="280"
+                         FontFamily="Consolas, Courier New" FontSize="12"
+                         TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                         AcceptsReturn="True"
+                         AutomationProperties.Name="生成的券码列表，每行一个" />
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="关闭" Padding="16,6" Margin="0,0,8,0" Click="Close_Click" />
+                <Button x:Name="GenerateButton" Content="生成" Padding="16,6"
+                        Background="#2D6A4F" Foreground="White" BorderThickness="0"
+                        Click="Generate_Click" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

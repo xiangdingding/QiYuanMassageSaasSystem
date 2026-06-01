@@ -171,7 +171,7 @@ export const membersApi = {
 };
 
 export const ordersApi = {
-  list: (params: { page?: number; pageSize?: number; storeId?: number; status?: string; from?: string; to?: string }) =>
+  list: (params: { page?: number; pageSize?: number; storeId?: number; status?: string; from?: string; to?: string; keyword?: string }) =>
     http().get<PagedResult<OrderListItem>>('/orders', { params }).then((r) => r.data),
   get: (id: number) => http().get<Order>(`/orders/${id}`).then((r) => r.data),
   create: (body: CreateOrderRequest) => http().post<Order>('/orders', body).then((r) => r.data),
@@ -195,6 +195,8 @@ export interface TechnicianServedItemDto {
   memberName: string | null;
   memberCardNo: string | null;
   hasPendingComplaint: boolean;
+  /** 该订单项是否已评价；代客录入评价时置灰 */
+  hasReview?: boolean;
 }
 
 export const queueApi = {
@@ -321,7 +323,7 @@ export const subscriptionsApi = {
 };
 
 export const appointmentsApi = {
-  list: (params: { storeId?: number; status?: AppointmentStatus; from?: string; to?: string; page?: number; pageSize?: number }) =>
+  list: (params: { storeId?: number; status?: AppointmentStatus; from?: string; to?: string; keyword?: string; page?: number; pageSize?: number }) =>
     http().get<PagedResult<Appointment>>('/appointments', { params }).then((r) => r.data),
   create: (body: {
     storeId: number;
@@ -410,7 +412,7 @@ export interface VoucherDto {
 }
 
 export const vouchersApi = {
-  list: (params?: { status?: string; keyword?: string; page?: number; pageSize?: number }) =>
+  list: (params?: { status?: string; kind?: string; keyword?: string; page?: number; pageSize?: number }) =>
     http().get<{ items: VoucherDto[]; total: number; page: number; pageSize: number }>('/vouchers', { params }).then((r) => r.data),
   create: (body: Partial<VoucherDto>) => http().post<VoucherDto>('/vouchers', body).then((r) => r.data),
   /** 批量生成：服务端按 SC/GB 前缀生成 N 个无歧义码，返回 codes 数组 */
@@ -504,7 +506,10 @@ export const reviewsApi = {
     http().get<ServiceReviewDto[]>('/reviews', { params }).then((r) => r.data),
   technicianSummary: (params?: { from?: string; to?: string }) =>
     http().get('/reviews/technician-summary', { params }).then((r) => r.data),
-  me: () => http().get<ServiceReviewDto[]>('/reviews/me').then((r) => r.data)
+  me: () => http().get<ServiceReviewDto[]>('/reviews/me').then((r) => r.data),
+  /** 门店端代客录入评价（已登录店员身份，无需 openId） */
+  submit: (body: { orderId: number; orderItemId: number; rating: number; tags?: string | null; comment?: string | null }) =>
+    http().post<ServiceReviewDto>('/reviews', body).then((r) => r.data)
 };
 
 export interface StaffScheduleDto {

@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <el-tabs v-model="tab">
+    <el-tabs v-model="tab" class="page-tabs">
       <el-tab-pane label="工资单" name="periods">
         <el-card shadow="never">
           <div class="toolbar">
@@ -27,7 +27,8 @@
             <el-button :icon="Refresh" @click="loadPeriods">刷新</el-button>
           </div>
 
-          <el-table :data="periods" v-loading="loading" stripe style="margin-top:12px">
+          <div class="table-wrap">
+          <el-table :data="periods" v-loading="loading" stripe height="100%">
             <el-table-column label="月份" width="120">
               <template #default="{ row }">{{ row.year }}-{{ String(row.month).padStart(2, '0') }}</template>
             </el-table-column>
@@ -52,6 +53,7 @@
               </template>
             </el-table-column>
           </el-table>
+          </div>
         </el-card>
       </el-tab-pane>
 
@@ -62,7 +64,8 @@
             <div class="spacer" />
             <el-button :icon="Refresh" @click="loadProfiles">刷新</el-button>
           </div>
-          <el-table :data="profiles" v-loading="loading" stripe style="margin-top:12px">
+          <div class="table-wrap">
+          <el-table :data="profiles" v-loading="loading" stripe height="100%">
             <el-table-column prop="userName" label="员工" width="140" />
             <el-table-column label="月底薪" width="120">
               <template #default="{ row }">¥{{ row.baseMonthly.toFixed(2) }}</template>
@@ -80,6 +83,7 @@
               </template>
             </el-table-column>
           </el-table>
+          </div>
           <div v-if="profiles.length === 0" class="empty">还没有员工配置薪资。先在"员工管理"里建好员工，然后在这里编辑。</div>
         </el-card>
       </el-tab-pane>
@@ -486,8 +490,19 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page { padding-bottom: 24px; }
 .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.page-tabs { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.page-tabs :deep(.el-tabs__content) { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.page-tabs :deep(.el-tab-pane) { height: 100%; display: flex; flex-direction: column; }
+/* tab 内嵌的 el-card 自身撑满并让内部 table-wrap 可滚 */
+.page-tabs :deep(.el-card) { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.page-tabs :deep(.el-card__body) {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
 .toolbar .title { font-weight: 600; font-size: 16px; }
 .spacer { flex: 1; }
 .empty { color: #999; padding: 40px 0; text-align: center; }
