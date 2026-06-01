@@ -16,13 +16,20 @@ public partial class ReviewCreateWindow : Window
     private readonly IApiClient _api;
     private readonly long _storeId;
 
+    /// <summary>常用标签：勾选多选，不够再手动补充。</summary>
+    private static readonly string[] TagPresets =
+        { "手法专业", "力度合适", "态度热情", "环境整洁", "服务周到", "准时守约", "性价比高", "耐心细致" };
+    private readonly System.Collections.Generic.List<TagOption> _tagOptions =
+        TagPresets.Select(t => new TagOption { Label = t }).ToList();
+
     public ReviewCreateWindow(IApiClient api, long storeId)
     {
         InitializeComponent();
         _api = api;
         _storeId = storeId;
         DateBox.SelectedDate = System.DateTime.Today;
-        RatingBox.SelectedIndex = 0; // 默认 5 星
+        RatingBox.SelectedIndex = 0; // 默认非常满意
+        TagOptionsControl.ItemsSource = _tagOptions;
         Loaded += async (_, _) => await LoadTechniciansAsync();
     }
 
@@ -68,13 +75,21 @@ public partial class ReviewCreateWindow : Window
             MessageBox.Show("请选择评分");
             return;
         }
+        // 勾选标签 + 手动补充，合并为逗号分隔
+        var picked = _tagOptions.Where(o => o.IsSelected).Select(o => o.Label);
+        var manual = (TagsBox.Text ?? string.Empty)
+            .Split(new[] { ',', '，' }, System.StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.Trim())
+            .Where(s => s.Length > 0);
+        var allTags = picked.Concat(manual).ToList();
+        var tags = allTags.Count > 0 ? string.Join(",", allTags) : null;
         try
         {
             await _api.SubmitReviewAsync(new SubmitReviewRequest(
                 item.OrderId,
                 item.ItemId,
                 rating,
-                string.IsNullOrWhiteSpace(TagsBox.Text) ? null : TagsBox.Text.Trim(),
+                tags,
                 string.IsNullOrWhiteSpace(CommentBox.Text) ? null : CommentBox.Text.Trim()));
             DialogResult = true;
             Close();
@@ -90,4 +105,11 @@ public partial class ReviewCreateWindow : Window
 
     /// <summary>技师下拉项：Id 用于提交，Display 用于展示。</summary>
     private record TechOption(long Id, string Display);
+
+    /// <summary>常用标签勾选项：CheckBox 双向绑定 IsSelected，提交时读取。</summary>
+    private sealed class TagOption
+    {
+        public string Label { get; set; } = string.Empty;
+        public bool IsSelected { get; set; }
+    }
 }

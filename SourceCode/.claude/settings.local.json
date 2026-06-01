@@ -19,7 +19,9 @@
       "PowerShell($env:MYSQL_PWD = \"123456\"; & \"C:\\\\Program Files\\\\MySQL\\\\MySQL Server 8.0\\\\bin\\\\mysql.exe\" -h localhost -P 3306 -u root -D massage_saas -e \"DESCRIBE service_items;\")",
       "PowerShell($env:MYSQL_PWD = \"123456\"; & \"C:\\\\Program Files\\\\MySQL\\\\MySQL Server 8.0\\\\bin\\\\mysql.exe\" -h localhost -P 3306 -u root -D massage_saas -e \"DESCRIBE member_types; SELECT TenantId, Code, Name, Kind, MinRechargeAmount, MinPurchaseCount, Discount, BonusAmount, BonusCount, ValidDays, Remark FROM member_types WHERE IsDeleted=0;\")",
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\)\")",
-      "Bash(node -e \"const p=require\\('./apps/shop-admin/package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\)\")"
+      "Bash(node -e \"const p=require\\('./apps/shop-admin/package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\)\")",
+      "Bash(git commit *)",
+      "Bash(echo \"=== exit $? ===\")"
     ]
   }
 }

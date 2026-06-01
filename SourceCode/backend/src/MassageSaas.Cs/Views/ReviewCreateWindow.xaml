@@ -45,23 +45,38 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <!-- 评分 -->
+        <!-- 满意度（底层仍存 1-5 整数） -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBlock Text="评分" VerticalAlignment="Center" Margin="0,0,6,0" />
-            <ComboBox x:Name="RatingBox" Width="110" Height="30"
-                      AutomationProperties.Name="评分星级，一到五星">
-                <ComboBoxItem Content="5 星" Tag="5" />
-                <ComboBoxItem Content="4 星" Tag="4" />
-                <ComboBoxItem Content="3 星" Tag="3" />
-                <ComboBoxItem Content="2 星" Tag="2" />
-                <ComboBoxItem Content="1 星" Tag="1" />
+            <TextBlock Text="满意度" VerticalAlignment="Center" Margin="0,0,6,0" />
+            <ComboBox x:Name="RatingBox" Width="140" Height="30"
+                      AutomationProperties.Name="满意度评价">
+                <ComboBoxItem Content="非常满意" Tag="5" />
+                <ComboBoxItem Content="满意" Tag="4" />
+                <ComboBoxItem Content="一般" Tag="3" />
+                <ComboBoxItem Content="不满意" Tag="2" />
+                <ComboBoxItem Content="非常不满意" Tag="1" />
             </ComboBox>
         </StackPanel>
 
         <StackPanel Grid.Row="3" Margin="0,0,0,10">
-            <TextBlock Text="标签（逗号分隔，如：手法专业,态度好）" Margin="0,0,0,4" />
+            <TextBlock Text="常用标签（勾选，可多选）" Margin="0,0,0,4" />
+            <ItemsControl x:Name="TagOptionsControl">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                  Margin="0,0,16,6" VerticalContentAlignment="Center"
+                                  AutomationProperties.Name="{Binding Label}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="其他标签（可手动填写，逗号分隔）" Margin="0,6,0,4" />
             <TextBox x:Name="TagsBox" Padding="6" MaxLength="200"
-                     AutomationProperties.Name="评价标签" />
+                     AutomationProperties.Name="其他标签" />
         </StackPanel>
         <StackPanel Grid.Row="4" Margin="0,0,0,10">
             <TextBlock Text="评论（可空）" Margin="0,0,0,4" />

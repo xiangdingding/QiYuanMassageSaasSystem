@@ -32,30 +32,62 @@
   overflow: hidden;
 }
 
-/* 星级：大号可点，已选填充蓝、未选灰，纯颜色之外文字标签已在 aria-label 朗读 */
-.stars {
-  display: flex;
+/* 满意度档位：整行大按钮，单列线性排列，已选填充蓝；选中态除颜色外，标签文字本身即语义 */
+.opts {
   margin-top: 12rpx;
 }
 
-.star {
-  min-width: 88rpx;
+.opt {
+  display: block;
+  width: 100%;
   min-height: 88rpx;
   line-height: 88rpx;
+  padding: 0 24rpx;
+  margin-bottom: 12rpx;
   text-align: center;
-  font-size: 56rpx;
-  margin-right: 12rpx;
+  font-size: 38rpx;
   border: 2rpx solid #bbb;
   border-radius: 12rpx;
+  box-sizing: border-box;
 }
 
-.star.on {
+.opt.on {
   color: #fff;
   background: #1677ff;
   border-color: #1677ff;
+  font-weight: 600;
 }
 
-.star.off {
-  color: #bbb;
+.opt.off {
+  color: #333;
+  background: #fff;
+}
+
+/* 常用标签：可换行的胶囊，点选高亮 */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 12rpx;
+}
+
+.chip {
+  min-height: 72rpx;
+  line-height: 72rpx;
+  padding: 0 28rpx;
+  margin: 0 16rpx 16rpx 0;
+  font-size: 34rpx;
+  border: 2rpx solid #bbb;
+  border-radius: 36rpx;
+}
+
+.chip.on {
+  color: #fff;
+  background: #1677ff;
+  border-color: #1677ff;
+  font-weight: 600;
+}
+
+.chip.off {
+  color: #333;
   background: #fff;
 }

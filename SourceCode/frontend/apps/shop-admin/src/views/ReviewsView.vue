@@ -84,11 +84,22 @@
             </el-table-column>
           </el-table>
         </el-form-item>
-        <el-form-item label="评分" required>
-          <el-rate v-model="createForm.rating" :max="5" aria-label="评分，一到五星" />
+        <el-form-item label="满意度" required>
+          <el-radio-group v-model="createForm.rating" aria-label="满意度评价">
+            <el-radio :value="5">非常满意</el-radio>
+            <el-radio :value="4">满意</el-radio>
+            <el-radio :value="3">一般</el-radio>
+            <el-radio :value="2">不满意</el-radio>
+            <el-radio :value="1">非常不满意</el-radio>
+          </el-radio-group>
         </el-form-item>
-        <el-form-item label="标签">
-          <el-input v-model="createForm.tags" placeholder="逗号分隔，如：手法专业,态度好" />
+        <el-form-item label="常用标签">
+          <el-checkbox-group v-model="createForm.selectedTags">
+            <el-checkbox-button v-for="t in tagOptions" :key="t" :value="t">{{ t }}</el-checkbox-button>
+          </el-checkbox-group>
+        </el-form-item>
+        <el-form-item label="其他标签">
+          <el-input v-model="createForm.tags" placeholder="点选之外可手动补充，逗号分隔" />
         </el-form-item>
         <el-form-item label="评论">
           <el-input v-model="createForm.comment" type="textarea" :rows="3" placeholder="客户原话/补充" maxlength="500" show-word-limit />
@@ -126,12 +137,15 @@ const techList = ref<Staff[]>([]);
 const itemCandidates = ref<TechnicianServedItemDto[]>([]);
 const lookingUp = ref(false);
 const lookedUp = ref(false);
+/** 常用标签：勾选多选，不够再手动补充 */
+const tagOptions = ['手法专业', '力度合适', '态度热情', '环境整洁', '服务周到', '准时守约', '性价比高', '耐心细致'];
 const createForm = reactive({
   technicianId: null as number | null,
   date: dayjs().format('YYYY-MM-DD'),
   orderItemId: 0,
   orderId: 0,
   rating: 5,
+  selectedTags: [] as string[],
   tags: '',
   comment: ''
 });
@@ -147,6 +161,7 @@ function openCreate() {
   createForm.orderItemId = 0;
   createForm.orderId = 0;
   createForm.rating = 5;
+  createForm.selectedTags = [];
   createForm.tags = '';
   createForm.comment = '';
   itemCandidates.value = [];
@@ -189,13 +204,16 @@ async function submitCreate() {
   // orderItemId 唯一确定订单项，orderId 由所选行带出
   const picked = itemCandidates.value.find((i) => i.itemId === createForm.orderItemId);
   const orderId = picked?.orderId ?? createForm.orderId;
+  // 勾选标签 + 手动补充，合并为逗号分隔
+  const manual = createForm.tags.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+  const allTags = [...createForm.selectedTags, ...manual];
   creating.value = true;
   try {
     await reviewsApi.submit({
       orderId,
       orderItemId: createForm.orderItemId,
       rating: createForm.rating,
-      tags: createForm.tags.trim() || null,
+      tags: allTags.length > 0 ? allTags.join(',') : null,
       comment: createForm.comment.trim() || null
     });
     ElMessage.success('已录入评价');

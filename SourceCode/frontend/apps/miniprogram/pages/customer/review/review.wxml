@@ -38,17 +38,26 @@
     </view>
 
     <view class="a11y-section">
-      <text class="a11y-label">评分（点击星级，当前 {{item.ratingText}}）</text>
-      <view class="stars" role="group" aria-label="选择星级，当前 {{item.ratingText}}">
-        <view wx:for="{{starList}}" wx:for-item="star" wx:key="*this"
-              class="star {{star <= item.rating ? 'on' : 'off'}}"
-              data-index="{{idx}}" data-star="{{star}}" bindtap="setRating"
-              aria-label="{{star}} 星">★</view>
+      <text class="a11y-label">满意度（点击选择，当前 {{item.ratingText}}）</text>
+      <view class="opts" role="radiogroup" aria-label="满意度，当前 {{item.ratingText}}">
+        <view wx:for="{{ratingOptions}}" wx:for-item="opt" wx:key="value"
+              class="opt {{opt.value === item.rating ? 'on' : 'off'}}"
+              data-index="{{idx}}" data-value="{{opt.value}}" bindtap="setRating"
+              aria-role="radio" aria-label="{{opt.label}}">{{opt.label}}</view>
       </view>
     </view>
 
     <view class="a11y-section">
-      <text class="a11y-label" id="lbl-tags-{{idx}}">标签（可选，逗号分隔，如：手法专业,态度好）</text>
+      <text class="a11y-label">常用标签（可点选多个，可不选）</text>
+      <view class="chips" role="group" aria-label="常用标签，可多选">
+        <view wx:for="{{item.tagChips}}" wx:for-item="chip" wx:for-index="ci" wx:key="label"
+              class="chip {{chip.on ? 'on' : 'off'}}"
+              data-index="{{idx}}" data-ci="{{ci}}" bindtap="toggleTag"
+              aria-label="{{chip.label}}{{chip.on ? '，已选' : ''}}">{{chip.label}}</view>
+      </view>
+    </view>
+    <view class="a11y-section">
+      <text class="a11y-label" id="lbl-tags-{{idx}}">其他标签（可手动填写，逗号分隔）</text>
       <input class="a11y-input" type="text" maxlength="200"
              aria-labelledby="lbl-tags-{{idx}}"
              placeholder="可不填"
