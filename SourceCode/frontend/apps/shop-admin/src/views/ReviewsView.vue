@@ -3,7 +3,13 @@
     <el-card shadow="never">
       <div class="toolbar">
         <span class="title">服务评价</span>
-        <el-input-number v-model="ratingFilter" :min="1" :max="5" controls-position="right" placeholder="星级" style="width:120px" />
+        <el-select v-model="ratingFilter" placeholder="全部评价" clearable style="width:140px">
+          <el-option label="非常满意" :value="5" />
+          <el-option label="满意" :value="4" />
+          <el-option label="一般" :value="3" />
+          <el-option label="不满意" :value="2" />
+          <el-option label="非常不满意" :value="1" />
+        </el-select>
         <el-date-picker v-model="dateRange" type="daterange" range-separator="-" start-placeholder="开始" end-placeholder="结束" />
         <div class="spacer" />
         <el-button type="primary" @click="openCreate">代客录入</el-button>
@@ -20,6 +26,9 @@
               <template #default="{ row }">
                 <span :aria-label="`${row.rating} 星`">{{ '★'.repeat(row.rating) }}</span>
               </template>
+            </el-table-column>
+            <el-table-column label="服务评价" width="110">
+              <template #default="{ row }">{{ ratingLabel(row.rating) }}</template>
             </el-table-column>
             <el-table-column prop="tags" label="标签" width="200" />
             <el-table-column prop="comment" label="评论" min-width="240" show-overflow-tooltip />
@@ -153,7 +162,12 @@ const createForm = reactive({
 const canSubmitCreate = computed(() => createForm.orderItemId > 0 && createForm.rating >= 1);
 
 function disableFuture(d: Date) { return d.getTime() > Date.now(); }
-function formatTime(t: string | null) { return t ? dayjs(t).format('YYYY-MM-DD HH:mm') : ''; }
+function formatTime(t: string | null) { return t ? dayjs(t).format('YYYY-MM-DD HH:mm:ss') : ''; }
+
+/// 评分（1-5）→ 满意度中文
+function ratingLabel(r: number): string {
+  return ({ 5: '非常满意', 4: '满意', 3: '一般', 2: '不满意', 1: '非常不满意' } as Record<number, string>)[r] ?? '';
+}
 
 function openCreate() {
   createForm.technicianId = null;

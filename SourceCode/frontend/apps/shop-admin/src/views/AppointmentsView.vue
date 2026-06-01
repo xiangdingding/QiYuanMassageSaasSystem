@@ -40,7 +40,7 @@
       <div class="table-wrap">
       <el-table :data="rows" v-loading="loading" stripe height="100%">
         <el-table-column label="到店时间" width="170">
-          <template #default="{ row }">{{ dayjs(row.expectedArriveAt).format('YYYY-MM-DD HH:mm') }}</template>
+          <template #default="{ row }">{{ dayjs(row.expectedArriveAt).format('YYYY-MM-DD HH:mm:ss') }}</template>
         </el-table-column>
         <el-table-column prop="customerName" label="姓名" width="120" />
         <el-table-column prop="customerPhone" label="电话" width="130" />

@@ -28,7 +28,7 @@
                       HeadersVisibility="Column" GridLinesVisibility="Horizontal"
                       AlternatingRowBackground="#FAFAFA">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='{}{0:MM-dd HH:mm}'}" Width="110" />
+                    <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="150" />
                     <DataGridTextColumn Header="订单号" Binding="{Binding OrderNo}" Width="130" />
                     <DataGridTextColumn Header="服务" Binding="{Binding ServiceName}" Width="120" />
                     <DataGridTextColumn Header="被投诉技师" Binding="{Binding OriginalTechnicianName}" Width="110" />

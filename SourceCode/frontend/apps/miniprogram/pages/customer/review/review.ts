@@ -28,7 +28,7 @@ const formatDate = (iso: string | null): string => {
   if (!iso) return '';
   const d = new Date(iso);
   const pad = (n: number): string => (n < 10 ? `0${n}` : `${n}`);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 };
 
 /** 满意度档位 → 评分（1-5）。底层仍存整数，UI 只呈现文字，便于读屏与无歧义。 */

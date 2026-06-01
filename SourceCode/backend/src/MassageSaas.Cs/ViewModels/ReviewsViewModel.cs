@@ -58,7 +58,16 @@ public partial class ReviewsViewModel : ObservableObject
         try
         {
             var from = DateTime.UtcNow.Date.AddDays(-Math.Max(1, Days));
-            int? rating = RatingFilter is >= 1 and <= 5 ? RatingFilter : null;
+            // 下拉按"非常满意→非常不满意"排列（索引 1-5），映射到评分 5-1
+            int? rating = RatingFilter switch
+            {
+                1 => 5,
+                2 => 4,
+                3 => 3,
+                4 => 2,
+                5 => 1,
+                _ => null
+            };
             Rows = new ObservableCollection<ServiceReviewDto>(
                 await _api.GetReviewsAsync(rating: rating, from: from));
             Summary = new ObservableCollection<TechnicianReviewSummaryDto>(

@@ -36,7 +36,7 @@
                                 <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="80" />
                                 <DataGridTextColumn Header="人数" Binding="{Binding ItemCount}" Width="70" />
                                 <DataGridTextColumn Header="工资总额" Binding="{Binding TotalAmount, StringFormat='¥{0:F2}'}" Width="120" />
-                                <DataGridTextColumn Header="生成时间" Binding="{Binding GeneratedAt, StringFormat='{}{0:MM-dd HH:mm}'}" Width="120" />
+                                <DataGridTextColumn Header="生成时间" Binding="{Binding GeneratedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="150" />
                                 <DataGridTextColumn Header="操作人" Binding="{Binding OperatorName}" Width="100" />
                                 <DataGridTemplateColumn Header="操作" Width="*">
                                     <DataGridTemplateColumn.CellTemplate>
@@ -118,7 +118,7 @@
                                 <DataGridTextColumn Header="金额" Binding="{Binding Amount, StringFormat='¥{0:F2}'}" Width="100" />
                                 <DataGridTextColumn Header="原因" Binding="{Binding Reason}" Width="240" />
                                 <DataGridTextColumn Header="操作人" Binding="{Binding OperatorName}" Width="100" />
-                                <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='{}{0:MM-dd HH:mm}'}" Width="120" />
+                                <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="150" />
                                 <DataGridTemplateColumn Header="操作" Width="*">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>

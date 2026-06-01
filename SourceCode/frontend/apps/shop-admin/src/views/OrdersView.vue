@@ -483,7 +483,7 @@ function statusType(s: string) {
   } as Record<string, any>)[s] ?? '';
 }
 function formatTime(v: string) {
-  return dayjs(v).format('YYYY-MM-DD HH:mm');
+  return dayjs(v).format('YYYY-MM-DD HH:mm:ss');
 }
 
 /// 是否会员卡支付：用支付方式判断，非会员卡支付的订单一律按散客展示

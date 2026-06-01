@@ -36,7 +36,7 @@
                     <Style TargetType="DataGridRow">
                         <Setter Property="AutomationProperties.Name">
                             <Setter.Value>
-                                <MultiBinding StringFormat="{}{0:yyyy-MM-dd HH:mm} 到店，{1}，{2}，{3} 人，{4}">
+                                <MultiBinding StringFormat="{}{0:yyyy-MM-dd HH:mm:ss} 到店，{1}，{2}，{3} 人，{4}">
                                     <Binding Path="ExpectedArriveAt" />
                                     <Binding Path="CustomerName" />
                                     <Binding Path="CustomerPhone" />
@@ -48,7 +48,7 @@
                     </Style>
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="到店时间" Binding="{Binding ExpectedArriveAt, StringFormat='yyyy-MM-dd HH:mm'}" Width="160" />
+                    <DataGridTextColumn Header="到店时间" Binding="{Binding ExpectedArriveAt, StringFormat='yyyy-MM-dd HH:mm:ss'}" Width="160" />
                     <DataGridTextColumn Header="姓名" Binding="{Binding CustomerName}" Width="120" />
                     <DataGridTextColumn Header="电话" Binding="{Binding CustomerPhone}" Width="130" />
                     <DataGridTextColumn Header="人数" Binding="{Binding PartySize}" Width="60" />

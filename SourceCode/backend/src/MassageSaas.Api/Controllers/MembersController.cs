@@ -159,6 +159,15 @@ public class MembersController : ControllerBase
             serviceItemName = m.MemberType.ServiceItem?.Name;
         }
 
+        // 会员卡有效期：开卡日 + 会员类型有效天数；无 ValidDays = 永久。
+        DateTime? cardExpiresAt = m.MemberType?.ValidDays is int vd && vd > 0
+            ? m.CreatedAt.AddDays(vd)
+            : null;
+        // 剩余天数按北京日历日（UTC+8）相减，已过期为负、当天为 0、永久为 null。
+        int? cardDaysRemaining = cardExpiresAt.HasValue
+            ? (cardExpiresAt.Value.AddHours(8).Date - DateTime.UtcNow.AddHours(8).Date).Days
+            : null;
+
         return new MemberDto(
             m.Id, m.StoreId, m.CardNo, m.Phone, m.Name, m.Gender, m.Birthday,
             m.Balance, m.TotalRecharge, m.TotalConsumed, m.Discount, m.Remark,
@@ -175,7 +184,9 @@ public class MembersController : ControllerBase
             totalCount,
             remainCount,
             serviceItemId,
-            serviceItemName);
+            serviceItemName,
+            cardExpiresAt,
+            cardDaysRemaining);
     }
 
     /// <summary>

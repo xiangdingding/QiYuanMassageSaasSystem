@@ -184,6 +184,9 @@
                     · 绑定 {{ c.serviceItemName }}
                   </span>
                 </el-checkbox>
+                <div class="card-valid-line" aria-hidden="true">
+                  开卡 {{ posCardStart(c) }} · <span :class="{ expired: (c.cardDaysRemaining ?? 1) < 0 }">{{ posCardValidity(c) }}</span>
+                </div>
               </div>
             </div>
             <div class="m-line">
@@ -469,6 +472,25 @@
           </el-table-column>
         </el-table>
 
+        <!-- 结算时即可评价：每个服务项默认"满意"，可逐项调整；点"完成"时自动提交 -->
+        <div v-if="lastOrder && lastOrder.items.length > 0" class="receipt-review">
+          <div class="review-head">
+            <strong>服务评价</strong>
+            <span class="muted">默认满意，可逐项调整；点"完成"自动提交</span>
+          </div>
+          <div v-for="it in lastOrder.items" :key="it.id" class="review-line">
+            <span class="review-svc">{{ it.serviceName }} · {{ it.technicianName }}</span>
+            <el-select v-model="reviewRatings[it.id]" size="small" style="width:118px"
+                       :aria-label="`${it.serviceName} ${it.technicianName} 满意度`">
+              <el-option :value="5" label="非常满意" />
+              <el-option :value="4" label="满意" />
+              <el-option :value="3" label="一般" />
+              <el-option :value="2" label="不满意" />
+              <el-option :value="1" label="非常不满意" />
+            </el-select>
+          </div>
+        </div>
+
         <el-table v-if="lastRoomCharges.length > 0" :data="lastRoomCharges" size="small" style="margin-top:8px">
           <el-table-column label="计时房" prop="roomNo" width="80" />
           <el-table-column label="时长" width="80" align="right">
@@ -483,7 +505,7 @@
         </el-table>
       </div>
       <template #footer>
-        <el-button type="primary" @click="receiptOpen = false; resetAll()">完成</el-button>
+        <el-button type="primary" :loading="reviewSubmitting" @click="finishReceipt">完成</el-button>
       </template>
     </el-dialog>
 
@@ -547,7 +569,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 defineOptions({ name: 'PosView' });
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Search, User } from '@element-plus/icons-vue';
-import { membersApi, ordersApi, roomsApi, servicesApi, staffApi, timedRoomsApi, vouchersApi, type TimedRoomSessionDto, type VoucherDto } from '@/api/modules';
+import { membersApi, ordersApi, reviewsApi, roomsApi, servicesApi, staffApi, timedRoomsApi, vouchersApi, type TimedRoomSessionDto, type VoucherDto } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
 import { useShortcuts } from '@/composables/useShortcuts';
 import type { Member, MemberPhoneGroup, Order, OrderItem, OrderRoomCharge, Room, ServiceItem, Staff } from '@/api/types';
@@ -671,7 +693,30 @@ function cardAriaLabel(c: Member): string {
   if (!c.isActive) parts.push('已关闭');
   else if (c.memberTypeKind === 'CountBased' && !isCardEligible(c))
     parts.push(c.serviceItemName ? `无匹配项目，需添加 ${c.serviceItemName}` : '无绑定服务，不可结算');
+  parts.push(`开卡 ${posCardStart(c)}`);
+  parts.push(c.cardExpiresAt
+    ? `有效期至 ${fmtDateTime(c.cardExpiresAt)}${c.cardDaysRemaining != null ? `，还有 ${c.cardDaysRemaining} 天` : ''}`
+    : '永久有效');
   return parts.join('，');
+}
+
+/// 把后端北京时间 ISO 串（yyyy-MM-ddTHH:mm:ss）转为 "yyyy-MM-dd HH:mm:ss" 展示
+function fmtDateTime(iso?: string | null): string {
+  if (!iso) return '';
+  const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}(?::\d{2})?)/.exec(iso);
+  if (!m) return iso;
+  const t = m[2].length === 5 ? `${m[2]}:00` : m[2];
+  return `${m[1]} ${t}`;
+}
+function posCardStart(c: Member): string { return fmtDateTime(c.createdAt); }
+function posCardValidity(c: Member): string {
+  if (!c.cardExpiresAt) return '永久有效';
+  const exp = fmtDateTime(c.cardExpiresAt);
+  const d = c.cardDaysRemaining;
+  if (d == null) return `到期 ${exp}`;
+  if (d < 0) return `已过期（${exp}）`;
+  if (d === 0) return `今天到期（${exp}）`;
+  return `到期 ${exp}（剩 ${d} 天）`;
 }
 
 function clearMember() {
@@ -744,6 +789,9 @@ const checkoutOpen = ref(false);
 const receiptOpen = ref(false);
 const checkingOut = ref(false);
 const lastOrder = ref<Order | null>(null);
+// 结算时评价：orderItemId → 满意度评分（默认 4=满意），点"完成"时提交
+const reviewRatings = reactive<Record<number, number>>({});
+const reviewSubmitting = ref(false);
 /// 收据弹窗用：本次结账挂在订单上的计时房费列表。由后端在 OrderDto.roomCharges 返回。
 const lastRoomCharges = computed<OrderRoomCharge[]>(() => lastOrder.value?.roomCharges ?? []);
 
@@ -1207,6 +1255,9 @@ async function doCheckout(payload: { payMethod: string; paidAmount: number | nul
     });
 
     lastOrder.value = checkedOrder;
+    // 结算即评价：每个服务项默认"满意"（4），收银员可逐项改，点"完成"时提交
+    for (const k of Object.keys(reviewRatings)) delete reviewRatings[Number(k)];
+    for (const it of checkedOrder.items) reviewRatings[it.id] = 4;
     checkoutOpen.value = false;
     receiptOpen.value = true;
     ElMessage.success('结账成功');
@@ -1215,6 +1266,29 @@ async function doCheckout(payload: { payMethod: string; paidAmount: number | nul
   } finally {
     checkingOut.value = false;
   }
+}
+
+/// 点"完成"：先按当前满意度（默认满意）提交各项评价，再收尾关闭。
+/// 评价失败不阻断完成（结账已成功，评价是附带项），错误由 http 拦截器弹出。
+async function finishReceipt() {
+  if (lastOrder.value && lastOrder.value.items.length > 0) {
+    reviewSubmitting.value = true;
+    try {
+      for (const it of lastOrder.value.items) {
+        await reviewsApi.submit({
+          orderId: lastOrder.value.id,
+          orderItemId: it.id,
+          rating: reviewRatings[it.id] ?? 4,
+          tags: null,
+          comment: null
+        });
+      }
+    } catch { /* http 拦截器已弹错；不阻断结账完成 */ } finally {
+      reviewSubmitting.value = false;
+    }
+  }
+  receiptOpen.value = false;
+  resetAll();
 }
 
 async function resetAll() {
@@ -1392,10 +1466,16 @@ useShortcuts({
 .m-line { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .m-line.muted { color: var(--el-text-color-secondary); font-size: 12px; margin-top: 4px; }
 .muted { color: var(--el-text-color-secondary); font-size: 12px; }
+.receipt-review { margin-top: 12px; padding: 10px; background: #f0f7f4; border: 1px solid #d4e9d8; border-radius: 6px; }
+.review-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.review-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; }
+.review-svc { font-size: 13px; color: #1f2937; }
 .card-pick-list { margin: 6px 0; max-height: 160px; overflow-y: auto; }
 .card-pick-row { padding: 2px 0; }
 .card-pick-row.closed { opacity: 0.55; }
 .card-pick-row :deep(.el-checkbox__label) { display: inline-flex; align-items: center; gap: 2px; }
+.card-valid-line { font-size: 12px; color: var(--el-text-color-secondary); margin: 1px 0 4px 24px; }
+.card-valid-line .expired { color: #d9534f; font-weight: 600; }
 .card-no { font-weight: 600; }
 .card-bal { color: #d9534f; font-weight: 600; }
 

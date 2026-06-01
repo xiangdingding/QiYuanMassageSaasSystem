@@ -60,7 +60,7 @@
                         <DataGridTextColumn Header="实收" Binding="{Binding PaidAmount, StringFormat='¥{0:F2}'}" Width="80" />
                         <DataGridTextColumn Header="支付" Binding="{Binding PayMethod}" Width="80" />
                         <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="80" />
-                        <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='yyyy-MM-dd HH:mm'}" Width="140" />
+                        <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='yyyy-MM-dd HH:mm:ss'}" Width="160" />
                     </DataGrid.Columns>
                 </DataGrid>
 

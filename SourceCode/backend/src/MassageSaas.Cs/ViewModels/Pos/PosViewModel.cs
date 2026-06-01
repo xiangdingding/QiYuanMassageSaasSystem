@@ -341,6 +341,13 @@ public partial class PosViewModel : ObservableObject
                 DiscountAmount: 0m,
                 Remark: Remark));
 
+            // 结算即评价：弹出快速评价窗（默认满意），收银员可逐项调整或跳过
+            if (checkedOut.Items.Count > 0)
+            {
+                var reviewDlg = new Views.CheckoutReviewWindow(_api, checkedOut);
+                reviewDlg.ShowDialog();
+            }
+
             ShowReceipt(checkedOut);
             Cart.Clear();
             ActiveMember = null;

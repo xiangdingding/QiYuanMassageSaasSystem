@@ -271,12 +271,14 @@ function generateCode(kind: string): string {
   return `${prefix}-${g1}-${g2}`;
 }
 
-/// ISO 时间串太长占列宽，去掉秒、只显示到分钟；空值返回"长期有效"。
+/// ISO 时间串统一截成 "YYYY-MM-DD HH:mm:ss"（北京时间）；空值返回"长期有效"。
 function formatExpiry(iso: string | null): string {
   if (!iso) return '长期有效';
-  // 后端返回的 ISO 串可能含 'T' 与时区，统一截到 "YYYY-MM-DD HH:mm"
-  const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/.exec(iso);
-  return m ? `${m[1]} ${m[2]}` : iso;
+  // 后端返回的 ISO 串可能含 'T' 与时区，秒可有可无，统一显示到秒
+  const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}(?::\d{2})?)/.exec(iso);
+  if (!m) return iso;
+  const time = m[2].length === 5 ? `${m[2]}:00` : m[2];
+  return `${m[1]} ${time}`;
 }
 
 function statusLabel(s: string) {

@@ -65,7 +65,7 @@
                               CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
                               GridLinesVisibility="Horizontal" Background="Transparent">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='{}{0:MM-dd HH:mm}'}" Width="100" />
+                            <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="150" />
                             <DataGridTextColumn Header="类型" Binding="{Binding Kind}" Width="90" />
                             <DataGridTextColumn Header="变化" Binding="{Binding Delta, StringFormat='{}{0:+0.#;-0.#}'}" Width="70" />
                             <DataGridTextColumn Header="结存" Binding="{Binding QuantityAfter, StringFormat='{}{0:F1}'}" Width="70" />

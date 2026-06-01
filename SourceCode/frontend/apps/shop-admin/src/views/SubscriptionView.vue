@@ -10,7 +10,7 @@
           </el-descriptions-item>
           <el-descriptions-item label="当前套餐">{{ status.currentPlanName ?? '—' }}</el-descriptions-item>
           <el-descriptions-item label="到期时间">
-            {{ status.expireAt ? dayjs(status.expireAt).format('YYYY-MM-DD HH:mm') : '—' }}
+            {{ status.expireAt ? dayjs(status.expireAt).format('YYYY-MM-DD HH:mm:ss') : '—' }}
           </el-descriptions-item>
           <el-descriptions-item label="距离到期" :span="2">
             <span v-if="status.daysToExpire == null">—</span>

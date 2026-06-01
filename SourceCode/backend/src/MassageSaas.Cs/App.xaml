@@ -17,6 +17,9 @@
             <conv:NotNullToBoolConverter x:Key="NotNullToBool" />
             <conv:DecimalGreaterThanZeroConverter x:Key="DecimalToVisible" />
             <conv:RoomTypeDisplayConverter x:Key="RoomTypeDisplay" />
+            <conv:RatingToTextConverter x:Key="RatingToText" />
+            <conv:CardExpiryConverter x:Key="CardExpiry" />
+            <conv:CardDaysRemainingConverter x:Key="CardDaysRemaining" />
 
             <DataTemplate DataType="{x:Type vmpos:PosViewModel}">
                 <views:PosView />

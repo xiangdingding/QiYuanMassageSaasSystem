@@ -113,6 +113,55 @@ public class RoomTypeDisplayConverter : IValueConverter
         => throw new NotImplementedException();
 }
 
+/// <summary>把服务评价分值（1-5）显示为满意度中文：5 非常满意 … 1 非常不满意。</summary>
+public class RatingToTextConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var rating = value switch
+        {
+            int i => i,
+            long l => (int)l,
+            _ => int.TryParse(value?.ToString(), out var n) ? n : 0
+        };
+        return rating switch
+        {
+            5 => "非常满意",
+            4 => "满意",
+            3 => "一般",
+            2 => "不满意",
+            1 => "非常不满意",
+            _ => string.Empty
+        };
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+/// <summary>会员卡到期时间：null 显示"永久"，否则 yyyy-MM-dd HH:mm:ss（已是北京时间）。</summary>
+public class CardExpiryConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is DateTime dt ? dt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) : "永久";
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+/// <summary>会员卡剩余天数：null=永久，负=已过期，0=今天到期，正=剩 N 天。</summary>
+public class CardDaysRemainingConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not int d) return "永久";
+        return d < 0 ? "已过期" : d == 0 ? "今天到期" : $"剩 {d} 天";
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
 public class EnumLabelConverter : IValueConverter
 {
     private static readonly Dictionary<string, string> Map = new()

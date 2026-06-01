@@ -99,7 +99,7 @@ public sealed class LoggingReceiptPrinter : IReceiptPrinter
         var sb = new StringBuilder();
         sb.AppendLine($"      {d.StoreName}");
         sb.AppendLine($"订单：{d.OrderNo}");
-        sb.AppendLine($"时间：{d.PrintedAt:yyyy-MM-dd HH:mm}");
+        sb.AppendLine($"时间：{d.PrintedAt:yyyy-MM-dd HH:mm:ss}");
         sb.AppendLine("--------------------------------");
         foreach (var i in d.Items)
         {

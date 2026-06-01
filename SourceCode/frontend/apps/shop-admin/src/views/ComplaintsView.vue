@@ -289,7 +289,7 @@ function resolutionLabel(r: string) {
   return ({ Reassigned: '改派', Refunded: '退款', Apologized: '道歉/补偿', NoAction: '不予处理' } as Record<string, string>)[r] ?? r;
 }
 function formatTime(t: string | null) {
-  return t ? dayjs(t).format('YYYY-MM-DD HH:mm') : '';
+  return t ? dayjs(t).format('YYYY-MM-DD HH:mm:ss') : '';
 }
 
 async function reload() {

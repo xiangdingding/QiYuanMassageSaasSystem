@@ -88,6 +88,10 @@ export interface Member {
   serviceItemId?: number | null;
   /** 次卡专属：绑定服务项目名称，用于"无匹配项目"提示 */
   serviceItemName?: string | null;
+  /** 会员卡到期时间 = 开卡日 + 会员类型有效天数；null = 永久 */
+  cardExpiresAt?: string | null;
+  /** 距到期剩余天数（北京日历日）；负=已过期；null=永久 */
+  cardDaysRemaining?: number | null;
 }
 
 export interface MemberPhoneGroup {

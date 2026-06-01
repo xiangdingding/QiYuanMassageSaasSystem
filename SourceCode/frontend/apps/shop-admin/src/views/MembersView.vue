@@ -142,6 +142,12 @@
                     </strong>
                   </span>
                 </div>
+                <div class="card-validity" :aria-label="`开卡时间 ${cardStartText(c)}，${cardValidityAria(c)}`">
+                  <span class="stat-label">开卡</span>
+                  <span class="validity-val">{{ cardStartText(c) }}</span>
+                  <span class="stat-label" style="margin-left:14px">有效期</span>
+                  <span class="validity-val" :class="{ expired: (c.cardDaysRemaining ?? 1) < 0 }">{{ cardValidityText(c) }}</span>
+                </div>
               </div>
               <div class="card-actions" role="group" :aria-label="`卡 ${c.cardNo} 操作`">
                 <el-button
@@ -631,7 +637,7 @@
               <template #default="{ row }">{{ row.counterpartyMemberName || '—' }}</template>
             </el-table-column>
             <el-table-column label="时间" min-width="140">
-              <template #default="{ row }">{{ dayjs(row.createdAt).format('YYYY-MM-DD HH:mm') }}</template>
+              <template #default="{ row }">{{ dayjs(row.createdAt).format('YYYY-MM-DD HH:mm:ss') }}</template>
             </el-table-column>
           </el-table>
         </el-tab-pane>
@@ -645,7 +651,7 @@
               <template #default="{ row }">{{ orderStatusLabel(row.status) }}</template>
             </el-table-column>
             <el-table-column label="时间" min-width="140">
-              <template #default="{ row }">{{ dayjs(row.createdAt).format('YYYY-MM-DD HH:mm') }}</template>
+              <template #default="{ row }">{{ dayjs(row.createdAt).format('YYYY-MM-DD HH:mm:ss') }}</template>
             </el-table-column>
           </el-table>
         </el-tab-pane>
@@ -740,7 +746,7 @@
             <template #default="{ row }">¥{{ row.totalRecharge.toFixed(2) }}</template>
           </el-table-column>
           <el-table-column label="开卡时间" min-width="160">
-            <template #default="{ row }">{{ dayjs(row.createdAt).format('YYYY-MM-DD HH:mm') }}</template>
+            <template #default="{ row }">{{ dayjs(row.createdAt).format('YYYY-MM-DD HH:mm:ss') }}</template>
           </el-table-column>
         </el-table>
         <p v-if="referralsData.referredCount === 0" class="muted" style="text-align:center; padding:30px 0">还没有引荐过会员</p>
@@ -1159,6 +1165,33 @@ function cardAriaLabel(c: Member, primaryName: string | null | undefined): strin
     ? `，累计 ${c.totalCount ?? 0} 次，剩 ${c.remainCount ?? 0} 次`
     : '';
   return `${name} 的卡 ${c.cardNo}，${type}，${status}${discount}，余额 ${yuanReadable(c.balance)}${countSuffix}`;
+}
+
+/// 开卡时间（= 会员创建时间）
+function cardStartText(c: Member): string {
+  return dayjs(c.createdAt).format('YYYY-MM-DD HH:mm:ss');
+}
+
+/// 有效期文案：无到期=永久；否则"到期时间（剩 N 天 / 已过期 / 今天到期）"
+function cardValidityText(c: Member): string {
+  if (!c.cardExpiresAt) return '永久有效';
+  const exp = dayjs(c.cardExpiresAt).format('YYYY-MM-DD HH:mm:ss');
+  const d = c.cardDaysRemaining;
+  if (d == null) return `到期 ${exp}`;
+  if (d < 0) return `已过期（${exp}）`;
+  if (d === 0) return `今天到期（${exp}）`;
+  return `到期 ${exp}（剩 ${d} 天）`;
+}
+
+/// 给读屏用的有效期朗读串
+function cardValidityAria(c: Member): string {
+  if (!c.cardExpiresAt) return '永久有效';
+  const exp = dayjs(c.cardExpiresAt).format('YYYY-MM-DD HH:mm:ss');
+  const d = c.cardDaysRemaining;
+  if (d == null) return `到期时间 ${exp}`;
+  if (d < 0) return `已过期，到期时间 ${exp}`;
+  if (d === 0) return `今天到期，${exp}`;
+  return `到期时间 ${exp}，还有 ${d} 天过期`;
 }
 
 function resetQuery() {
@@ -1582,6 +1615,9 @@ onMounted(async () => {
 /* 卡号 = 子卡的主键，加粗与手机号对齐 */
 .card-no { font-weight: 600; }
 .card-stats { display: flex; gap: 14px; flex-wrap: wrap; }
+.card-validity { font-size: 12px; color: var(--el-text-color-regular); display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.validity-val { color: #1f2937; }
+.validity-val.expired { color: #d9534f; font-weight: 600; }
 .card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* 文本+颜色双重传达状态（盲人无障碍约定：不靠纯颜色） */

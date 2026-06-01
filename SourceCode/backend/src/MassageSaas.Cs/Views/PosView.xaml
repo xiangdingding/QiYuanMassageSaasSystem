@@ -116,6 +116,15 @@
                             <Run Text="  " />
                             <Run Text="{Binding ActiveMember.Phone}" />
                         </TextBlock>
+                        <TextBlock FontSize="11" Foreground="#666"
+                                   AutomationProperties.Name="会员卡有效期">
+                            <Run Text="开卡 " />
+                            <Run Text="{Binding ActiveMember.CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" />
+                            <Run Text="  到期 " />
+                            <Run Text="{Binding ActiveMember.CardExpiresAt, Converter={StaticResource CardExpiry}}" />
+                            <Run Text="  " />
+                            <Run Text="{Binding ActiveMember.CardDaysRemaining, Converter={StaticResource CardDaysRemaining}}" />
+                        </TextBlock>
                     </StackPanel>
                 </Border>
 

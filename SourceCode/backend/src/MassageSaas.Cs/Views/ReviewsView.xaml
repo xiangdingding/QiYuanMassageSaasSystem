@@ -12,15 +12,15 @@
             <DockPanel Grid.Row="0" Margin="0,0,0,12">
                 <TextBlock DockPanel.Dock="Left" Text="服务评价" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <TextBlock Text="评分" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <ComboBox SelectedIndex="{Binding RatingFilter, Mode=TwoWay}" Width="90" Height="30"
-                              AutomationProperties.Name="按评分筛选">
+                    <TextBlock Text="评价" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <ComboBox SelectedIndex="{Binding RatingFilter, Mode=TwoWay}" Width="120" Height="30"
+                              AutomationProperties.Name="按满意度筛选">
                         <ComboBoxItem Content="全部" />
-                        <ComboBoxItem Content="1 星" />
-                        <ComboBoxItem Content="2 星" />
-                        <ComboBoxItem Content="3 星" />
-                        <ComboBoxItem Content="4 星" />
-                        <ComboBoxItem Content="5 星" />
+                        <ComboBoxItem Content="非常满意" />
+                        <ComboBoxItem Content="满意" />
+                        <ComboBoxItem Content="一般" />
+                        <ComboBoxItem Content="不满意" />
+                        <ComboBoxItem Content="非常不满意" />
                     </ComboBox>
                     <TextBlock Text="天数" VerticalAlignment="Center" Margin="12,0,6,0" />
                     <TextBox Text="{Binding Days, UpdateSourceTrigger=PropertyChanged}" Width="56" Height="30"
@@ -52,9 +52,10 @@
                       HeadersVisibility="Column" GridLinesVisibility="Horizontal"
                       AlternatingRowBackground="#FAFAFA">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='{}{0:MM-dd HH:mm}'}" Width="120" />
+                    <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="150" />
                     <DataGridTextColumn Header="技师" Binding="{Binding TechnicianName}" Width="140" />
                     <DataGridTextColumn Header="评分" Binding="{Binding Rating, StringFormat='{}{0} 星'}" Width="80" />
+                    <DataGridTextColumn Header="服务评价" Binding="{Binding Rating, Converter={StaticResource RatingToText}}" Width="100" />
                     <DataGridTextColumn Header="会员" Binding="{Binding MemberName}" Width="120" />
                     <DataGridTextColumn Header="标签" Binding="{Binding Tags}" Width="160" />
                     <DataGridTextColumn Header="评价内容" Binding="{Binding Comment}" Width="*" />

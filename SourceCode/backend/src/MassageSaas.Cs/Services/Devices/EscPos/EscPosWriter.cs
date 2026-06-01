@@ -47,7 +47,7 @@ public sealed class EscPosWriter
         buf.AddRange(AlignLeft);
 
         Line(buf, $"订单：{doc.OrderNo}");
-        Line(buf, $"时间：{doc.PrintedAt:yyyy-MM-dd HH:mm}");
+        Line(buf, $"时间：{doc.PrintedAt:yyyy-MM-dd HH:mm:ss}");
         Separator(buf);
 
         foreach (var i in doc.Items)

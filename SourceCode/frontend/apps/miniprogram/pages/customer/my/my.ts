@@ -76,7 +76,7 @@ const LEVEL_MAP: Record<string, string> = {
 const formatArrive = (iso: string): string => {
   const d = new Date(iso);
   const pad = (n: number): string => (n < 10 ? `0${n}` : `${n}`);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 };
 
 const toBoundView = (m: BoundMemberDto): BoundView => ({

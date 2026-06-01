@@ -1,5 +1,6 @@
 using MassageSaas.Api.Extensions;
 using MassageSaas.Api.HealthChecks;
+using MassageSaas.Api.Json;
 using MassageSaas.Api.Middleware;
 using MassageSaas.Infrastructure;
 using MassageSaas.Infrastructure.Persistence;
@@ -15,7 +16,13 @@ builder.Host.UseSerilog((ctx, services, config) => config
     .WriteTo.Console()
     .WriteTo.File("logs/massage-saas-.log", rollingInterval: RollingInterval.Day));
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+        // 全系统时间统一北京时间：存 UTC，API 边界转 UTC+8
+        o.JsonSerializerOptions.Converters.Add(new BeijingDateTimeConverter());
+        o.JsonSerializerOptions.Converters.Add(new BeijingNullableDateTimeConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
