@@ -2,7 +2,7 @@
   <div class="register-bg">
     <el-card class="register-card">
       <h1>注册按摩店账号</h1>
-      <p class="subtitle">免费试用 30 天，无需信用卡。试用结束前联系平台续费即可转正</p>
+      <p class="subtitle">免费试用 30 天，无需付费即可体验全部功能。试用结束前联系平台续费即可转成正式用户</p>
       <el-form :model="form" :rules="rules" ref="formRef" label-width="100px" @submit.prevent>
         <el-form-item label="店铺名" prop="name">
           <el-input v-model="form.name" placeholder="如：齐源按摩中心" />

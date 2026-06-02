@@ -19,6 +19,7 @@ using MassageSaas.Shared.Services;
 using MassageSaas.Shared.Staff;
 using MassageSaas.Shared.Stores;
 using MassageSaas.Shared.Subscriptions;
+using MassageSaas.Shared.Tenants;
 using MassageSaas.Shared.Vouchers;
 using Refit;
 
@@ -28,6 +29,10 @@ public interface IApiClient
 {
     [Post("/auth/login")]
     Task<LoginResponse> LoginAsync([Body] LoginRequest req);
+
+    /// <summary>按摩店自助注册（公开匿名端点）：成功后获 30 天试用，返回店主登录手机号。</summary>
+    [Post("/tenants/register")]
+    Task<RegisterTenantResponse> RegisterTenantAsync([Body] RegisterTenantRequest req);
 
     [Get("/services")]
     Task<List<ServiceItemDto>> GetServicesAsync([Query] bool includeInactive = false);

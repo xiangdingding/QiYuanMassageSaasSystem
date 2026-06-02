@@ -9,11 +9,21 @@ public partial class LoginViewModel : ObservableObject
 {
     private readonly IApiClient _api;
     private readonly SessionService _session;
+    private readonly CredentialStore _credentials;
 
-    public LoginViewModel(IApiClient api, SessionService session)
+    public LoginViewModel(IApiClient api, SessionService session, CredentialStore credentials)
     {
         _api = api;
         _session = session;
+        _credentials = credentials;
+
+        // 启动时回填上次“记住”的账号密码；勾选状态随之置位，PasswordBox 由 View 在 Loaded 时同步
+        if (_credentials.Load() is { } saved)
+        {
+            Username = saved.Username;
+            Password = saved.Password;
+            RememberMe = true;
+        }
     }
 
     [ObservableProperty]
@@ -21,6 +31,9 @@ public partial class LoginViewModel : ObservableObject
 
     [ObservableProperty]
     private string password = string.Empty;
+
+    [ObservableProperty]
+    private bool rememberMe;
 
     [ObservableProperty]
     private bool isBusy;
@@ -50,6 +63,8 @@ public partial class LoginViewModel : ObservableObject
                 return;
             }
             _session.SignIn(resp);
+            if (RememberMe) _credentials.Save(Username.Trim(), Password);
+            else _credentials.Clear();
             LoginSucceeded?.Invoke();
         }
         catch (Exception ex)

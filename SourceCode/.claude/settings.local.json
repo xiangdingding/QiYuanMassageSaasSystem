@@ -27,7 +27,8 @@
       "Bash(xargs -n1 basename)",
       "Bash(grep -iE \"CS[0-9]{3,}|XAML|XDG|MC[0-9]|error|错误|生成成功|已成功生成|生成失败\")",
       "Bash(sed -n '/async function doIssueCard/,/^}/p' frontend/apps/shop-admin/src/views/MembersView.vue)",
-      "Bash(sed -n '465,575p' backend/src/MassageSaas.Api/Controllers/MembersController.cs)"
+      "Bash(sed -n '465,575p' backend/src/MassageSaas.Api/Controllers/MembersController.cs)",
+      "Bash(Select-Object -Last 40)"
     ]
   }
 }

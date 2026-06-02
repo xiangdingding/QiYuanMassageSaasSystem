@@ -2,73 +2,196 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="按摩店收银系统 - 登录"
-        Height="380" Width="420"
-        WindowStartupLocation="CenterScreen"
+        Width="928"
+        Height="628"
+        AllowsTransparency="True"
+        Background="Transparent"
         ResizeMode="NoResize"
-        Background="#F5F7FA">
-    <Grid Margin="40">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Themes/AuthStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
 
-        <TextBlock Grid.Row="0"
-                   Text="按摩店收银系统"
-                   FontSize="22" FontWeight="Bold"
-                   HorizontalAlignment="Center"
-                   Foreground="#2D6A4F" />
-        <TextBlock Grid.Row="1"
-                   Text="店主 / 店长 / 收银 / 技师 通用登录"
-                   FontSize="12"
-                   Foreground="#666"
-                   HorizontalAlignment="Center"
-                   Margin="0,4,0,12" />
+    <!--  圆角窗体 + 投影（透明边距给投影留空间）  -->
+    <Border Margin="14"
+            Background="White"
+            CornerRadius="12">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="22"
+                              Opacity="0.18"
+                              ShadowDepth="0"
+                              Color="#000000" />
+        </Border.Effect>
 
-        <CheckBox Grid.Row="1"
-                  x:Name="A11yToggle"
-                  Content="启用无障碍模式（放大字号、加粗焦点、读屏优化）"
-                  HorizontalAlignment="Center"
-                  Margin="0,40,0,12"
-                  FontSize="13"
-                  Checked="A11yToggle_Changed"
-                  Unchecked="A11yToggle_Changed"
-                  AutomationProperties.Name="无障碍模式开关"
-                  AutomationProperties.HelpText="勾选后立即应用，并在下次启动时记住该选择" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="380" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-        <TextBox Grid.Row="2"
-                 Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
-                 FontSize="14" Padding="8" Margin="0,0,0,12"
-                 AutomationProperties.Name="账号"
-                 AutomationProperties.HelpText="请输入登录账号" />
+            <!--  左侧品牌区  -->
+            <Border Grid.Column="0"
+                    Background="{StaticResource BrandGradient}"
+                    CornerRadius="12,0,0,12">
+                <StackPanel Margin="48,0" VerticalAlignment="Center">
+                    <Border Width="88"
+                            Height="88"
+                            Margin="0,0,0,30"
+                            HorizontalAlignment="Left"
+                            Background="#33FFFFFF"
+                            CornerRadius="44">
+                        <TextBlock HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="30"
+                                   FontWeight="Bold"
+                                   Foreground="White"
+                                   Text="齐源" />
+                    </Border>
 
-        <PasswordBox Grid.Row="3"
-                     Name="PasswordBox"
-                     FontSize="14" Padding="8" Margin="0,0,0,12"
-                     AutomationProperties.Name="密码"
-                     AutomationProperties.HelpText="请输入登录密码"
-                     PasswordChanged="PasswordBox_PasswordChanged"
-                     KeyDown="PasswordBox_KeyDown" />
+                    <TextBlock FontSize="30"
+                               FontWeight="Bold"
+                               Foreground="White"
+                               Text="按摩店收银系统" />
+                    <StackPanel Margin="0,20,0,0">
+                        <TextBlock Margin="0,0,0,10"
+                                   FontSize="14"
+                                   Foreground="#EAF7F0"
+                                   Text="✓  收银 · 会员 · 排钟 · 报表" />
+                        <TextBlock Margin="0,0,0,10"
+                                   FontSize="14"
+                                   Foreground="#EAF7F0"
+                                   Text="✓  总店 + 分店多门店管理" />
+                        <TextBlock FontSize="14"
+                                   Foreground="#EAF7F0"
+                                   Text="✓  无障碍适配，读屏可用" />
+                    </StackPanel>
 
-        <Button Grid.Row="4"
-                Content="登 录"
-                FontSize="15"
-                Padding="0,10"
-                Background="#2D6A4F"
-                Foreground="White"
-                BorderThickness="0"
-                Command="{Binding LoginCommand}"
-                AutomationProperties.Name="登录按钮" />
+                    <Border Margin="0,44,0,0"
+                            Padding="16,14"
+                            Background="#26FFFFFF"
+                            CornerRadius="10">
+                        <TextBlock FontSize="13"
+                                   Foreground="#EAF7F0"
+                                   Text="本系统适配读屏软件与低视力用户。可在右侧开启无障碍模式，放大字号、加粗焦点。"
+                                   TextWrapping="Wrap" />
+                    </Border>
+                </StackPanel>
+            </Border>
 
-        <TextBlock Grid.Row="6"
-                   Text="{Binding ErrorMessage}"
-                   Foreground="#D9534F"
-                   FontSize="13"
-                   TextWrapping="Wrap"
-                   HorizontalAlignment="Center" />
-    </Grid>
+            <!--  右侧表单区  -->
+            <Border Grid.Column="1"
+                    Background="White"
+                    CornerRadius="0,12,12,0">
+                <StackPanel Width="340"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <TextBlock FontSize="26"
+                               FontWeight="Bold"
+                               Foreground="#1F2933"
+                               Text="欢迎登录" />
+                    <TextBlock Margin="0,6,0,28"
+                               FontSize="13"
+                               Foreground="#8A929B"
+                               Text="店主 / 店长 / 收银 / 技师 通用登录" />
+
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="账号 / 手机号" />
+                    <TextBox Margin="0,0,0,16"
+                             AutomationProperties.HelpText="请输入登录账号或手机号"
+                             AutomationProperties.Name="账号"
+                             Style="{StaticResource RoundedTextBox}"
+                             Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <TextBlock Style="{StaticResource FieldLabel}" Text="密码" />
+                    <PasswordBox Name="PasswordBox"
+                                 AutomationProperties.HelpText="请输入登录密码"
+                                 AutomationProperties.Name="密码"
+                                 KeyDown="PasswordBox_KeyDown"
+                                 PasswordChanged="PasswordBox_PasswordChanged"
+                                 Style="{StaticResource RoundedPasswordBox}" />
+
+                    <CheckBox x:Name="RememberCheck"
+                              Margin="2,16,0,22"
+                              AutomationProperties.HelpText="勾选后将在本机加密保存账号与密码，下次自动填入"
+                              AutomationProperties.Name="记住账号密码"
+                              Checked="RememberCheck_Changed"
+                              Content="记住账号密码"
+                              FontSize="13"
+                              Unchecked="RememberCheck_Changed" />
+
+                    <Button AutomationProperties.Name="登录按钮"
+                            Command="{Binding LoginCommand}"
+                            Content="登 录"
+                            Style="{StaticResource PrimaryButton}" />
+
+                    <Grid Margin="0,16,0,0">
+                        <Border Height="1"
+                                VerticalAlignment="Center"
+                                Background="#ECEEF1" />
+                        <Border Padding="10,0"
+                                HorizontalAlignment="Center"
+                                Background="White">
+                            <TextBlock FontSize="12"
+                                       Foreground="#8A929B"
+                                       Text="还没有账号？" />
+                        </Border>
+                    </Grid>
+
+                    <Button Margin="0,16,0,0"
+                            AutomationProperties.HelpText="注册一家新门店并获得 30 天免费试用"
+                            AutomationProperties.Name="注册新店铺按钮"
+                            Click="RegisterButton_Click"
+                            Content="注册新店铺（免费试用 30 天）"
+                            Style="{StaticResource OutlineButton}" />
+
+                    <TextBlock Margin="0,18,0,0"
+                               HorizontalAlignment="Center"
+                               FontSize="13"
+                               Foreground="#D9534F"
+                               Text="{Binding ErrorMessage}"
+                               TextWrapping="Wrap" />
+
+                    <CheckBox x:Name="A11yToggle"
+                              Margin="0,24,0,0"
+                              HorizontalAlignment="Center"
+                              AutomationProperties.HelpText="开启后立即应用，并在下次启动时记住该选择"
+                              AutomationProperties.Name="无障碍模式开关"
+                              Checked="A11yToggle_Changed"
+                              Content="启用无障碍模式（放大字号、加粗焦点、读屏优化）"
+                              Style="{StaticResource ToggleSwitch}"
+                              Unchecked="A11yToggle_Changed" />
+                </StackPanel>
+            </Border>
+
+            <!--  可拖动标题条（透明，覆盖顶部；窗口按钮在其上层）  -->
+            <Border Grid.ColumnSpan="2"
+                    Height="46"
+                    VerticalAlignment="Top"
+                    Background="Transparent"
+                    MouseLeftButtonDown="TitleBar_MouseDown" />
+
+            <!--  窗口按钮  -->
+            <StackPanel Grid.Column="1"
+                        Margin="0,10,14,0"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Orientation="Horizontal">
+                <Button AutomationProperties.Name="最小化窗口"
+                        Click="Minimize_Click"
+                        Content="—"
+                        Style="{StaticResource WindowChromeButton}"
+                        ToolTip="最小化" />
+                <Button Margin="4,0,0,0"
+                        AutomationProperties.Name="关闭窗口"
+                        Click="Close_Click"
+                        Content="✕"
+                        Style="{StaticResource WindowCloseButton}"
+                        ToolTip="关闭" />
+            </StackPanel>
+        </Grid>
+    </Border>
 </Window>

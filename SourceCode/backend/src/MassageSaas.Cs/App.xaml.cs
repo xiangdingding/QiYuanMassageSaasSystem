@@ -46,6 +46,7 @@ public partial class App : Application
                 services.AddSingleton<NavigationService>();
                 services.AddSingleton<AppContextService>();
                 services.AddSingleton<PreferencesService>();
+                services.AddSingleton<CredentialStore>();
                 services.AddSingleton<ISpeechAnnouncer, SpeechAnnouncer>();
                 services.AddTransient<AuthMessageHandler>();
 

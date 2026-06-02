@@ -5,7 +5,7 @@
         Title="{Binding WindowTitle, FallbackValue=按摩店收银系统}"
         Height="780" Width="1280"
         MinHeight="600" MinWidth="1000"
-        WindowStartupLocation="CenterScreen"
+        WindowStartupLocation="CenterScreen"  
         Background="#F5F7FA">
     <Window.InputBindings>
         <KeyBinding Key="F2" Command="{Binding FocusMembersCommand}" />
