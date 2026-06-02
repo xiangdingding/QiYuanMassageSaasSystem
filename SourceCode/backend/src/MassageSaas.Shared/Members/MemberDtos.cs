@@ -133,3 +133,14 @@ public record ReferredMemberDto(
     string Phone,
     decimal TotalRecharge,
     DateTime CreatedAt);
+
+/// <summary>会员消费记录（流水「消费记录」页）：对应 GET /members/{id}/orders 的投影。</summary>
+public record MemberConsumptionDto(
+    long Id,
+    string OrderNo,
+    decimal Total,
+    decimal PaidAmount,
+    string PayMethod,
+    string Status,
+    DateTime CreatedAt,
+    DateTime? CompletedAt);

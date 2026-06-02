@@ -102,7 +102,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        var now = DateTime.UtcNow;
+        var now = DateTime.Now;
 
         foreach (var entry in ChangeTracker.Entries<BaseEntity>())
         {

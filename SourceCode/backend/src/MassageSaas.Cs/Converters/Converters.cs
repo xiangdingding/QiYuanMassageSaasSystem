@@ -174,7 +174,9 @@ public class EnumLabelConverter : IValueConverter
         ["Cancelled"] = "已取消", ["Refunded"] = "已退款",
         ["FixedAmount"] = "固定金额", ["Percentage"] = "百分比", ["Tiered"] = "阶梯", ["Timed"] = "按时计费",
         ["ShopOwner"] = "店主", ["StoreManager"] = "店长", ["Cashier"] = "收银员", ["Technician"] = "技师",
-        ["OnlinePayment"] = "在线支付", ["OfflineManual"] = "线下激活"
+        ["OnlinePayment"] = "在线支付", ["OfflineManual"] = "线下激活",
+        // 会员资金流水类型
+        ["Recharge"] = "充值", ["Refund"] = "退卡", ["TransferOut"] = "转出", ["TransferIn"] = "转入", ["ReferralBonus"] = "返佣"
     };
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

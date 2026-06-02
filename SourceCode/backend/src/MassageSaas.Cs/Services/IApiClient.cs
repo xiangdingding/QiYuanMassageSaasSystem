@@ -102,6 +102,9 @@ public interface IApiClient
     [Get("/members/{id}/recharges")]
     Task<List<RechargeRecordDto>> GetRechargeHistoryAsync(long id);
 
+    [Get("/members/{id}/orders")]
+    Task<List<MemberConsumptionDto>> GetConsumptionHistoryAsync(long id);
+
     [Post("/members/{id}/refund")]
     Task<RechargeRecordDto> RefundMemberAsync(long id, [Body] RefundMemberRequest req);
 
@@ -110,6 +113,20 @@ public interface IApiClient
 
     [Get("/members/{id}/referrals")]
     Task<ReferralSummaryDto> GetMemberReferralsAsync(long id);
+
+    [Get("/member-types")]
+    Task<List<MemberTypeDto>> GetMemberTypesAsync(
+        [Query] bool includeInactive = false,
+        [Query] string? kind = null);
+
+    [Post("/member-types")]
+    Task<MemberTypeDto> CreateMemberTypeAsync([Body] CreateMemberTypeRequest req);
+
+    [Put("/member-types/{id}")]
+    Task<MemberTypeDto> UpdateMemberTypeAsync(long id, [Body] UpdateMemberTypeRequest req);
+
+    [Delete("/member-types/{id}")]
+    Task DeleteMemberTypeAsync(long id);
 
     [Get("/orders")]
     Task<PagedResult<OrderListItemDto>> GetOrdersAsync(
@@ -167,6 +184,9 @@ public interface IApiClient
     [Delete("/commission-rules/{id}")]
     Task DeleteCommissionRuleAsync(long id);
 
+    [Post("/commission-rules/bulk")]
+    Task<BulkCommissionRuleResult> BulkCreateCommissionRulesAsync([Body] BulkCommissionRuleRequest req);
+
     [Get("/reports/daily")]
     Task<DailyReportDto> GetDailyReportAsync([Query] long storeId, [Query] DateTime? date = null);
 
@@ -221,6 +241,12 @@ public interface IApiClient
         [Query] DateTime? to = null,
         [Query] int page = 1,
         [Query] int pageSize = 20);
+
+    [Post("/appointments")]
+    Task<AppointmentDto> CreateAppointmentAsync([Body] CreateAppointmentRequest req);
+
+    [Put("/appointments/{id}")]
+    Task<AppointmentDto> UpdateAppointmentAsync(long id, [Body] UpdateAppointmentRequest req);
 
     [Post("/appointments/{id}/confirm")]
     Task<AppointmentDto> ConfirmAppointmentAsync(long id, [Body] ConfirmAppointmentRequest req);

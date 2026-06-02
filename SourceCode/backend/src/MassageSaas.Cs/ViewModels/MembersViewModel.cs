@@ -95,4 +95,52 @@ public partial class MembersViewModel : ObservableObject
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
     }
+
+    /// <summary>退卡：退还余额并关闭该卡。逻辑与 BS 端 doRefund 一致。</summary>
+    [RelayCommand]
+    private async Task RefundAsync(MemberDto? m)
+    {
+        if (m is null) return;
+        var dlg = new Views.MemberRefundWindow(m) { Owner = Application.Current?.MainWindow };
+        if (dlg.ShowDialog() != true) return;
+        try
+        {
+            await _api.RefundMemberAsync(m.Id, new RefundMemberRequest(dlg.RefundAmount, dlg.RefundMethod, dlg.Reason));
+            MessageBox.Show($"已退卡，退还 ¥{dlg.RefundAmount:F2}", "提示");
+            await ReloadAsync();
+        }
+        catch (Exception ex) { ErrorReporter.Show(ex); }
+    }
+
+    /// <summary>转赠：把当前卡全部余额转到已有/新建会员，原卡关闭。逻辑与 BS 端 doTransfer 一致。</summary>
+    [RelayCommand]
+    private async Task TransferAsync(MemberDto? m)
+    {
+        if (m is null) return;
+        var dlg = new Views.MemberTransferWindow(_api, m, _context.ActiveStoreId) { Owner = Application.Current?.MainWindow };
+        if (dlg.ShowDialog() != true || dlg.Request is null) return;
+        try
+        {
+            await _api.TransferMemberAsync(m.Id, dlg.Request);
+            MessageBox.Show("已转赠", "提示");
+            await ReloadAsync();
+        }
+        catch (Exception ex) { ErrorReporter.Show(ex); }
+    }
+
+    /// <summary>会员流水：资金流水 + 消费记录。</summary>
+    [RelayCommand]
+    private void ShowHistory(MemberDto? m)
+    {
+        if (m is null) return;
+        new Views.MemberHistoryWindow(_api, m) { Owner = Application.Current?.MainWindow }.ShowDialog();
+    }
+
+    /// <summary>引荐情况：该会员引荐人数 / 累计返佣 / 被引荐清单。</summary>
+    [RelayCommand]
+    private void ShowReferrals(MemberDto? m)
+    {
+        if (m is null) return;
+        new Views.MemberReferralsWindow(_api, m) { Owner = Application.Current?.MainWindow }.ShowDialog();
+    }
 }

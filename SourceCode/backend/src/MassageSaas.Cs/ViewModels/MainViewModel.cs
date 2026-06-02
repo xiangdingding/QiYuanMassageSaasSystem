@@ -142,6 +142,7 @@ public partial class MainViewModel : ObservableObject
         if (canPos) items.Add(new NavItem("订单流水", "orders", () => _sp.GetRequiredService<OrdersViewModel>()));
         if (canPos) items.Add(new NavItem("房间管理", "rooms", () => _sp.GetRequiredService<RoomsViewModel>()));
         if (canPos) items.Add(new NavItem("会员管理", "members", () => _sp.GetRequiredService<MembersViewModel>()));
+        if (canLead) items.Add(new NavItem("会员类型", "member-types", () => _sp.GetRequiredService<MemberTypesViewModel>()));
         items.Add(new NavItem("技师排队", "queue", () => _sp.GetRequiredService<QueueViewModel>()));
         if (canPos) items.Add(new NavItem("日报与业绩", "reports", () => _sp.GetRequiredService<ReportsViewModel>()));
         if (canPos) items.Add(new NavItem("日结/交班", "day-close", () => _sp.GetRequiredService<DayCloseViewModel>()));

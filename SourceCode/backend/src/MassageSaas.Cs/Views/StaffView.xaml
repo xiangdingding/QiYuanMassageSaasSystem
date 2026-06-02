@@ -55,7 +55,7 @@
                     <DataGridTextColumn Header="盲人" Binding="{Binding IsBlind}" Width="60" />
                     <DataGridTextColumn Header="启用" Binding="{Binding IsActive}" Width="60" />
                     <DataGridTextColumn Header="最近登录" Binding="{Binding LastLoginAt, StringFormat='yyyy-MM-dd HH:mm:ss'}" Width="160" />
-                    <DataGridTemplateColumn Header="操作" Width="240">
+                    <DataGridTemplateColumn Header="操作" Width="300">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -64,6 +64,9 @@
                                             CommandParameter="{Binding}" />
                                     <Button Margin="2" Padding="6,2" Content="重置密码"
                                             Command="{Binding DataContext.ResetPasswordCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Margin="2" Padding="6,2" Content="跨店调动"
+                                            Command="{Binding DataContext.TransferCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                             CommandParameter="{Binding}" />
                                 </StackPanel>
                             </DataTemplate>

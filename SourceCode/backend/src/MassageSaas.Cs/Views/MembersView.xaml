@@ -48,15 +48,27 @@
                     <DataGridTextColumn Header="开卡时间" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="150" />
                     <DataGridTextColumn Header="到期时间" Binding="{Binding CardExpiresAt, Converter={StaticResource CardExpiry}}" Width="150" />
                     <DataGridTextColumn Header="剩余" Binding="{Binding CardDaysRemaining, Converter={StaticResource CardDaysRemaining}}" Width="90" />
-                    <DataGridTemplateColumn Header="操作" Width="200">
+                    <DataGridTemplateColumn Header="操作" Width="360">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Margin="2" Padding="6,2" Content="充值"
+                                    <Button Margin="2" Padding="8,2" Content="充值"
                                             Command="{Binding DataContext.RechargeCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                             CommandParameter="{Binding}" />
-                                    <Button Margin="2" Padding="6,2" Content="编辑"
+                                    <Button Margin="2" Padding="8,2" Content="编辑"
                                             Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Margin="2" Padding="8,2" Content="退卡"
+                                            Command="{Binding DataContext.RefundCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Margin="2" Padding="8,2" Content="转赠"
+                                            Command="{Binding DataContext.TransferCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Margin="2" Padding="8,2" Content="流水"
+                                            Command="{Binding DataContext.ShowHistoryCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Margin="2" Padding="8,2" Content="引荐"
+                                            Command="{Binding DataContext.ShowReferralsCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                             CommandParameter="{Binding}" />
                                 </StackPanel>
                             </DataTemplate>

@@ -10,10 +10,12 @@ namespace MassageSaas.Cs.ViewModels;
 public partial class CommissionsViewModel : ObservableObject
 {
     private readonly IApiClient _api;
+    private readonly AppContextService _context;
 
-    public CommissionsViewModel(IApiClient api)
+    public CommissionsViewModel(IApiClient api, AppContextService context)
     {
         _api = api;
+        _context = context;
         _ = ReloadAsync();
     }
 
@@ -46,6 +48,14 @@ public partial class CommissionsViewModel : ObservableObject
             await ReloadAsync();
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
+    }
+
+    /// <summary>批量设置：服务 × 技师笛卡尔积按同一模板生成/更新通用规则。</summary>
+    [RelayCommand]
+    private async Task BulkSetAsync()
+    {
+        var dlg = new Views.BulkCommissionWindow(_api, _context.ActiveStoreId) { Owner = Application.Current?.MainWindow };
+        if (dlg.ShowDialog() == true) await ReloadAsync();
     }
 
     [RelayCommand]

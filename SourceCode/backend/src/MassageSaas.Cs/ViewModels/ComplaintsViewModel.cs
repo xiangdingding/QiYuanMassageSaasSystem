@@ -58,6 +58,15 @@ public partial class ComplaintsViewModel : ObservableObject
         finally { IsBusy = false; }
     }
 
+    /// <summary>登记投诉：查询订单(按技师+日期)选服务项登记，或不指定项目做匿名投诉。</summary>
+    [RelayCommand]
+    private async Task RegisterAsync()
+    {
+        if (_context.ActiveStoreId is not long sid) { MessageBox.Show("请先选择门店"); return; }
+        var dlg = new Views.ComplaintCreateWindow(_api, sid, _technicians) { Owner = Application.Current?.MainWindow };
+        if (dlg.ShowDialog() == true) await ReloadAsync();
+    }
+
     [RelayCommand]
     private async Task ResolveAsync(ComplaintDto? c)
     {

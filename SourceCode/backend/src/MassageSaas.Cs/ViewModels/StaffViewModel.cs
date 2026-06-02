@@ -89,4 +89,13 @@ public partial class StaffViewModel : ObservableObject
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
     }
+
+    /// <summary>跨店调动（永久/临时借调）+ 历史归还。逻辑与 BS 端 openTransfer 一致。</summary>
+    [RelayCommand]
+    private async Task TransferAsync(StaffDto? s)
+    {
+        if (s is null) return;
+        var dlg = new Views.StaffTransferWindow(_api, s, _context.Stores) { Owner = Application.Current?.MainWindow };
+        if (dlg.ShowDialog() == true) await ReloadAsync();
+    }
 }

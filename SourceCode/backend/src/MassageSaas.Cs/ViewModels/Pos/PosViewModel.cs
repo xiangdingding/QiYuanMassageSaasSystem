@@ -48,6 +48,17 @@ public partial class PosViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<RoomDto> rooms = new();
 
+    /// <summary>本店所有计时 session（含历史，按 Status 过滤 Open）。</summary>
+    [ObservableProperty]
+    private ObservableCollection<TimedRoomSessionDto> timedSessions = new();
+
+    /// <summary>「计时房费」区卡片：每间计时房一张，含当前 Open session 与是否已入车。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasTimedRooms))]
+    private ObservableCollection<TimedRoomCardViewModel> timedRoomCards = new();
+
+    public bool HasTimedRooms => TimedRoomCards.Count > 0;
+
     [ObservableProperty]
     private ObservableCollection<CartItemViewModel> cart = new();
 
@@ -251,13 +262,122 @@ public partial class PosViewModel : ObservableObject
             {
                 try { Rooms = new ObservableCollection<RoomDto>(await _api.GetRoomsAsync(sid)); }
                 catch { /* 房间领域 P2 后端可能尚未迁移 */ }
+                try { TimedSessions = new ObservableCollection<TimedRoomSessionDto>(await _api.GetTimedRoomSessionsAsync(sid)); }
+                catch { /* 计时房后端可能尚未迁移 */ }
             }
+            RebuildTimedRoomCards();
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
         finally { IsBusy = false; }
     }
 
+    /// <summary>按 Rooms + TimedSessions + Cart 重建「计时房费」卡片（计时房 = IsTimedRoom 且启用）。</summary>
+    private void RebuildTimedRoomCards()
+    {
+        var cards = new ObservableCollection<TimedRoomCardViewModel>();
+        foreach (var room in Rooms.Where(r => r.IsTimedRoom && r.IsActive))
+        {
+            var session = TimedSessions.FirstOrDefault(s => s.RoomId == room.Id && s.Status == "Open");
+            var inCart = session is not null && Cart.Any(c => c.IsRoomCharge && c.SessionId == session.Id);
+            cards.Add(new TimedRoomCardViewModel(room, session, inCart));
+        }
+        TimedRoomCards = cards;
+    }
+
+    /// <summary>刷新计时 session（开台/取消/结算后调用，避免拿过期分钟数）。</summary>
+    private async Task ReloadTimedSessionsAsync()
+    {
+        if (_context.ActiveStoreId is not long sid) return;
+        try { TimedSessions = new ObservableCollection<TimedRoomSessionDto>(await _api.GetTimedRoomSessionsAsync(sid)); }
+        catch { /* http 已弹错 */ }
+        RebuildTimedRoomCards();
+    }
+
+    /// <summary>在收银台给一间计时房开台（弹窗选会员/散客/备注）。</summary>
+    [RelayCommand]
+    private async Task OpenStartTimingAsync(TimedRoomCardViewModel? card)
+    {
+        if (card is null) return;
+        var dlg = new Views.StartTimingWindow(_api, card.Room, _context.ActiveStoreId)
+        {
+            Owner = Application.Current?.MainWindow
+        };
+        if (dlg.ShowDialog() == true)
+        {
+            await ReloadTimedSessionsAsync();
+            _speech.SayAsync($"{card.RoomNo} 已开台计时");
+        }
+    }
+
+    /// <summary>把进行中的计时 session 作为一行 roomCharge 加入购物车（金额按当前已计时分钟快照）。</summary>
+    [RelayCommand]
+    private void AddRoomCharge(TimedRoomCardViewModel? card)
+    {
+        if (card?.Session is null) return;
+        if (Cart.Any(c => c.IsRoomCharge && c.SessionId == card.Session.Id))
+        {
+            _speech.SayAsync("该房间已在订单里");
+            return;
+        }
+        var minutes = card.Session.ElapsedMinutes;
+        var amount = Math.Round(minutes / 60m * card.Session.HourlyRateSnapshot, 2);
+        var item = new CartItemViewModel
+        {
+            Kind = "roomCharge",
+            ServiceName = $"{card.RoomNo} 计时房 {minutes} 分钟",
+            SessionId = card.Session.Id,
+            RoomId = card.Room.Id,
+            RoomNo = card.RoomNo,
+            ElapsedMinutes = minutes,
+            HourlyRate = card.Session.HourlyRateSnapshot,
+            BoundMemberId = card.Session.MemberId,
+            BoundMemberName = card.Session.MemberName,
+            UnitPrice = amount,
+            Quantity = 1
+        };
+        Cart.Add(item);
+        item.PropertyChanged += (_, __) => Recompute();
+        Recompute();
+        RebuildTimedRoomCards(); // 标记该房"已加入"
+        if (IsRoomChargeMismatch(item))
+            _speech.SayAsync($"{card.RoomNo} 开台会员与当前结算会员不一致，结算前请关联同一会员");
+    }
+
+    /// <summary>取消一段进行中的计时（误开台/客人临时不消费）：session 作废、不计费，并从购物车移除。</summary>
+    [RelayCommand]
+    private async Task CancelTimingAsync(TimedRoomCardViewModel? card)
+    {
+        if (card?.Session is null) return;
+        if (MessageBox.Show(
+                $"确认取消 {card.RoomNo} 的计时？已计 {card.Session.ElapsedMinutes} 分钟将作废、不计费。",
+                "取消计时", MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
+        try
+        {
+            await _api.CancelTimedRoomAsync(card.Session.Id);
+            var inCart = Cart.FirstOrDefault(c => c.IsRoomCharge && c.SessionId == card.Session.Id);
+            if (inCart is not null) { Cart.Remove(inCart); Recompute(); }
+            await ReloadTimedSessionsAsync();
+            _speech.SayAsync($"{card.RoomNo} 计时已取消");
+        }
+        catch (Exception ex) { ErrorReporter.Show(ex); }
+    }
+
+    /// <summary>计时房费"绑定会员 vs 结算会员"匹配：散客开台无约束；绑定会员开台必须当前已查询到同一手机号下的卡。</summary>
+    private bool IsRoomChargeMismatch(CartItemViewModel item)
+    {
+        if (!item.IsRoomCharge || item.BoundMemberId is null) return false;
+        if (PrimaryMember is null) return true;
+        return !MemberCards.Any(c => c.Id == item.BoundMemberId);
+    }
+
+    private IEnumerable<CartItemViewModel> MismatchedRoomCharges =>
+        Cart.Where(c => c.IsRoomCharge && IsRoomChargeMismatch(c));
+
     partial void OnServiceFilterChanged(string value) => ApplyFilter();
+
+    /// <summary>清除服务搜索框（旁边的 ✕ 按钮 / Esc），恢复显示全部服务。</summary>
+    [RelayCommand]
+    private void ClearServiceFilter() => ServiceFilter = string.Empty;
 
     /// <summary>
     /// 快速开单：按搜索框里的字符匹配第一个服务并加入。给纯小键盘流程用：
@@ -377,6 +497,8 @@ public partial class PosViewModel : ObservableObject
         Cart.Remove(item);
         Recompute();
         RefreshCardEligibility();
+        // 移除计时房费行后，对应计时房卡片恢复"加入订单"
+        if (item.IsRoomCharge) RebuildTimedRoomCards();
     }
 
     [RelayCommand]
@@ -391,6 +513,7 @@ public partial class PosViewModel : ObservableObject
         AppliedVoucher = null;
         VoucherCode = string.Empty;
         Recompute();
+        RebuildTimedRoomCards();
     }
 
     [RelayCommand]
@@ -401,14 +524,25 @@ public partial class PosViewModel : ObservableObject
             MessageBox.Show("购物车为空", "提示");
             return;
         }
-        if (Cart.Any(c => c.Technician is null))
+        // 仅服务项要求指派技师；计时房费行无技师
+        if (Cart.Any(c => c.IsService && c.Technician is null))
         {
-            MessageBox.Show("请为所有项目指派技师", "提示");
+            MessageBox.Show("请为所有服务项目指派技师", "提示");
             return;
         }
         if (_context.ActiveStoreId is null)
         {
             MessageBox.Show("未选择门店", "提示");
+            return;
+        }
+        // 计时房费绑定会员必须与当前结算会员一致，否则不允许结算（避免归账到错的会员）
+        var mismatched = MismatchedRoomCharges.ToList();
+        if (mismatched.Count > 0)
+        {
+            var desc = string.Join("、", mismatched.Select(r => $"{r.RoomNo}（开台 {r.BoundMemberName ?? "—"}）"));
+            MessageBox.Show($"计时房费 {desc} 与当前结算会员不一致，请关联同一会员或将该房费从订单中移除。",
+                "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+            _speech.SayAsync("计时房费会员不一致，无法结算");
             return;
         }
         // 会员卡支付：用所有勾选卡的合计余额判断是否够付（合并结算）
@@ -439,6 +573,9 @@ public partial class PosViewModel : ObservableObject
         IsBusy = true;
         try
         {
+            // 服务项走 Items；计时房费走 RoomSessionIds（Checkout 时后端会一并收尾这些 session 并入订单总额）
+            var serviceLines = Cart.Where(c => c.IsService).ToList();
+            var roomSessionIds = Cart.Where(c => c.IsRoomCharge).Select(c => c.SessionId).ToList();
             var created = await _api.CreateOrderAsync(new CreateOrderRequest(
                 StoreId: _context.ActiveStoreId.Value,
                 MemberId: PrimaryMember?.Id,
@@ -446,12 +583,13 @@ public partial class PosViewModel : ObservableObject
                 // 不传 AssignmentSource 时后端 ParseSource 兜底为 Designation，
                 // 提成自动按"仅点钟"或"通配"规则计算。BS POS 已支持完整切换，
                 // 待 CS 端补 radio + 叫下一钟按钮后再透传 AssignmentSource。
-                Items: Cart.Select(c => new OrderItemInputDto(
+                Items: serviceLines.Select(c => new OrderItemInputDto(
                     ServiceId: c.ServiceId,
                     TechnicianId: c.Technician!.Id,
                     Quantity: c.Quantity,
                     RoomId: c.Room?.Id)).ToList(),
-                Remark: null));
+                Remark: null,
+                RoomSessionIds: roomSessionIds.Count > 0 ? roomSessionIds : null));
 
             // 订单已落库；如果先前应用了券，这里 redeem 把券挂上去再 checkout。
             // redeem 失败就中断，订单留在 Pending 让收银员决定移除券或在订单流水里继续处理。
@@ -493,6 +631,8 @@ public partial class PosViewModel : ObservableObject
             AppliedVoucher = null;
             VoucherCode = string.Empty;
             Recompute();
+            // 已结算的计时 session 已收尾消失，刷新计时房卡片
+            await ReloadTimedSessionsAsync();
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
         finally { IsBusy = false; }

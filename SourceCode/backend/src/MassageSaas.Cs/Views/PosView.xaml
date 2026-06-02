@@ -58,18 +58,25 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <DockPanel Grid.Row="0" LastChildFill="True" Margin="0,0,0,12">
                     <TextBlock DockPanel.Dock="Left" Text="选择服务项目" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Button DockPanel.Dock="Right" Width="38" Height="32" Margin="6,0,0,0" Content="✕"
+                            Visibility="{Binding ServiceFilter, Converter={StaticResource NullToCollapsed}}"
+                            Command="{Binding ClearServiceFilterCommand}"
+                            AutomationProperties.Name="清除服务搜索"
+                            AutomationProperties.HelpText="清空搜索框，恢复显示全部服务" />
                     <TextBox x:Name="ServiceFilterBox"
                              Width="240" Height="32" HorizontalAlignment="Right"
                              Text="{Binding ServiceFilter, UpdateSourceTrigger=PropertyChanged}"
                              AutomationProperties.Name="服务搜索框"
-                             AutomationProperties.HelpText="输入编码或名称，按回车快速加入第一项"
+                             AutomationProperties.HelpText="输入编码或名称，按回车快速加入第一项，按 Esc 清空"
                              VerticalContentAlignment="Center" Padding="6,0">
                         <TextBox.InputBindings>
                             <KeyBinding Key="Enter" Command="{Binding QuickAddFirstCommand}" />
+                            <KeyBinding Key="Esc" Command="{Binding ClearServiceFilterCommand}" />
                         </TextBox.InputBindings>
                     </TextBox>
                 </DockPanel>
@@ -125,6 +132,88 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
+
+                <!-- 计时房费：点「开台」由收银开始计时；点「加入订单」把当前房费加入购物车一起结算 -->
+                <Border Grid.Row="2" Margin="0,12,0,0"
+                        Visibility="{Binding HasTimedRooms, Converter={StaticResource BoolToVisible}}">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,6">
+                            <TextBlock DockPanel.Dock="Left" Text="计时房费" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock DockPanel.Dock="Left" Margin="10,0,0,0" VerticalAlignment="Center"
+                                       Foreground="#999" FontSize="12" Text="开台计时 · 加入订单一起结算" />
+                        </DockPanel>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="248">
+                            <ItemsControl ItemsSource="{Binding TimedRoomCards}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="216" Margin="7" Background="#F0F4F8" BorderBrush="#CBD5E0"
+                                                BorderThickness="1" CornerRadius="4" Padding="10,8">
+                                            <StackPanel>
+                                                <DockPanel>
+                                                    <TextBlock DockPanel.Dock="Left" Text="{Binding RoomNo}" FontWeight="Bold" FontSize="16" />
+                                                    <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" Foreground="#666" FontSize="12" VerticalAlignment="Center">
+                                                        <Run Text="¥" />
+                                                        <Run Text="{Binding HourlyRate, StringFormat='F2', Mode=OneWay}" />
+                                                        <Run Text="/时" />
+                                                    </TextBlock>
+                                                </DockPanel>
+
+                                                <!-- 计时中 -->
+                                                <StackPanel Margin="0,6,0,0"
+                                                            Visibility="{Binding HasOpenSession, Converter={StaticResource BoolToVisible}}">
+                                                    <TextBlock FontSize="13" Foreground="#444">
+                                                        <Run Text="已计时 " />
+                                                        <Run Text="{Binding ElapsedMinutes, Mode=OneWay}" FontWeight="Bold" />
+                                                        <Run Text=" 分钟" />
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="12" Foreground="#888" Text="{Binding CustomerLabel}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock FontSize="14" Foreground="#2D6A4F" FontWeight="Bold" Margin="0,2,0,0">
+                                                        <Run Text="≈ ¥" />
+                                                        <Run Text="{Binding EstimatedAmount, StringFormat='F2', Mode=OneWay}" />
+                                                    </TextBlock>
+                                                    <Grid Margin="0,8,0,0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <Button Grid.Column="0" Height="32" Margin="0,0,3,0"
+                                                                Background="#2D6A4F" Foreground="White" BorderThickness="0" Cursor="Hand"
+                                                                Content="{Binding AddButtonLabel}"
+                                                                IsEnabled="{Binding CanAddToCart}"
+                                                                Command="{Binding DataContext.AddRoomChargeCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                CommandParameter="{Binding}"
+                                                                AutomationProperties.Name="加入订单" />
+                                                        <Button Grid.Column="1" Height="32" Margin="3,0,0,0"
+                                                                Background="Transparent" BorderBrush="#D9534F" Foreground="#D9534F" Cursor="Hand"
+                                                                Content="取消计时"
+                                                                Command="{Binding DataContext.CancelTimingCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                CommandParameter="{Binding}"
+                                                                AutomationProperties.Name="取消计时" />
+                                                    </Grid>
+                                                </StackPanel>
+
+                                                <!-- 空闲 -->
+                                                <Button Margin="0,8,0,0" Height="34"
+                                                        Background="#2D6A4F" Foreground="White" BorderThickness="0" Cursor="Hand"
+                                                        FontWeight="SemiBold" Content="开台"
+                                                        Visibility="{Binding IsIdle, Converter={StaticResource BoolToVisible}}"
+                                                        Command="{Binding DataContext.OpenStartTimingCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        AutomationProperties.Name="{Binding RoomNo}"
+                                                        AutomationProperties.HelpText="为该计时房开台计时" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
             </Grid>
         </Border>
 
@@ -305,10 +394,33 @@
                                                         Command="{Binding DataContext.RemoveCartItemCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                         CommandParameter="{Binding}"
                                                         AutomationProperties.Name="移除此项" />
+                                                <Border DockPanel.Dock="Left" Background="#2D6A4F" CornerRadius="2" Padding="5,1" Margin="0,0,6,0"
+                                                        VerticalAlignment="Center"
+                                                        Visibility="{Binding IsRoomCharge, Converter={StaticResource BoolToVisible}}">
+                                                    <TextBlock Text="计时房" Foreground="White" FontSize="11" />
+                                                </Border>
                                                 <TextBlock Text="{Binding ServiceName}" FontWeight="SemiBold" FontSize="15"
                                                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                             </DockPanel>
-                                            <Grid Margin="0,8,0,0">
+
+                                            <!-- 计时房费行：无技师/数量，仅展示时长与小计 -->
+                                            <DockPanel Margin="0,8,0,0"
+                                                       Visibility="{Binding IsRoomCharge, Converter={StaticResource BoolToVisible}}">
+                                                <TextBlock DockPanel.Dock="Left" Foreground="#888" FontSize="13" VerticalAlignment="Center">
+                                                    <Run Text="已计时 " />
+                                                    <Run Text="{Binding ElapsedMinutes, Mode=OneWay}" />
+                                                    <Run Text=" 分钟" />
+                                                </TextBlock>
+                                                <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                           FontWeight="Bold" FontSize="15" Foreground="#D9534F">
+                                                    <Run Text="¥" />
+                                                    <Run Text="{Binding LineTotal, StringFormat='F2', Mode=OneWay}" />
+                                                </TextBlock>
+                                            </DockPanel>
+
+                                            <!-- 服务项行：技师/房间/数量/小计 -->
+                                            <Grid Margin="0,8,0,0"
+                                                  Visibility="{Binding IsService, Converter={StaticResource BoolToVisible}}">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="84" />

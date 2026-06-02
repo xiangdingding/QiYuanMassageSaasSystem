@@ -79,6 +79,7 @@ public partial class App : Application
                 services.AddTransient<LoginViewModel>();
                 services.AddTransient<PosViewModel>();
                 services.AddTransient<MembersViewModel>();
+                services.AddTransient<MemberTypesViewModel>();
                 services.AddTransient<QueueViewModel>();
                 services.AddTransient<OrdersViewModel>();
                 services.AddTransient<ReportsViewModel>();

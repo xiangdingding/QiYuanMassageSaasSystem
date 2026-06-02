@@ -27,6 +27,9 @@
             <DataTemplate DataType="{x:Type vm:MembersViewModel}">
                 <views:MembersView />
             </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:MemberTypesViewModel}">
+                <views:MemberTypesView />
+            </DataTemplate>
             <DataTemplate DataType="{x:Type vm:QueueViewModel}">
                 <views:QueueView />
             </DataTemplate>

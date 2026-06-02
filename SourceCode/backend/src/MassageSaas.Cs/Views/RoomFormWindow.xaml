@@ -2,43 +2,56 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="房间"
-        Height="380" Width="380"
+        Height="480" Width="400"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize">
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-
-        <TextBlock Grid.Row="0" Text="房间号" Margin="0,0,0,4" />
-        <TextBox Grid.Row="1" x:Name="RoomNoBox" Padding="6" Margin="0,0,0,12" />
-
-        <TextBlock Grid.Row="2" Text="容客（人）" Margin="0,0,0,4" />
-        <TextBox Grid.Row="3" x:Name="CapacityBox" Padding="6" Margin="0,0,0,12" Text="1" />
-
-        <TextBlock Grid.Row="4" Text="类型（可选）" Margin="0,0,0,4" />
-        <ComboBox Grid.Row="5" x:Name="TypeBox" Padding="6" Margin="0,0,0,12" IsEditable="True">
-            <ComboBoxItem Content="标准间" />
-            <ComboBoxItem Content="VIP" />
-            <ComboBoxItem Content="情侣间" />
-        </ComboBox>
-
-        <TextBlock Grid.Row="6" Text="备注" Margin="0,0,0,4" />
-        <TextBox Grid.Row="7" x:Name="RemarkBox" Padding="6" Margin="0,0,0,12" />
-
-        <CheckBox Grid.Row="8" x:Name="ActiveBox" Content="启用" IsChecked="True" />
-
-        <Border Grid.Row="10" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
+    <DockPanel Margin="20">
+        <Border DockPanel.Dock="Bottom" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="取消" Padding="16,6" Margin="0,0,8,0" Click="Cancel_Click" />
                 <Button Content="保存" Padding="16,6" Background="#2D6A4F" Foreground="White" BorderThickness="0" Click="Save_Click" />
             </StackPanel>
         </Border>
-    </Grid>
+
+        <StackPanel>
+            <TextBlock Text="房间号" Margin="0,0,0,4" />
+            <TextBox x:Name="RoomNoBox" Padding="6" Margin="0,0,0,12" MaxLength="32"
+                     AutomationProperties.Name="房间号" />
+
+            <TextBlock Text="容客（人）" Margin="0,0,0,4" />
+            <TextBox x:Name="CapacityBox" Padding="6" Margin="0,0,0,12" Text="1"
+                     AutomationProperties.Name="容客人数" />
+
+            <TextBlock Text="类型（可选）" Margin="0,0,0,4" />
+            <ComboBox x:Name="TypeBox" Padding="6" Margin="0,0,0,12" IsEditable="True"
+                      AutomationProperties.Name="房间类型">
+                <ComboBoxItem Content="标准间" />
+                <ComboBoxItem Content="VIP" />
+                <ComboBoxItem Content="情侣间" />
+            </ComboBox>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                <CheckBox x:Name="TimedBox" Content="计时房" VerticalAlignment="Center"
+                          AutomationProperties.Name="计时房"
+                          AutomationProperties.HelpText="按停留时长计费，而非按服务项目" />
+                <TextBlock Text="按停留时长计费，而非按服务项目" Foreground="#999" FontSize="12"
+                           VerticalAlignment="Center" Margin="8,0,0,0" />
+            </StackPanel>
+
+            <StackPanel x:Name="HourlyPanel" Margin="0,0,0,12"
+                        Visibility="{Binding IsChecked, ElementName=TimedBox, Converter={StaticResource BoolToVisible}}">
+                <TextBlock Text="小时单价（元/时，必填且大于 0）" Margin="0,0,0,4" />
+                <TextBox x:Name="HourlyRateBox" Padding="6" Text="0"
+                         AutomationProperties.Name="小时单价" />
+            </StackPanel>
+
+            <TextBlock Text="备注" Margin="0,0,0,4" />
+            <TextBox x:Name="RemarkBox" Padding="6" Margin="0,0,0,12" MaxLength="500"
+                     AcceptsReturn="True" TextWrapping="Wrap" Height="48"
+                     AutomationProperties.Name="备注" />
+
+            <CheckBox x:Name="ActiveBox" Content="启用" IsChecked="True"
+                      AutomationProperties.Name="启用" />
+        </StackPanel>
+    </DockPanel>
 </Window>

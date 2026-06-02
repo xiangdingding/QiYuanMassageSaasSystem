@@ -25,6 +25,8 @@
                     <TextBlock Text="到：" VerticalAlignment="Center" Margin="8,0,0,0" />
                     <DatePicker Width="120" SelectedDate="{Binding ToDate}" />
                     <Button Content="查询" Padding="12,6" Margin="8,0,0,0" Command="{Binding ReloadCommand}" />
+                    <Button Content="登记电话预约" Padding="12,6" Margin="8,0,0,0" Background="#2D6A4F" Foreground="White"
+                            BorderThickness="0" Command="{Binding RegisterCommand}" />
                 </StackPanel>
             </DockPanel>
 
@@ -41,7 +43,7 @@
                                     <Binding Path="CustomerName" />
                                     <Binding Path="CustomerPhone" />
                                     <Binding Path="PartySize" />
-                                    <Binding Path="Status" />
+                                    <Binding Path="StatusLabel" />
                                 </MultiBinding>
                             </Setter.Value>
                         </Setter>
@@ -54,20 +56,31 @@
                     <DataGridTextColumn Header="人数" Binding="{Binding PartySize}" Width="60" />
                     <DataGridTextColumn Header="服务" Binding="{Binding ServiceName}" Width="160" />
                     <DataGridTextColumn Header="指定技师" Binding="{Binding PreferredTechnicianName}" Width="140" />
-                    <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="80" />
-                    <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="200" />
-                    <DataGridTemplateColumn Header="操作" Width="240">
+                    <DataGridTextColumn Header="状态" Binding="{Binding StatusLabel}" Width="80" />
+                    <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="180" />
+                    <DataGridTemplateColumn Header="操作" Width="300">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
                                     <Button Margin="2" Padding="6,2" Content="确认"
+                                            Visibility="{Binding CanConfirm, Converter={StaticResource BoolToVisible}}"
                                             Command="{Binding DataContext.ConfirmCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                             CommandParameter="{Binding}" />
+                                    <Button Margin="2" Padding="6,2" Content="修改"
+                                            Visibility="{Binding CanEdit, Converter={StaticResource BoolToVisible}}"
+                                            Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}" />
                                     <Button Margin="2" Padding="6,2" Content="到店"
+                                            Visibility="{Binding CanArrive, Converter={StaticResource BoolToVisible}}"
                                             Command="{Binding DataContext.ArriveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                             CommandParameter="{Binding}" />
                                     <Button Margin="2" Padding="6,2" Content="取消" Background="#D9534F" Foreground="White" BorderThickness="0"
+                                            Visibility="{Binding CanCancel, Converter={StaticResource BoolToVisible}}"
                                             Command="{Binding DataContext.CancelCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}" />
+                                    <Button Margin="2" Padding="6,2" Content="再次预约"
+                                            Visibility="{Binding CanRebook, Converter={StaticResource BoolToVisible}}"
+                                            Command="{Binding DataContext.RebookCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                             CommandParameter="{Binding}" />
                                 </StackPanel>
                             </DataTemplate>

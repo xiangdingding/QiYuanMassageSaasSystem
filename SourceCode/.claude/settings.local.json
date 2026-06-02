@@ -21,7 +21,11 @@
       "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\)\")",
       "Bash(node -e \"const p=require\\('./apps/shop-admin/package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\)\")",
       "Bash(git commit *)",
-      "Bash(echo \"=== exit $? ===\")"
+      "Bash(echo \"=== exit $? ===\")",
+      "Bash(grep -oE '<el-button[^>]*>[^<]+</el-button>|>[^<]{2,12}</el-button>' __TRACKED_VAR__.vue)",
+      "Bash(grep -oE '>[^<>]{2,14}</el-button>')",
+      "Bash(xargs -n1 basename)",
+      "Bash(grep -iE \"CS[0-9]{3,}|XAML|XDG|MC[0-9]|error|错误|生成成功|已成功生成|生成失败\")"
     ]
   }
 }

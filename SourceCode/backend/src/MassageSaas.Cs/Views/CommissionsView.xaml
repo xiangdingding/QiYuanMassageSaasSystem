@@ -12,6 +12,7 @@
                 <TextBlock DockPanel.Dock="Left" Text="提成规则" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                     <Button Content="新建" Padding="12,6" Background="#2D6A4F" Foreground="White" BorderThickness="0" Command="{Binding CreateCommand}" />
+                    <Button Content="批量设置" Padding="12,6" Margin="8,0,0,0" Background="#E6A23C" Foreground="White" BorderThickness="0" Command="{Binding BulkSetCommand}" />
                     <Button Content="刷新" Padding="12,6" Margin="8,0,0,0" Command="{Binding ReloadCommand}" />
                 </StackPanel>
             </DockPanel>

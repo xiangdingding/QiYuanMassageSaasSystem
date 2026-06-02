@@ -19,7 +19,9 @@
                         <ComboBoxItem Content="已处理" />
                         <ComboBoxItem Content="已撤销" />
                     </ComboBox>
-                    <Button Content="刷新" Padding="12,6" Margin="12,0,0,0" Command="{Binding ReloadCommand}" />
+                    <Button Content="登记投诉" Padding="12,6" Margin="12,0,0,0" Background="#2D6A4F" Foreground="White"
+                            BorderThickness="0" Command="{Binding RegisterCommand}" />
+                    <Button Content="刷新" Padding="12,6" Margin="8,0,0,0" Command="{Binding ReloadCommand}" />
                 </StackPanel>
             </DockPanel>
 
