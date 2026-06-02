@@ -32,6 +32,8 @@ public partial class App : Application
         var refitSettings = new RefitSettings(new SystemTextJsonContentSerializer(new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            // 大小写不敏感：避免 record 构造参数与 camelCase JSON 匹配不上时整条记录字段为 null
+            PropertyNameCaseInsensitive = true,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             Converters = { new JsonStringEnumConverter() }
         }));

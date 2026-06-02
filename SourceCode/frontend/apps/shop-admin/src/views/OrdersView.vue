@@ -206,7 +206,7 @@
           <el-table-column
             v-if="detail.status === 'Pending' || detail.status === 'InProgress' || detail.status === 'Completed'"
             label="操作"
-            width="120"
+            :width="$actCol(120)"
             fixed="right"
           >
             <template #default="{ row }">

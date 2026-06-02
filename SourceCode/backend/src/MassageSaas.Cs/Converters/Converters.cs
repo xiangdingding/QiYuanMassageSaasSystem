@@ -139,11 +139,11 @@ public class RatingToTextConverter : IValueConverter
         => throw new NotImplementedException();
 }
 
-/// <summary>会员卡到期时间：null 显示"永久"，否则 yyyy-MM-dd HH:mm:ss（已是北京时间）。</summary>
+/// <summary>会员卡到期：null 显示"永久"，否则只显示到期日期 yyyy-MM-dd（到当天 23:59:59）。</summary>
 public class CardExpiryConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => value is DateTime dt ? dt.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) : "永久";
+        => value is DateTime dt ? dt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "永久";
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotImplementedException();

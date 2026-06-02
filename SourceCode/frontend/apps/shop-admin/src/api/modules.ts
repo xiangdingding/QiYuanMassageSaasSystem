@@ -502,8 +502,8 @@ export interface ServiceReviewDto {
 }
 
 export const reviewsApi = {
-  list: (params?: { technicianId?: number; rating?: number; from?: string; to?: string }) =>
-    http().get<ServiceReviewDto[]>('/reviews', { params }).then((r) => r.data),
+  list: (params?: { technicianId?: number; rating?: number; from?: string; to?: string; page?: number; pageSize?: number }) =>
+    http().get<{ items: ServiceReviewDto[]; total: number; page: number; pageSize: number }>('/reviews', { params }).then((r) => r.data),
   technicianSummary: (params?: { from?: string; to?: string }) =>
     http().get('/reviews/technician-summary', { params }).then((r) => r.data),
   me: () => http().get<ServiceReviewDto[]>('/reviews/me').then((r) => r.data),

@@ -23,7 +23,7 @@
               <template #default="{ row }">{{ row.startTime }} - {{ row.endTime }}</template>
             </el-table-column>
             <el-table-column prop="remark" label="备注" min-width="160" />
-            <el-table-column label="操作" width="120">
+            <el-table-column label="操作" :width="$actCol(120)">
               <template #default="{ row }">
                 <el-button size="small" type="danger" @click="removeSchedule(row.id)">删除</el-button>
               </template>
@@ -47,7 +47,7 @@
               <template #default="{ row }">{{ leaveStatusLabel(row.status) }}</template>
             </el-table-column>
             <el-table-column prop="approverName" label="审批人" width="100" />
-            <el-table-column label="操作" width="180" fixed="right">
+            <el-table-column label="操作" :width="$actCol(180)" fixed="right">
               <template #default="{ row }">
                 <el-button size="small" type="success" :disabled="row.status !== 'Pending'" @click="approve(row, true)">同意</el-button>
                 <el-button size="small" type="danger" :disabled="row.status !== 'Pending'" @click="approve(row, false)">驳回</el-button>

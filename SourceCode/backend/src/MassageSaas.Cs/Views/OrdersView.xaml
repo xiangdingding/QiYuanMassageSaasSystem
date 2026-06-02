@@ -69,12 +69,12 @@
                         <StackPanel DataContext="{Binding SelectedDetail}">
                             <TextBlock FontSize="14" FontWeight="Bold" Text="{Binding OrderNo, StringFormat='订单详情：{0}'}" />
                             <TextBlock Margin="0,4,0,0">
-                                <Run Text="状态：" /><Run Text="{Binding Status}" />
-                                <Run Text="    支付：" /><Run Text="{Binding PayMethod}" />
+                                <Run Text="状态：" /><Run Text="{Binding Status, Mode=OneWay}" />
+                                <Run Text="    支付：" /><Run Text="{Binding PayMethod, Mode=OneWay}" />
                             </TextBlock>
                             <TextBlock>
-                                <Run Text="合计：¥" /><Run Text="{Binding Total, StringFormat='F2'}" />
-                                <Run Text="    实收：¥" /><Run Text="{Binding PaidAmount, StringFormat='F2'}" />
+                                <Run Text="合计：¥" /><Run Text="{Binding Total, StringFormat='F2', Mode=OneWay}" />
+                                <Run Text="    实收：¥" /><Run Text="{Binding PaidAmount, StringFormat='F2', Mode=OneWay}" />
                             </TextBlock>
                             <TextBlock Margin="0,8,0,4" FontWeight="SemiBold" Text="项目明细" />
                             <ItemsControl ItemsSource="{Binding Items}">
@@ -89,9 +89,9 @@
                                                 <StackPanel Grid.Column="0">
                                                     <TextBlock Text="{Binding ServiceName}" FontWeight="SemiBold" />
                                                     <TextBlock FontSize="12" Foreground="#666">
-                                                        <Run Text="技师：" /><Run Text="{Binding TechnicianName}" />
-                                                        <Run Text="    房间：" /><Run Text="{Binding RoomNo, FallbackValue='—'}" />
-                                                        <Run Text="    数量：" /><Run Text="{Binding Quantity}" />
+                                                        <Run Text="技师：" /><Run Text="{Binding TechnicianName, Mode=OneWay}" />
+                                                        <Run Text="    房间：" /><Run Text="{Binding RoomNo, FallbackValue='—', Mode=OneWay}" />
+                                                        <Run Text="    数量：" /><Run Text="{Binding Quantity, Mode=OneWay}" />
                                                     </TextBlock>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">

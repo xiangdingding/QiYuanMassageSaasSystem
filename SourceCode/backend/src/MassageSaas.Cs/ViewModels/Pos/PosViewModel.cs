@@ -57,8 +57,18 @@ public partial class PosViewModel : ObservableObject
     [ObservableProperty]
     private string memberKeyword = string.Empty;
 
+    /// <summary>收银模式：member=会员收银（按会员价、可关联会员卡合并结算）；walkin=散客收银（标准价、无会员）。</summary>
     [ObservableProperty]
-    private MemberDto? activeMember;
+    [NotifyPropertyChangedFor(nameof(IsMemberMode))]
+    [NotifyPropertyChangedFor(nameof(IsWalkinMode))]
+    private string mode = "member";
+
+    /// <summary>按手机号查出的会员名下所有卡（充值卡 + 次卡）。可勾选多张合并结算。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMemberCards))]
+    [NotifyPropertyChangedFor(nameof(MultipleCards))]
+    [NotifyPropertyChangedFor(nameof(PrimaryPhone))]
+    private ObservableCollection<PosMemberCardViewModel> memberCards = new();
 
     [ObservableProperty]
     private string payMethod = "Cash";
@@ -82,6 +92,21 @@ public partial class PosViewModel : ObservableObject
 
     [ObservableProperty]
     private bool voucherApplying;
+
+    public bool IsMemberMode => Mode == "member";
+    public bool IsWalkinMode => Mode == "walkin";
+    public bool HasMemberCards => MemberCards.Count > 0;
+    public bool MultipleCards => MemberCards.Count > 1;
+    public string PrimaryPhone => MemberCards.FirstOrDefault()?.Member.Phone ?? string.Empty;
+
+    public IEnumerable<PosMemberCardViewModel> SelectedCards => MemberCards.Where(c => c.IsSelected);
+    /// <summary>主卡：第一张勾选的卡，作 order.MemberId；其余为 SecondaryMemberIds。</summary>
+    public MemberDto? PrimaryMember => SelectedCards.FirstOrDefault()?.Member;
+    /// <summary>兼容旧绑定/逻辑：当前会员即主卡。</summary>
+    public MemberDto? ActiveMember => PrimaryMember;
+    public bool HasMember => PrimaryMember is not null;
+    public int SelectedCount => SelectedCards.Count();
+    public decimal SelectedBalance => SelectedCards.Sum(c => c.Member.Balance);
 
     public decimal Total => Cart.Sum(c => c.LineTotal);
 
@@ -115,15 +140,102 @@ public partial class PosViewModel : ObservableObject
 
     partial void OnCashReceivedChanged(decimal value) => OnPropertyChanged(nameof(Change));
 
-    partial void OnActiveMemberChanged(MemberDto? value)
+    partial void OnModeChanged(string value)
     {
-        // 切换会员后重算单价
+        // 切到散客：解除会员关联、回到标准价；切回会员：仅重算状态（需重新查询会员）
+        if (value == "walkin") ClearMemberInternal();
+        else RecomputeMemberState();
+    }
+
+    partial void OnMemberKeywordChanged(string value)
+    {
+        // 输入框被清空时，已查出的会员卡一并清掉，避免"框空了还挂着上个会员"的歧义
+        if (string.IsNullOrWhiteSpace(value) && MemberCards.Count > 0) ClearMemberInternal();
+    }
+
+    private bool _suppressCardEvents;
+
+    /// <summary>勾选/取消某张会员卡时：拦截不可选卡的误勾，然后重算主卡/余额/单价。</summary>
+    private void OnCardPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (_suppressCardEvents || sender is not PosMemberCardViewModel card) return;
+        if (e.PropertyName != nameof(PosMemberCardViewModel.IsSelected)) return;
+        if (card.IsSelected && !card.CanSelect)
+        {
+            _suppressCardEvents = true;
+            card.IsSelected = false;
+            _suppressCardEvents = false;
+            var msg = card.ServiceItemName is not null
+                ? $"次卡绑定的「{card.ServiceItemName}」不在购物车里，不能选用"
+                : "该次卡未绑定服务项目，不能用于结算";
+            MessageBox.Show(msg, "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        RecomputeMemberState();
+    }
+
+    /// <summary>会员选择变动后：重算主卡/合计余额、按"是否关联会员"重置单价、刷新支付方式可用性。</summary>
+    private void RecomputeMemberState()
+    {
+        OnPropertyChanged(nameof(PrimaryMember));
+        OnPropertyChanged(nameof(ActiveMember));
+        OnPropertyChanged(nameof(HasMember));
+        OnPropertyChanged(nameof(SelectedCount));
+        OnPropertyChanged(nameof(SelectedBalance));
+        // 价格按"是否已关联会员"取会员价/标准价（与原行为一致）
         foreach (var c in Cart)
         {
             var svc = Services.FirstOrDefault(s => s.Id == c.ServiceId);
-            if (svc is not null) c.UnitPrice = value is null ? svc.Price : svc.MemberPrice;
+            if (svc is not null) c.UnitPrice = HasMember ? svc.MemberPrice : svc.Price;
         }
+        // 没有会员时，会员卡支付不可用，回退现金
+        if (!HasMember && PayMethod == "MemberCard") PayMethod = "Cash";
         Recompute();
+    }
+
+    /// <summary>按购物车内容刷新各卡可选性：次卡仅当其绑定服务在购物车里才可选；
+    /// 已勾选却变得不可选的卡自动取消（与 BS 一致，避免落 400 PunchCardMismatch）。</summary>
+    private void RefreshCardEligibility()
+    {
+        if (MemberCards.Count == 0) return;
+        var dropped = false;
+        foreach (var card in MemberCards)
+        {
+            var eligible = !card.IsCountBased
+                || (card.ServiceItemId is long sid && Cart.Any(c => c.ServiceId == sid));
+            card.IsEligible = eligible;
+            if (!eligible && card.IsSelected)
+            {
+                _suppressCardEvents = true;
+                card.IsSelected = false;
+                _suppressCardEvents = false;
+                dropped = true;
+            }
+        }
+        if (dropped) _speech.SayAsync("部分次卡因购物车无匹配服务已取消");
+        RecomputeMemberState();
+    }
+
+    /// <summary>替换会员卡列表并挂上勾选监听（先退订旧的，避免泄漏）。</summary>
+    private void SetMemberCards(IEnumerable<MemberDto> cards)
+    {
+        foreach (var c in MemberCards) c.PropertyChanged -= OnCardPropertyChanged;
+        var coll = new ObservableCollection<PosMemberCardViewModel>();
+        foreach (var m in cards)
+        {
+            var vm = new PosMemberCardViewModel(m);
+            vm.PropertyChanged += OnCardPropertyChanged;
+            coll.Add(vm);
+        }
+        MemberCards = coll;
+    }
+
+    private void ClearMemberInternal()
+    {
+        foreach (var c in MemberCards) c.PropertyChanged -= OnCardPropertyChanged;
+        MemberCards = new();
+        MemberKeyword = string.Empty;
+        RecomputeMemberState();
     }
 
     private async Task LoadAsync()
@@ -181,21 +293,44 @@ public partial class PosViewModel : ObservableObject
         if (string.IsNullOrEmpty(k)) return;
         try
         {
-            var page = await _api.GetMembersAsync(keyword: k, pageSize: 5, storeId: _context.ActiveStoreId);
-            if (page.Items.Count == 0)
+            // 先用关键字（卡号/手机号）定位一张卡，再按其手机号把名下所有卡拉出来。
+            // includeClosed=true 让已退/已关闭的历史卡也显示（UI 区分、不可勾选）。逻辑同 BS 端 lookupMember。
+            var first = await _api.GetMembersAsync(
+                keyword: k, pageSize: 5, storeId: _context.ActiveStoreId, includeClosed: true);
+            if (first.Items.Count == 0)
             {
+                ClearMemberInternal();
                 MessageBox.Show("未找到会员", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-            ActiveMember = page.Items[0];
+            var phone = first.Items[0].Phone;
+            var all = await _api.GetMembersAsync(
+                keyword: phone, pageSize: 100, storeId: _context.ActiveStoreId, includeClosed: true);
+            SetMemberCards(all.Items.Where(m => m.Phone == phone));
+            RefreshCardEligibility();
+            // 默认勾选命中的那张；命中卡不可选（已关闭/无匹配）时退而选第一张可选卡
+            var hit = MemberCards.FirstOrDefault(c => c.Id == first.Items[0].Id);
+            var pick = hit is { CanSelect: true } ? hit : MemberCards.FirstOrDefault(c => c.CanSelect);
+            if (pick is not null)
+            {
+                _suppressCardEvents = true;
+                pick.IsSelected = true;
+                _suppressCardEvents = false;
+            }
+            RecomputeMemberState();
+            var activeCnt = MemberCards.Count(c => c.IsActive);
+            _speech.SayAsync(activeCnt > 1
+                ? $"已找到{activeCnt}张可用卡，可勾选合并结算"
+                : "已关联会员");
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
     }
 
-    /// <summary>磁条会员卡刷卡：用卡号自动调出会员。由 MainViewModel 在收银台界面时转发。</summary>
+    /// <summary>磁条会员卡刷卡：切到会员模式并用卡号自动调出会员。由 MainViewModel 在收银台界面时转发。</summary>
     public void ApplyCardSwipe(string cardNumber)
     {
         if (string.IsNullOrWhiteSpace(cardNumber)) return;
+        Mode = "member";
         MemberKeyword = cardNumber.Trim();
         if (LookupMemberCommand.CanExecute(null)) LookupMemberCommand.Execute(null);
     }
@@ -212,17 +347,13 @@ public partial class PosViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ClearMember()
-    {
-        ActiveMember = null;
-        MemberKeyword = string.Empty;
-    }
+    private void ClearMember() => ClearMemberInternal();
 
     [RelayCommand]
     private void AddService(ServiceItemDto? svc)
     {
         if (svc is null) return;
-        var unit = ActiveMember is null ? svc.Price : svc.MemberPrice;
+        var unit = HasMember ? svc.MemberPrice : svc.Price;
         var defaultTech = Technicians.FirstOrDefault();
         Cart.Add(new CartItemViewModel
         {
@@ -235,6 +366,8 @@ public partial class PosViewModel : ObservableObject
         });
         Cart.Last().PropertyChanged += (_, __) => Recompute();
         Recompute();
+        // 购物车项变化可能让某些次卡变为可选/不可选
+        RefreshCardEligibility();
     }
 
     [RelayCommand]
@@ -243,17 +376,17 @@ public partial class PosViewModel : ObservableObject
         if (item is null) return;
         Cart.Remove(item);
         Recompute();
+        RefreshCardEligibility();
     }
 
     [RelayCommand]
     private void Clear()
     {
-        if (Cart.Count == 0 && ActiveMember is null && AppliedVoucher is null) return;
+        if (Cart.Count == 0 && !HasMemberCards && AppliedVoucher is null) return;
         if (MessageBox.Show("确认清空当前订单？", "提示",
                 MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK) return;
         Cart.Clear();
-        ActiveMember = null;
-        MemberKeyword = string.Empty;
+        ClearMemberInternal();
         Remark = null;
         AppliedVoucher = null;
         VoucherCode = string.Empty;
@@ -278,7 +411,8 @@ public partial class PosViewModel : ObservableObject
             MessageBox.Show("未选择门店", "提示");
             return;
         }
-        if (PayMethod == "MemberCard" && (ActiveMember is null || ActiveMember.Balance < Payable))
+        // 会员卡支付：用所有勾选卡的合计余额判断是否够付（合并结算）
+        if (PayMethod == "MemberCard" && (!HasMember || SelectedBalance < Payable))
         {
             MessageBox.Show("会员卡余额不足或未关联会员", "提示");
             return;
@@ -289,13 +423,13 @@ public partial class PosViewModel : ObservableObject
             return;
         }
         // 次卡只能在购物车含其绑定服务时才允许结算；否则等同后端 PunchCardMismatch 提示
-        if (ActiveMember is { MemberTypeKind: "CountBased" } pc)
+        foreach (var pc in SelectedCards.Where(c => c.IsCountBased).ToList())
         {
-            var ok = pc.ServiceItemId.HasValue && Cart.Any(c => c.ServiceId == pc.ServiceItemId.Value);
+            var ok = pc.ServiceItemId is long sid && Cart.Any(c => c.ServiceId == sid);
             if (!ok)
             {
                 var svcName = pc.ServiceItemName ?? "（未绑定服务）";
-                MessageBox.Show($"次卡 {pc.CardNo} 绑定的服务「{svcName}」不在本单内，请添加该服务或改用其它会员卡。",
+                MessageBox.Show($"次卡 {pc.CardNo} 绑定的服务「{svcName}」不在本单内，请添加该服务或取消勾选该卡。",
                     "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                 _speech.SayAsync($"次卡未含{svcName}，无法结算");
                 return;
@@ -307,7 +441,7 @@ public partial class PosViewModel : ObservableObject
         {
             var created = await _api.CreateOrderAsync(new CreateOrderRequest(
                 StoreId: _context.ActiveStoreId.Value,
-                MemberId: ActiveMember?.Id,
+                MemberId: PrimaryMember?.Id,
                 // TODO(轮钟/点钟): CS POS 尚未接入 queue/call-next 与 radio UI；
                 // 不传 AssignmentSource 时后端 ParseSource 兜底为 Designation，
                 // 提成自动按"仅点钟"或"通配"规则计算。BS POS 已支持完整切换，
@@ -335,11 +469,14 @@ public partial class PosViewModel : ObservableObject
                 }
             }
 
+            // 合并结算：主卡之外勾选的卡走 SecondaryMemberIds（仅 MemberCard 支付时后端会用）
+            var secondary = SelectedCards.Skip(1).Select(c => c.Id).ToList();
             var checkedOut = await _api.CheckoutAsync(created.Id, new CheckoutRequest(
                 PayMethod: PayMethod,
                 PaidAmount: PayMethod == "Cash" ? CashReceived : null,
                 DiscountAmount: 0m,
-                Remark: Remark));
+                Remark: Remark,
+                SecondaryMemberIds: secondary.Count > 0 ? secondary : null));
 
             // 结算即评价：弹出快速评价窗（默认满意），收银员可逐项调整或跳过
             if (checkedOut.Items.Count > 0)
@@ -350,8 +487,7 @@ public partial class PosViewModel : ObservableObject
 
             ShowReceipt(checkedOut);
             Cart.Clear();
-            ActiveMember = null;
-            MemberKeyword = string.Empty;
+            ClearMemberInternal();
             Remark = null;
             CashReceived = 0;
             AppliedVoucher = null;

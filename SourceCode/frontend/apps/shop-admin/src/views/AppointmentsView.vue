@@ -53,7 +53,7 @@
           </template>
         </el-table-column>
         <el-table-column label="备注" min-width="160" prop="remark" show-overflow-tooltip />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" :width="$actCol(220)" fixed="right">
           <template #default="{ row }">
             <el-button v-if="row.status === 'Pending'" size="small" type="primary"
                        :aria-label="`确认 ${row.customerName} 的预约`" @click="confirm(row)">

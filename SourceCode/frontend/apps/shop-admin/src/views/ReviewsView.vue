@@ -32,9 +32,23 @@
             </el-table-column>
             <el-table-column prop="tags" label="标签" width="200" />
             <el-table-column prop="comment" label="评论" min-width="240" show-overflow-tooltip />
-            <el-table-column prop="createdAt" label="时间" width="180" />
+            <el-table-column label="时间" width="180">
+              <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
+            </el-table-column>
           </el-table>
           </div>
+          <el-pagination
+            class="pager"
+            style="margin-top: 12px; justify-content: flex-end; display: flex"
+            :current-page="page"
+            :page-size="pageSize"
+            :total="total"
+            :page-sizes="[20, 50, 100]"
+            layout="total, sizes, prev, pager, next, jumper"
+            background
+            @current-change="(p: number) => { page = p; reload(); }"
+            @size-change="(s: number) => { pageSize = s; page = 1; reload(); }"
+          />
         </el-tab-pane>
         <el-tab-pane label="技师汇总" name="summary">
           <div class="table-wrap">
@@ -138,6 +152,9 @@ const summary = ref<any[]>([]);
 const loading = ref(false);
 const ratingFilter = ref<number | undefined>(undefined);
 const dateRange = ref<[Date, Date] | null>(null);
+const page = ref(1);
+const pageSize = ref(20);
+const total = ref(0);
 
 // —— 代客录入评价 ——
 const createOpen = ref(false);
@@ -244,10 +261,14 @@ async function reload() {
     const from = dateRange.value?.[0]?.toISOString();
     const to = dateRange.value?.[1]?.toISOString();
     if (tab.value === 'list') {
-      rows.value = await reviewsApi.list({
+      const resp = await reviewsApi.list({
         rating: ratingFilter.value,
-        from, to
+        from, to,
+        page: page.value,
+        pageSize: pageSize.value
       });
+      rows.value = resp.items;
+      total.value = resp.total;
     } else {
       const data = await reviewsApi.technicianSummary({ from, to }) as any[];
       summary.value = data;
@@ -257,8 +278,9 @@ async function reload() {
   }
 }
 
-function onTabChange() { reload(); }
-watch([ratingFilter, dateRange], () => reload());
+function onTabChange() { page.value = 1; reload(); }
+// 筛选变化回到第 1 页再查
+watch([ratingFilter, dateRange], () => { page.value = 1; reload(); });
 watch(() => appStore.activeStoreId, () => loadTechList());
 
 onMounted(async () => {

@@ -167,12 +167,14 @@ public class PayrollController : ControllerBase
             })
             .ToDictionaryAsync(x => x.UserId, ct);
 
-        // 当月排班天数 / 请假天数
-        var scheduleRows = await _db.StaffSchedules.AsNoTracking()
+        // 当月排班天数：GroupBy 里套 Distinct().Count() EF Core 翻译不了，先取明细再内存按人去重计数
+        var scheduleRaw = await _db.StaffSchedules.AsNoTracking()
             .Where(s => staffIds.Contains(s.UserId) && s.WorkDate >= dateFrom && s.WorkDate <= dateTo)
+            .Select(s => new { s.UserId, s.WorkDate })
+            .ToListAsync(ct);
+        var scheduleDays = scheduleRaw
             .GroupBy(s => s.UserId)
-            .Select(g => new { UserId = g.Key, Days = g.Select(s => s.WorkDate).Distinct().Count() })
-            .ToDictionaryAsync(x => x.UserId, ct);
+            .ToDictionary(g => g.Key, g => g.Select(x => x.WorkDate).Distinct().Count());
 
         var leaveRows = await _db.LeaveRequests.AsNoTracking()
             .Where(l => staffIds.Contains(l.UserId)
@@ -201,13 +203,12 @@ public class PayrollController : ControllerBase
             var uid = entry.Id;
             profiles.TryGetValue(uid, out var profile);
             perfRows.TryGetValue(uid, out var perf);
-            scheduleRows.TryGetValue(uid, out var sched);
-            var scheduledDays = sched?.Days ?? 0;
+            scheduleDays.TryGetValue(uid, out var scheduledDays);
             var leaveDays = leaveRows
                 .Where(l => l.UserId == uid)
                 .Sum(l => OverlapDays(l.FromDate, l.ToDate, dateFrom, dateTo));
 
-            var attendance = ComputeAttendanceBonus(profile, scheduledDays, leaveDays);
+            var attendance = ComputeAttendanceBonus(profile, scheduledDays, leaveDays, DateTime.DaysInMonth(req.Year, req.Month));
 
             var item = new PayrollItem
             {
@@ -405,12 +406,14 @@ public class PayrollController : ControllerBase
         period.TotalAmount = period.Items.Sum(i => i.NetTotal);
     }
 
-    private static decimal ComputeAttendanceBonus(SalaryProfile? profile, int scheduledDays, int leaveDays)
+    private static decimal ComputeAttendanceBonus(SalaryProfile? profile, int scheduledDays, int leaveDays, int naturalDays)
     {
         if (profile is null) return 0m;
-        if (profile.RequiredAttendanceDays <= 0 || profile.AttendanceBonusAmount <= 0) return 0m;
+        if (profile.AttendanceBonusAmount <= 0) return 0m;
+        // 未设置满勤所需天数（<=0）时，按当月自然天数作为满勤标准
+        var required = profile.RequiredAttendanceDays > 0 ? profile.RequiredAttendanceDays : naturalDays;
         var actual = scheduledDays - leaveDays;
-        return actual >= profile.RequiredAttendanceDays ? profile.AttendanceBonusAmount : 0m;
+        return actual >= required ? profile.AttendanceBonusAmount : 0m;
     }
 
     private static int OverlapDays(DateOnly fromA, DateOnly toA, DateOnly fromB, DateOnly toB)

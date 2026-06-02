@@ -32,7 +32,7 @@
         <TextBlock Grid.Row="5" Text="满勤奖额度" Margin="0,0,0,4" />
         <TextBox Grid.Row="6" x:Name="BonusBox" Padding="6" Margin="0,0,0,12" Text="0" />
 
-        <TextBlock Grid.Row="7" Text="满勤所需出勤天数（0 = 不发满勤）" Margin="0,0,0,4" />
+        <TextBlock Grid.Row="7" Text="满勤所需出勤天数（0 = 按当月自然天数）" Margin="0,0,0,4" />
         <TextBox Grid.Row="8" x:Name="DaysBox" Padding="6" Margin="0,0,0,12" Text="0" />
 
         <TextBlock Grid.Row="9" Text="备注" Margin="0,0,0,4" />

@@ -18,7 +18,7 @@ public class SalaryProfile : BaseEntity, ITenantScoped
     public decimal OvertimeHourRate { get; set; }
     /// <summary>满勤奖额度（达到 RequiredAttendanceDays 后给）。</summary>
     public decimal AttendanceBonusAmount { get; set; }
-    /// <summary>满勤所需的本月排班天数。0 = 不发满勤。</summary>
+    /// <summary>满勤所需的本月排班天数。0 / 未设置 = 按当月自然天数作为满勤标准（仍需满勤奖额度 &gt; 0 才发）。</summary>
     public int RequiredAttendanceDays { get; set; }
     public string? Remark { get; set; }
 }

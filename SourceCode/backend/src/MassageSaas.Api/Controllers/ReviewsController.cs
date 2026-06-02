@@ -2,6 +2,7 @@ using MassageSaas.Application.Abstractions;
 using MassageSaas.Domain.Common;
 using MassageSaas.Domain.Entities;
 using MassageSaas.Infrastructure.Persistence;
+using MassageSaas.Shared.Common;
 using MassageSaas.Shared.Reviews;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -91,11 +92,13 @@ public class ReviewsController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = "ShopStaff")]
-    public async Task<ActionResult<IReadOnlyList<ServiceReviewDto>>> List(
+    public async Task<ActionResult<PagedResult<ServiceReviewDto>>> List(
         [FromQuery] long? technicianId = null,
         [FromQuery] int? rating = null,
         [FromQuery] DateTime? from = null,
         [FromQuery] DateTime? to = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
         var q = _db.ServiceReviews.AsNoTracking()
@@ -107,8 +110,14 @@ public class ReviewsController : ControllerBase
         if (from.HasValue) q = q.Where(r => r.CreatedAt >= from.Value);
         if (to.HasValue) q = q.Where(r => r.CreatedAt < to.Value);
 
-        var rows = await q.OrderByDescending(r => r.CreatedAt).Take(200).ToListAsync(ct);
-        return Ok(rows.Select(MapDto).ToList());
+        var pq = new PageQuery(page, pageSize, null);
+        var total = await q.CountAsync(ct);
+        var rows = await q
+            .OrderByDescending(r => r.CreatedAt)
+            .Skip((pq.SafePage - 1) * pq.SafePageSize)
+            .Take(pq.SafePageSize)
+            .ToListAsync(ct);
+        return Ok(new PagedResult<ServiceReviewDto>(rows.Select(MapDto).ToList(), total, pq.SafePage, pq.SafePageSize));
     }
 
     [HttpGet("technician-summary")]
@@ -122,15 +131,27 @@ public class ReviewsController : ControllerBase
         if (from.HasValue) q = q.Where(r => r.CreatedAt >= from.Value);
         if (to.HasValue) q = q.Where(r => r.CreatedAt < to.Value);
 
-        var data = await q
-            .GroupBy(r => new { r.TechnicianId, Name = r.Technician.RealName ?? r.Technician.Username })
-            .Select(g => new TechnicianReviewSummaryDto(
-                g.Key.TechnicianId,
-                g.Key.Name,
-                g.Count(),
-                Math.Round(g.Average(x => (decimal)x.Rating), 2)))
-            .OrderByDescending(x => x.AverageRating)
+        // 仅按 TechnicianId 标量分组（避免按导航属性 coalesce 分组导致 EF 翻译失败 / 500）。
+        // 平均分用 double 让 SQL AVG 翻译，名称单独查再拼接，四舍五入在内存里做。
+        var grouped = await q
+            .GroupBy(r => r.TechnicianId)
+            .Select(g => new { TechnicianId = g.Key, Count = g.Count(), Avg = g.Average(x => (double)x.Rating) })
             .ToListAsync(ct);
+
+        var techIds = grouped.Select(x => x.TechnicianId).ToList();
+        var names = await _db.Users.AsNoTracking()
+            .Where(u => techIds.Contains(u.Id))
+            .Select(u => new { u.Id, Name = u.RealName ?? u.Username })
+            .ToDictionaryAsync(u => u.Id, u => u.Name, ct);
+
+        var data = grouped
+            .Select(g => new TechnicianReviewSummaryDto(
+                g.TechnicianId,
+                names.TryGetValue(g.TechnicianId, out var n) ? n : string.Empty,
+                g.Count,
+                Math.Round((decimal)g.Avg, 2)))
+            .OrderByDescending(x => x.AverageRating)
+            .ToList();
         return Ok(data);
     }
 

@@ -69,7 +69,7 @@ public partial class ReviewsViewModel : ObservableObject
                 _ => null
             };
             Rows = new ObservableCollection<ServiceReviewDto>(
-                await _api.GetReviewsAsync(rating: rating, from: from));
+                (await _api.GetReviewsAsync(rating: rating, from: from, pageSize: 200)).Items);
             Summary = new ObservableCollection<TechnicianReviewSummaryDto>(
                 await _api.GetReviewSummaryAsync(from: from));
         }

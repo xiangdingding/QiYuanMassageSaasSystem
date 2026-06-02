@@ -72,7 +72,7 @@
         <el-table-column prop="expiresAt" label="到期" width="170">
           <template #default="{ row }">{{ formatExpiry(row.expiresAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="80" align="center" fixed="right">
+        <el-table-column label="操作" :width="$actCol(80)" align="center" fixed="right">
           <template #default="{ row }">
             <el-button size="small" type="danger" :disabled="row.status !== 'Active'" @click="cancel(row)">作废</el-button>
           </template>

@@ -695,7 +695,7 @@ function cardAriaLabel(c: Member): string {
     parts.push(c.serviceItemName ? `无匹配项目，需添加 ${c.serviceItemName}` : '无绑定服务，不可结算');
   parts.push(`开卡 ${posCardStart(c)}`);
   parts.push(c.cardExpiresAt
-    ? `有效期至 ${fmtDateTime(c.cardExpiresAt)}${c.cardDaysRemaining != null ? `，还有 ${c.cardDaysRemaining} 天` : ''}`
+    ? `有效期至 ${fmtDate(c.cardExpiresAt)}${c.cardDaysRemaining != null ? `，还有 ${c.cardDaysRemaining} 天` : ''}`
     : '永久有效');
   return parts.join('，');
 }
@@ -708,10 +708,16 @@ function fmtDateTime(iso?: string | null): string {
   const t = m[2].length === 5 ? `${m[2]}:00` : m[2];
   return `${m[1]} ${t}`;
 }
+/// 仅取日期 yyyy-MM-dd（到期值不显示时分秒）
+function fmtDate(iso?: string | null): string {
+  if (!iso) return '';
+  const m = /^(\d{4}-\d{2}-\d{2})/.exec(iso);
+  return m ? m[1] : iso;
+}
 function posCardStart(c: Member): string { return fmtDateTime(c.createdAt); }
 function posCardValidity(c: Member): string {
   if (!c.cardExpiresAt) return '永久有效';
-  const exp = fmtDateTime(c.cardExpiresAt);
+  const exp = fmtDate(c.cardExpiresAt);
   const d = c.cardDaysRemaining;
   if (d == null) return `到期 ${exp}`;
   if (d < 0) return `已过期（${exp}）`;

@@ -175,6 +175,31 @@ body {
 /* 标签字号同步抬升，避免读屏跳过太小的状态字 */
 :root[data-a11y='a11y'] .el-tag { font-size: 13px; padding: 0 10px; height: 26px; line-height: 24px; }
 
+/* 操作列：含按钮的单元格在盲人模式下强制按钮一排不换行（列宽由各表 actCol() 加宽配合） */
+:root[data-a11y='a11y'] .el-table .cell:has(.el-button) {
+  white-space: nowrap;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 盲人模式：操作列里的"文字/链接"按钮一律显示为带边框背景的实体按钮，
+   不能是纯文字样式——便于弱视/盲人辨识为可点击控件。类型色作为文字色保留（类似 plain 按钮）。 */
+:root[data-a11y='a11y'] .el-table .cell .el-button.is-link,
+:root[data-a11y='a11y'] .el-table .cell .el-button.is-text {
+  border: 1px solid var(--el-border-color-dark);
+  background-color: #fff;
+  border-radius: 6px;
+  padding: 9px 15px;
+  min-height: 40px;
+  text-decoration: none;
+}
+:root[data-a11y='a11y'] .el-table .cell .el-button.is-link:hover,
+:root[data-a11y='a11y'] .el-table .cell .el-button.is-text:hover {
+  background-color: var(--el-fill-color-light);
+}
+
 /* 菜单：放大 row 高度，更容易键盘命中 */
 :root[data-a11y='a11y'] .menu :deep(.el-menu-item),
 :root[data-a11y='a11y'] .el-menu-item { height: 52px !important; line-height: 52px !important; font-size: 16px; }

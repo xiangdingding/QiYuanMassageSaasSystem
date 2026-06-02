@@ -159,10 +159,15 @@ public class MembersController : ControllerBase
             serviceItemName = m.MemberType.ServiceItem?.Name;
         }
 
-        // 会员卡有效期：开卡日 + 会员类型有效天数；无 ValidDays = 永久。
-        DateTime? cardExpiresAt = m.MemberType?.ValidDays is int vd && vd > 0
-            ? m.CreatedAt.AddDays(vd)
-            : null;
+        // 会员卡有效期：开卡日(北京) + 会员类型有效天数 = 到期日，取到期当天 23:59:59（北京）再换算回 UTC。
+        // 无 ValidDays = 永久。
+        DateTime? cardExpiresAt = null;
+        if (m.MemberType?.ValidDays is int vd && vd > 0)
+        {
+            var openBeijingDate = m.CreatedAt.AddHours(8).Date;
+            var expiryBeijingEnd = openBeijingDate.AddDays(vd).AddHours(23).AddMinutes(59).AddSeconds(59);
+            cardExpiresAt = DateTime.SpecifyKind(expiryBeijingEnd.AddHours(-8), DateTimeKind.Utc);
+        }
         // 剩余天数按北京日历日（UTC+8）相减，已过期为负、当天为 0、永久为 null。
         int? cardDaysRemaining = cardExpiresAt.HasValue
             ? (cardExpiresAt.Value.AddHours(8).Date - DateTime.UtcNow.AddHours(8).Date).Days

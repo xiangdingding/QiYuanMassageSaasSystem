@@ -26,13 +26,13 @@
       <div class="table-wrap">
       <el-table :data="rows" v-loading="loading" stripe height="100%">
         <el-table-column prop="employeeNo" label="工号" width="80" />
-        <el-table-column prop="username" label="账号" width="120" />
-        <el-table-column prop="realName" label="姓名" width="100" />
-        <el-table-column prop="phone" label="手机号" width="130" />
+        <el-table-column prop="username" label="账号" min-width="140" />
+        <el-table-column prop="realName" label="姓名" min-width="110" />
+        <el-table-column prop="phone" label="手机号" min-width="140" />
         <el-table-column label="角色" width="100">
           <template #default="{ row }">{{ roleLabel(row.role) }}</template>
         </el-table-column>
-        <el-table-column label="所属门店" width="140">
+        <el-table-column label="所属门店" min-width="160">
           <template #default="{ row }">{{ storeName(row.storeId) }}</template>
         </el-table-column>
         <el-table-column label="盲人" width="80">
@@ -46,7 +46,7 @@
             <el-tag :type="row.isActive ? 'success' : 'info'">{{ row.isActive ? '在职' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="300" fixed="right">
+        <el-table-column label="操作" :width="$actCol(300)" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="warning" @click="openResetPwd(row)">重置密码</el-button>
@@ -242,7 +242,7 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="90" fixed="right">
+          <el-table-column label="操作" :width="$actCol(90)" fixed="right">
             <template #default="{ row }">
               <el-button
                 v-if="row.kind === 'Temporary' && row.status === 'InEffect'"

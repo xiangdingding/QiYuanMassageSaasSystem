@@ -23,19 +23,19 @@
                     DataContext="{Binding Preview}">
                 <StackPanel>
                     <TextBlock FontSize="14" FontWeight="SemiBold">
-                        <Run Text="完成订单：" /><Run Text="{Binding OrderCount}" />
-                        <Run Text="    营业总额：¥" /><Run Text="{Binding RevenueTotal, StringFormat='F2'}" />
-                        <Run Text="    预期现金：¥" /><Run Text="{Binding ExpectedCash, StringFormat='F2'}" />
+                        <Run Text="完成订单：" /><Run Text="{Binding OrderCount, Mode=OneWay}" />
+                        <Run Text="    营业总额：¥" /><Run Text="{Binding RevenueTotal, StringFormat='F2', Mode=OneWay}" />
+                        <Run Text="    预期现金：¥" /><Run Text="{Binding ExpectedCash, StringFormat='F2', Mode=OneWay}" />
                     </TextBlock>
                     <UniformGrid Columns="5" Margin="0,8,0,0">
-                        <TextBlock><Run Text="现金 ¥" /><Run Text="{Binding CashAmount, StringFormat='F2'}" /></TextBlock>
-                        <TextBlock><Run Text="会员 ¥" /><Run Text="{Binding MemberCardAmount, StringFormat='F2'}" /></TextBlock>
-                        <TextBlock><Run Text="微信 ¥" /><Run Text="{Binding WechatAmount, StringFormat='F2'}" /></TextBlock>
-                        <TextBlock><Run Text="支付宝 ¥" /><Run Text="{Binding AlipayAmount, StringFormat='F2'}" /></TextBlock>
-                        <TextBlock><Run Text="银行卡 ¥" /><Run Text="{Binding BankCardAmount, StringFormat='F2'}" /></TextBlock>
+                        <TextBlock><Run Text="现金 ¥" /><Run Text="{Binding CashAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                        <TextBlock><Run Text="会员 ¥" /><Run Text="{Binding MemberCardAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                        <TextBlock><Run Text="微信 ¥" /><Run Text="{Binding WechatAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                        <TextBlock><Run Text="支付宝 ¥" /><Run Text="{Binding AlipayAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                        <TextBlock><Run Text="银行卡 ¥" /><Run Text="{Binding BankCardAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
                     </UniformGrid>
                     <TextBlock Margin="0,4,0,0">
-                        <Run Text="充值 ¥" /><Run Text="{Binding RechargeAmount, StringFormat='F2'}" />
+                        <Run Text="充值 ¥" /><Run Text="{Binding RechargeAmount, StringFormat='F2', Mode=OneWay}" />
                     </TextBlock>
                     <TextBlock FontWeight="SemiBold" Foreground="#D9534F" Margin="0,4,0,0"
                                Visibility="{Binding AlreadyClosed, Converter={StaticResource BoolToVisible}}"

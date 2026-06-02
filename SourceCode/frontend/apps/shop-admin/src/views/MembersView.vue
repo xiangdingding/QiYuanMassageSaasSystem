@@ -145,8 +145,7 @@
                 <div class="card-validity" :aria-label="`开卡时间 ${cardStartText(c)}，${cardValidityAria(c)}`">
                   <span class="stat-label">开卡</span>
                   <span class="validity-val">{{ cardStartText(c) }}</span>
-                  <span class="stat-label" style="margin-left:14px">有效期</span>
-                  <span class="validity-val" :class="{ expired: (c.cardDaysRemaining ?? 1) < 0 }">{{ cardValidityText(c) }}</span>
+                  <span class="validity-val" style="margin-left:14px" :class="{ expired: (c.cardDaysRemaining ?? 1) < 0 }">{{ cardValidityText(c) }}</span>
                 </div>
               </div>
               <div class="card-actions" role="group" :aria-label="`卡 ${c.cardNo} 操作`">
@@ -1172,10 +1171,10 @@ function cardStartText(c: Member): string {
   return dayjs(c.createdAt).format('YYYY-MM-DD HH:mm:ss');
 }
 
-/// 有效期文案：无到期=永久；否则"到期时间（剩 N 天 / 已过期 / 今天到期）"
+/// 有效期文案：无到期=永久；到期只显示日期（到当天 23:59:59）
 function cardValidityText(c: Member): string {
   if (!c.cardExpiresAt) return '永久有效';
-  const exp = dayjs(c.cardExpiresAt).format('YYYY-MM-DD HH:mm:ss');
+  const exp = dayjs(c.cardExpiresAt).format('YYYY-MM-DD');
   const d = c.cardDaysRemaining;
   if (d == null) return `到期 ${exp}`;
   if (d < 0) return `已过期（${exp}）`;
@@ -1183,15 +1182,15 @@ function cardValidityText(c: Member): string {
   return `到期 ${exp}（剩 ${d} 天）`;
 }
 
-/// 给读屏用的有效期朗读串
+/// 给读屏用的有效期朗读串（到期只读日期）
 function cardValidityAria(c: Member): string {
   if (!c.cardExpiresAt) return '永久有效';
-  const exp = dayjs(c.cardExpiresAt).format('YYYY-MM-DD HH:mm:ss');
+  const exp = dayjs(c.cardExpiresAt).format('YYYY-MM-DD');
   const d = c.cardDaysRemaining;
-  if (d == null) return `到期时间 ${exp}`;
-  if (d < 0) return `已过期，到期时间 ${exp}`;
+  if (d == null) return `到期日 ${exp}`;
+  if (d < 0) return `已过期，到期日 ${exp}`;
   if (d === 0) return `今天到期，${exp}`;
-  return `到期时间 ${exp}，还有 ${d} 天过期`;
+  return `到期日 ${exp}，还有 ${d} 天过期`;
 }
 
 function resetQuery() {

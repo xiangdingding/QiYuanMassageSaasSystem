@@ -25,11 +25,11 @@
 
       <div class="table-wrap">
       <el-table :data="rows" v-loading="loading" stripe height="100%">
-        <el-table-column prop="orderNo" label="订单号" width="160" />
-        <el-table-column prop="serviceName" label="项目" width="160" />
-        <el-table-column prop="originalTechnicianName" label="被投诉技师" width="120" />
-        <el-table-column prop="memberName" label="会员" width="120" />
-        <el-table-column label="标签 / 描述" min-width="240">
+        <el-table-column prop="orderNo" label="订单号" min-width="130" show-overflow-tooltip />
+        <el-table-column prop="serviceName" label="项目" min-width="100" show-overflow-tooltip />
+        <el-table-column prop="originalTechnicianName" label="被投诉技师" min-width="95" show-overflow-tooltip />
+        <el-table-column prop="memberName" label="会员" min-width="85" show-overflow-tooltip />
+        <el-table-column label="标签 / 描述" min-width="150">
           <template #default="{ row }">
             <div v-if="row.tags">
               <el-tag v-for="t in (row.tags as string).split(',')" :key="t" size="small" type="warning" style="margin-right:4px">{{ t }}</el-tag>
@@ -37,12 +37,12 @@
             <div v-if="row.comment" class="muted">{{ row.comment }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column label="状态" width="80">
           <template #default="{ row }">
             <el-tag :type="statusTag(row.status)">{{ statusLabel(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="处理结果" width="160">
+        <el-table-column label="处理结果" min-width="110">
           <template #default="{ row }">
             <span v-if="row.resolution">
               {{ resolutionLabel(row.resolution) }}
@@ -51,16 +51,14 @@
             <span v-else class="muted">—</span>
           </template>
         </el-table-column>
-        <el-table-column label="登记/处理" width="160">
+        <el-table-column label="登记/处理" min-width="160">
           <template #default="{ row }">
             <div>{{ row.recordedByName || '—' }}</div>
+            <div class="muted">{{ formatTime(row.createdAt) }}</div>
             <div class="muted" v-if="row.resolvedByName">{{ row.resolvedByName }} · {{ formatTime(row.resolvedAt) }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="时间" width="160">
-          <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" :width="$actCol(110)" fixed="right">
           <template #default="{ row }">
             <el-button v-if="row.status === 'Pending'" link type="primary" @click="openResolve(row)">处理</el-button>
             <el-button v-if="row.status === 'Pending'" link type="danger" @click="cancelOne(row)">取消</el-button>

@@ -84,7 +84,8 @@ public interface IApiClient
         [Query] int page = 1,
         [Query] int pageSize = 20,
         [Query] string? keyword = null,
-        [Query] long? storeId = null);
+        [Query] long? storeId = null,
+        [Query] bool includeClosed = false);
 
     [Get("/members/{id}")]
     Task<MemberDto> GetMemberAsync(long id);
@@ -355,11 +356,13 @@ public interface IApiClient
     Task<InventoryMovementDto> CreateInventoryMovementAsync([Body] CreateMovementRequest req);
 
     [Get("/reviews")]
-    Task<List<ServiceReviewDto>> GetReviewsAsync(
+    Task<PagedResult<ServiceReviewDto>> GetReviewsAsync(
         [Query] long? technicianId = null,
         [Query] int? rating = null,
         [Query] DateTime? from = null,
-        [Query] DateTime? to = null);
+        [Query] DateTime? to = null,
+        [Query] int page = 1,
+        [Query] int pageSize = 20);
 
     [Get("/reviews/technician-summary")]
     Task<List<TechnicianReviewSummaryDto>> GetReviewSummaryAsync(

@@ -26,7 +26,7 @@
         <el-table-column prop="unitCost" label="单价" width="100">
           <template #default="{ row }">{{ row.unitCost ?? '—' }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" :width="$actCol(280)" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="openMovement(row, 'PurchaseIn')">入库</el-button>
             <el-button size="small" @click="openMovement(row, 'Consume')">领用</el-button>
@@ -78,7 +78,9 @@
         <el-table-column prop="quantityAfter" label="结余" width="100" />
         <el-table-column prop="operatorName" label="操作人" width="120" />
         <el-table-column prop="remark" label="备注" min-width="120" />
-        <el-table-column prop="createdAt" label="时间" width="180" />
+        <el-table-column label="时间" width="180">
+          <template #default="{ row }">{{ dayjs(row.createdAt).format('YYYY-MM-DD HH:mm:ss') }}</template>
+        </el-table-column>
       </el-table>
     </el-dialog>
   </div>
@@ -88,6 +90,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Plus, Refresh } from '@element-plus/icons-vue';
+import dayjs from 'dayjs';
 import { inventoryApi, type InventoryItemDto, type InventoryMovementDto } from '@/api/modules';
 import { inventoryKindLabel } from '@/utils/enumLabels';
 import { useAppStore } from '@/stores/app';

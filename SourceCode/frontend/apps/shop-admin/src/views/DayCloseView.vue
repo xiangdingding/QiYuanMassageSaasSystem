@@ -104,7 +104,7 @@
         </el-table-column>
         <el-table-column label="操作员" width="120" prop="operatorName" />
         <el-table-column label="备注" min-width="160" prop="remark" show-overflow-tooltip />
-        <el-table-column v-if="canRevoke" label="操作" width="100" fixed="right">
+        <el-table-column v-if="canRevoke" label="操作" :width="$actCol(100)" fixed="right">
           <template #default="{ row }">
             <el-button link type="danger" @click="revoke(row)">撤销</el-button>
           </template>
@@ -246,8 +246,14 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.page { padding-bottom: 24px; }
-.toolbar { display: flex; gap: 12px; align-items: center; }
+/* 本页是"清点表单 + 历史表"两张卡，不适用单表视口锁定布局：
+   .page 自身作为滚动容器（保持 100% 高度 + overflow-y:auto），
+   卡片按内容高度排布、body 不裁切。这样既不会把"提交日结"按钮裁掉，
+   历史日结超长时整页也能滚动看到全部。 */
+.page { overflow-y: auto; padding-bottom: 24px; }
+.page :deep(.el-card) { flex: 0 0 auto !important; }
+.page :deep(.el-card__body) { overflow: visible !important; }
+.toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .toolbar .title { font-weight: 600; font-size: 16px; }
 .preview { margin-top: 16px; }
 .variance { margin-left: 12px; font-weight: 600; }

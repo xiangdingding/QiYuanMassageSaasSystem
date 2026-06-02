@@ -23,7 +23,7 @@
             <el-tag :type="row.isActive ? 'success' : 'info'">{{ row.isActive ? '营业中' : '已停' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" :width="$actCol(120)">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
           </template>

@@ -39,7 +39,7 @@
             <span v-else>—</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" :width="$actCol(220)" fixed="right">
           <template #default="{ row }">
             <el-button v-if="canManage" size="small" :aria-label="`编辑 ${row.roomNo} 号房`" @click="openEdit(row)">编辑</el-button>
             <el-button

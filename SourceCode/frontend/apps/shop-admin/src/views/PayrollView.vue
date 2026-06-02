@@ -41,10 +41,12 @@
             <el-table-column label="工资总额" width="140">
               <template #default="{ row }">¥{{ row.totalAmount.toFixed(2) }}</template>
             </el-table-column>
-            <el-table-column prop="generatedAt" label="生成时间" width="180" />
+            <el-table-column label="生成时间" width="180">
+              <template #default="{ row }">{{ dayjs(row.generatedAt).format('YYYY-MM-DD HH:mm:ss') }}</template>
+            </el-table-column>
             <el-table-column prop="operatorName" label="操作人" width="120" />
             <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
-            <el-table-column label="操作" width="280" fixed="right">
+            <el-table-column label="操作" :width="$actCol(280)" fixed="right">
               <template #default="{ row }">
                 <el-button size="small" @click="openDetail(row)">查看</el-button>
                 <el-button size="small" type="warning" :disabled="row.status !== 'Draft'" @click="lockPeriod(row)">封盘</el-button>
@@ -77,7 +79,7 @@
               <template #default="{ row }">¥{{ row.attendanceBonusAmount.toFixed(2) }} / {{ row.requiredAttendanceDays }} 天</template>
             </el-table-column>
             <el-table-column prop="remark" label="备注" min-width="160" />
-            <el-table-column label="操作" width="120" fixed="right">
+            <el-table-column label="操作" :width="$actCol(120)" fixed="right">
               <template #default="{ row }">
                 <el-button size="small" @click="openProfile(row)">编辑</el-button>
               </template>
@@ -129,7 +131,7 @@
           <el-table-column label="排班/请假" width="100">
             <template #default="{ row }">{{ row.scheduledDays }}/{{ row.leaveDays }}</template>
           </el-table-column>
-          <el-table-column label="操作" width="160" fixed="right">
+          <el-table-column label="操作" :width="$actCol(160)" fixed="right">
             <template #default="{ row }">
               <el-button size="small" :disabled="detail!.period.status !== 'Draft'" @click="openEditItem(row)">改</el-button>
               <el-button size="small" :disabled="detail!.period.status !== 'Draft'" @click="openAddAdj(row)">奖/扣</el-button>
@@ -152,8 +154,10 @@
             </el-table-column>
             <el-table-column prop="reason" label="原因" min-width="160" />
             <el-table-column prop="operatorName" label="操作人" width="100" />
-            <el-table-column prop="createdAt" label="时间" width="160" />
-            <el-table-column label="操作" width="80" fixed="right">
+            <el-table-column label="时间" width="160">
+              <template #default="{ row }">{{ dayjs(row.createdAt).format('YYYY-MM-DD HH:mm:ss') }}</template>
+            </el-table-column>
+            <el-table-column label="操作" :width="$actCol(80)" fixed="right">
               <template #default="{ row }">
                 <el-button size="small" type="danger" :disabled="detail!.period.status !== 'Draft'" @click="removeAdj(expandedItem!.id, row.id)">删</el-button>
               </template>
@@ -222,7 +226,7 @@
         </el-form-item>
         <el-form-item label="满勤所需天数">
           <el-input-number v-model="profileForm.requiredAttendanceDays" :min="0" />
-          <span class="hint">0 = 不发满勤</span>
+          <span class="hint">0 = 按当月自然天数</span>
         </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="profileForm.remark" type="textarea" :rows="2" maxlength="500" />

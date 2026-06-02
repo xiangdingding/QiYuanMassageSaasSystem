@@ -32,7 +32,7 @@
         <el-table-column label="最近叫号" width="160">
           <template #default="{ row }">{{ row.lastCalledAt ? dayjs(row.lastCalledAt).format('HH:mm') : '—' }}</template>
         </el-table-column>
-        <el-table-column v-if="canManage" label="操作" width="320" fixed="right">
+        <el-table-column v-if="canManage" label="操作" :width="$actCol(320)" fixed="right">
           <template #default="{ row }">
             <el-button
               size="small"

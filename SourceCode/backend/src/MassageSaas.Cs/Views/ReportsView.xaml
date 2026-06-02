@@ -3,36 +3,50 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <TabControl Background="Transparent" BorderThickness="0">
 
-        <!-- 日报 -->
+        <!--  日报  -->
         <TabItem Header="日报">
-            <Border Background="White" CornerRadius="4" Padding="16" Margin="0,8,0,0">
+            <Border Margin="0,8,0,0"
+                    Padding="16"
+                    Background="White"
+                    CornerRadius="4">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,12">
-                        <TextBlock DockPanel.Dock="Left" Text="日报" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock VerticalAlignment="Center"
+                                   DockPanel.Dock="Left"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Text="日报" />
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <TextBlock Text="日期：" VerticalAlignment="Center" />
-                            <DatePicker SelectedDate="{Binding Date}" Width="150" />
-                            <Button Content="查询" Padding="12,6" Margin="8,0,0,0" Command="{Binding ReloadCommand}" />
+                            <TextBlock VerticalAlignment="Center" Text="日期：" />
+                            <DatePicker Width="150" SelectedDate="{Binding Date}" />
+                            <Button Margin="8,0,0,0"
+                                    Padding="12,6"
+                                    Command="{Binding ReloadCommand}"
+                                    Content="查询" />
                         </StackPanel>
                     </DockPanel>
-                    <Border Background="#F8FAFC" CornerRadius="4" Padding="12">
+                    <Border Padding="12"
+                            Background="#F8FAFC"
+                            CornerRadius="4">
                         <StackPanel DataContext="{Binding Daily}">
-                            <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0,0,0,4">
-                                <Run Text="当日订单：" /><Run Text="{Binding OrderCount}" />
-                                <Run Text="    营业额：¥" /><Run Text="{Binding Revenue, StringFormat='F2'}" />
+                            <TextBlock Margin="0,0,0,4"
+                                       FontSize="14"
+                                       FontWeight="SemiBold">
+                                <Run Text="当日订单：" /><Run Text="{Binding OrderCount, Mode=OneWay}" />
+                                <Run Text="    营业额：¥" /><Run Text="{Binding Revenue, StringFormat='F2', Mode=OneWay}" />
                             </TextBlock>
                             <UniformGrid Columns="5">
-                                <TextBlock><Run Text="现金 ¥" /><Run Text="{Binding CashAmount, StringFormat='F2'}" /></TextBlock>
-                                <TextBlock><Run Text="会员 ¥" /><Run Text="{Binding MemberCardAmount, StringFormat='F2'}" /></TextBlock>
-                                <TextBlock><Run Text="微信 ¥" /><Run Text="{Binding WechatAmount, StringFormat='F2'}" /></TextBlock>
-                                <TextBlock><Run Text="支付宝 ¥" /><Run Text="{Binding AlipayAmount, StringFormat='F2'}" /></TextBlock>
-                                <TextBlock><Run Text="银行卡 ¥" /><Run Text="{Binding BankCardAmount, StringFormat='F2'}" /></TextBlock>
+                                <TextBlock><Run Text="现金 ¥" /><Run Text="{Binding CashAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                                <TextBlock><Run Text="会员 ¥" /><Run Text="{Binding MemberCardAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                                <TextBlock><Run Text="微信 ¥" /><Run Text="{Binding WechatAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                                <TextBlock><Run Text="支付宝 ¥" /><Run Text="{Binding AlipayAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                                <TextBlock><Run Text="银行卡 ¥" /><Run Text="{Binding BankCardAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
                             </UniformGrid>
                             <TextBlock Margin="0,4,0,0">
-                                <Run Text="退款 " /><Run Text="{Binding RefundCount}" />
-                                <Run Text="单 ¥" /><Run Text="{Binding RefundAmount, StringFormat='F2'}" />
-                                <Run Text="    充值 " /><Run Text="{Binding MemberRechargeCount}" />
-                                <Run Text="单 ¥" /><Run Text="{Binding MemberRechargeAmount, StringFormat='F2'}" />
+                                <Run Text="退款 " /><Run Text="{Binding RefundCount, Mode=OneWay}" />
+                                <Run Text="单 ¥" /><Run Text="{Binding RefundAmount, StringFormat='F2', Mode=OneWay}" />
+                                <Run Text="    充值 " /><Run Text="{Binding MemberRechargeCount, Mode=OneWay}" />
+                                <Run Text="单 ¥" /><Run Text="{Binding MemberRechargeAmount, StringFormat='F2', Mode=OneWay}" />
                             </TextBlock>
                         </StackPanel>
                     </Border>
@@ -40,42 +54,71 @@
             </Border>
         </TabItem>
 
-        <!-- 技师业绩 -->
+        <!--  技师业绩  -->
         <TabItem Header="技师业绩">
-            <Border Background="White" CornerRadius="4" Padding="16" Margin="0,8,0,0">
+            <Border Margin="0,8,0,0"
+                    Padding="16"
+                    Background="White"
+                    CornerRadius="4">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                        <TextBlock DockPanel.Dock="Left" Text="技师业绩" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock VerticalAlignment="Center"
+                                   DockPanel.Dock="Left"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Text="技师业绩" />
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <DatePicker SelectedDate="{Binding FromDate}" Width="130" />
-                            <TextBlock Text=" ~ " VerticalAlignment="Center" />
-                            <DatePicker SelectedDate="{Binding ToDate}" Width="130" />
-                            <Button Content="查询" Padding="12,6" Margin="8,0,0,0" Command="{Binding ReloadCommand}" />
+                            <DatePicker Width="130" SelectedDate="{Binding FromDate}" />
+                            <TextBlock VerticalAlignment="Center" Text=" ~ " />
+                            <DatePicker Width="130" SelectedDate="{Binding ToDate}" />
+                            <Button Margin="8,0,0,0"
+                                    Padding="12,6"
+                                    Command="{Binding ReloadCommand}"
+                                    Content="查询" />
                         </StackPanel>
                     </DockPanel>
-                    <DataGrid Grid.Row="1" ItemsSource="{Binding Performance}" AutoGenerateColumns="False"
-                              CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                              AlternatingRowBackground="#FAFAFA">
+                    <DataGrid Grid.Row="1"
+                              AlternatingRowBackground="#FAFAFA"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              ItemsSource="{Binding Performance}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="工号" Binding="{Binding EmployeeNo}" Width="60" />
-                            <DataGridTextColumn Header="技师" Binding="{Binding TechnicianName}" Width="140" />
-                            <DataGridTextColumn Header="服务次数" Binding="{Binding OrderItemCount}" Width="100" />
-                            <DataGridTextColumn Header="服务金额" Binding="{Binding TotalServiceAmount, StringFormat='¥{0:F2}'}" Width="120" />
-                            <DataGridTextColumn Header="提成" Binding="{Binding TotalCommission, StringFormat='¥{0:F2}'}" Width="120" />
-                            <DataGridTextColumn Header="时长(分钟)" Binding="{Binding TotalDurationMinutes}" Width="100" />
+                            <DataGridTextColumn Width="60"
+                                                Binding="{Binding EmployeeNo}"
+                                                Header="工号" />
+                            <DataGridTextColumn Width="140"
+                                                Binding="{Binding TechnicianName}"
+                                                Header="技师" />
+                            <DataGridTextColumn Width="100"
+                                                Binding="{Binding OrderItemCount}"
+                                                Header="服务次数" />
+                            <DataGridTextColumn Width="120"
+                                                Binding="{Binding TotalServiceAmount, StringFormat='¥{0:F2}'}"
+                                                Header="服务金额" />
+                            <DataGridTextColumn Width="120"
+                                                Binding="{Binding TotalCommission, StringFormat='¥{0:F2}'}"
+                                                Header="提成" />
+                            <DataGridTextColumn Width="100"
+                                                Binding="{Binding TotalDurationMinutes}"
+                                                Header="时长(分钟)" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
             </Border>
         </TabItem>
 
-        <!-- 月报 -->
+        <!--  月报  -->
         <TabItem Header="月报">
-            <Border Background="White" CornerRadius="4" Padding="16" Margin="0,8,0,0">
+            <Border Margin="0,8,0,0"
+                    Padding="16"
+                    Background="White"
+                    CornerRadius="4">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -83,40 +126,66 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                        <TextBlock DockPanel.Dock="Left" Text="月报" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock VerticalAlignment="Center"
+                                   DockPanel.Dock="Left"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Text="月报" />
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <TextBlock Text="选择该月任意一天：" VerticalAlignment="Center" />
-                            <DatePicker SelectedDate="{Binding MonthlyMonth}" Width="150" />
-                            <Button Content="查询" Padding="12,6" Margin="8,0,0,0" Command="{Binding LoadMonthlyCommand}" />
+                            <TextBlock VerticalAlignment="Center" Text="选择该月任意一天：" />
+                            <DatePicker Width="150" SelectedDate="{Binding MonthlyMonth}" />
+                            <Button Margin="8,0,0,0"
+                                    Padding="12,6"
+                                    Command="{Binding LoadMonthlyCommand}"
+                                    Content="查询" />
                         </StackPanel>
                     </DockPanel>
-                    <Border Grid.Row="1" Background="#F8FAFC" CornerRadius="4" Padding="12" Margin="0,0,0,12">
+                    <Border Grid.Row="1"
+                            Margin="0,0,0,12"
+                            Padding="12"
+                            Background="#F8FAFC"
+                            CornerRadius="4">
                         <TextBlock DataContext="{Binding Monthly}" FontSize="14">
-                            <Run Text="{Binding Year}" /><Run Text="-" /><Run Text="{Binding Month}" />
-                            <Run Text="  营业额 ¥" /><Run Text="{Binding Revenue, StringFormat='F2'}" />
-                            <Run Text="  订单 " /><Run Text="{Binding OrderCount}" />
-                            <Run Text="  钟数 " /><Run Text="{Binding RoundsCount}" />
-                            <Run Text="  充值 ¥" /><Run Text="{Binding RechargeAmount, StringFormat='F2'}" />
-                            <Run Text="  客单价 ¥" /><Run Text="{Binding AverageOrder, StringFormat='F2'}" />
+                            <Run Text="{Binding Year, Mode=OneWay}" /><Run Text="-" /><Run Text="{Binding Month, Mode=OneWay}" />
+                            <Run Text="  营业额 ¥" /><Run Text="{Binding Revenue, StringFormat='F2', Mode=OneWay}" />
+                            <Run Text="  订单 " /><Run Text="{Binding OrderCount, Mode=OneWay}" />
+                            <Run Text="  钟数 " /><Run Text="{Binding RoundsCount, Mode=OneWay}" />
+                            <Run Text="  充值 ¥" /><Run Text="{Binding RechargeAmount, StringFormat='F2', Mode=OneWay}" />
+                            <Run Text="  客单价 ¥" /><Run Text="{Binding AverageOrder, StringFormat='F2', Mode=OneWay}" />
                         </TextBlock>
                     </Border>
-                    <DataGrid Grid.Row="2" ItemsSource="{Binding Monthly.Daily}" AutoGenerateColumns="False"
-                              CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                              AlternatingRowBackground="#FAFAFA">
+                    <DataGrid Grid.Row="2"
+                              AlternatingRowBackground="#FAFAFA"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              ItemsSource="{Binding Monthly.Daily}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="日期" Binding="{Binding Day, StringFormat='{}{0:yyyy-MM-dd}'}" Width="140" />
-                            <DataGridTextColumn Header="订单" Binding="{Binding OrderCount}" Width="100" />
-                            <DataGridTextColumn Header="营业额" Binding="{Binding Revenue, StringFormat='¥{0:F2}'}" Width="140" />
-                            <DataGridTextColumn Header="钟数" Binding="{Binding Rounds}" Width="100" />
+                            <DataGridTextColumn Width="140"
+                                                Binding="{Binding Day, StringFormat='{}{0:yyyy-MM-dd}'}"
+                                                Header="日期" />
+                            <DataGridTextColumn Width="100"
+                                                Binding="{Binding OrderCount}"
+                                                Header="订单" />
+                            <DataGridTextColumn Width="140"
+                                                Binding="{Binding Revenue, StringFormat='¥{0:F2}'}"
+                                                Header="营业额" />
+                            <DataGridTextColumn Width="100"
+                                                Binding="{Binding Rounds}"
+                                                Header="钟数" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
             </Border>
         </TabItem>
 
-        <!-- 年报 -->
+        <!--  年报  -->
         <TabItem Header="年报">
-            <Border Background="White" CornerRadius="4" Padding="16" Margin="0,8,0,0">
+            <Border Margin="0,8,0,0"
+                    Padding="16"
+                    Background="White"
+                    CornerRadius="4">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -124,119 +193,198 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                        <TextBlock DockPanel.Dock="Left" Text="年报" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock VerticalAlignment="Center"
+                                   DockPanel.Dock="Left"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Text="年报" />
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <TextBlock Text="选择该年任意一天：" VerticalAlignment="Center" />
-                            <DatePicker SelectedDate="{Binding YearlyYear}" Width="150" />
-                            <Button Content="查询" Padding="12,6" Margin="8,0,0,0" Command="{Binding LoadYearlyCommand}" />
+                            <TextBlock VerticalAlignment="Center" Text="选择该年任意一天：" />
+                            <DatePicker Width="150" SelectedDate="{Binding YearlyYear}" />
+                            <Button Margin="8,0,0,0"
+                                    Padding="12,6"
+                                    Command="{Binding LoadYearlyCommand}"
+                                    Content="查询" />
                         </StackPanel>
                     </DockPanel>
-                    <Border Grid.Row="1" Background="#F8FAFC" CornerRadius="4" Padding="12" Margin="0,0,0,12">
+                    <Border Grid.Row="1"
+                            Margin="0,0,0,12"
+                            Padding="12"
+                            Background="#F8FAFC"
+                            CornerRadius="4">
                         <TextBlock DataContext="{Binding Yearly}" FontSize="14">
-                            <Run Text="{Binding Year}" /><Run Text=" 年" />
-                            <Run Text="  营业额 ¥" /><Run Text="{Binding Revenue, StringFormat='F2'}" />
-                            <Run Text="  订单 " /><Run Text="{Binding OrderCount}" />
-                            <Run Text="  钟数 " /><Run Text="{Binding RoundsCount}" />
+                            <Run Text="{Binding Year, Mode=OneWay}" /><Run Text=" 年" />
+                            <Run Text="  营业额 ¥" /><Run Text="{Binding Revenue, StringFormat='F2', Mode=OneWay}" />
+                            <Run Text="  订单 " /><Run Text="{Binding OrderCount, Mode=OneWay}" />
+                            <Run Text="  钟数 " /><Run Text="{Binding RoundsCount, Mode=OneWay}" />
                         </TextBlock>
                     </Border>
-                    <DataGrid Grid.Row="2" ItemsSource="{Binding Yearly.Monthly}" AutoGenerateColumns="False"
-                              CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                              AlternatingRowBackground="#FAFAFA">
+                    <DataGrid Grid.Row="2"
+                              AlternatingRowBackground="#FAFAFA"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              ItemsSource="{Binding Yearly.Monthly}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="月份" Binding="{Binding Day, StringFormat='{}{0:yyyy-MM}'}" Width="140" />
-                            <DataGridTextColumn Header="订单" Binding="{Binding OrderCount}" Width="100" />
-                            <DataGridTextColumn Header="营业额" Binding="{Binding Revenue, StringFormat='¥{0:F2}'}" Width="140" />
-                            <DataGridTextColumn Header="钟数" Binding="{Binding Rounds}" Width="100" />
+                            <DataGridTextColumn Width="140"
+                                                Binding="{Binding Day, StringFormat='{}{0:yyyy-MM}'}"
+                                                Header="月份" />
+                            <DataGridTextColumn Width="100"
+                                                Binding="{Binding OrderCount}"
+                                                Header="订单" />
+                            <DataGridTextColumn Width="140"
+                                                Binding="{Binding Revenue, StringFormat='¥{0:F2}'}"
+                                                Header="营业额" />
+                            <DataGridTextColumn Width="100"
+                                                Binding="{Binding Rounds}"
+                                                Header="钟数" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
             </Border>
         </TabItem>
 
-        <!-- 服务热度 -->
+        <!--  服务热度  -->
         <TabItem Header="服务热度">
-            <Border Background="White" CornerRadius="4" Padding="16" Margin="0,8,0,0">
+            <Border Margin="0,8,0,0"
+                    Padding="16"
+                    Background="White"
+                    CornerRadius="4">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                        <TextBlock DockPanel.Dock="Left" Text="服务热度" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock VerticalAlignment="Center"
+                                   DockPanel.Dock="Left"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Text="服务热度" />
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <DatePicker SelectedDate="{Binding RangeFrom}" Width="130" />
-                            <TextBlock Text=" ~ " VerticalAlignment="Center" />
-                            <DatePicker SelectedDate="{Binding RangeTo}" Width="130" />
-                            <Button Content="查询" Padding="12,6" Margin="8,0,0,0" Command="{Binding LoadPopularityCommand}" />
+                            <DatePicker Width="130" SelectedDate="{Binding RangeFrom}" />
+                            <TextBlock VerticalAlignment="Center" Text=" ~ " />
+                            <DatePicker Width="130" SelectedDate="{Binding RangeTo}" />
+                            <Button Margin="8,0,0,0"
+                                    Padding="12,6"
+                                    Command="{Binding LoadPopularityCommand}"
+                                    Content="查询" />
                         </StackPanel>
                     </DockPanel>
-                    <DataGrid Grid.Row="1" ItemsSource="{Binding Popularity}" AutoGenerateColumns="False"
-                              CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                              AlternatingRowBackground="#FAFAFA">
+                    <DataGrid Grid.Row="1"
+                              AlternatingRowBackground="#FAFAFA"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              ItemsSource="{Binding Popularity}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="服务" Binding="{Binding ServiceName}" Width="200" />
-                            <DataGridTextColumn Header="下单次数" Binding="{Binding OrderItemCount}" Width="120" />
-                            <DataGridTextColumn Header="钟数合计" Binding="{Binding RoundsCount}" Width="120" />
-                            <DataGridTextColumn Header="营业额" Binding="{Binding Revenue, StringFormat='¥{0:F2}'}" Width="140" />
+                            <DataGridTextColumn Width="200"
+                                                Binding="{Binding ServiceName}"
+                                                Header="服务" />
+                            <DataGridTextColumn Width="120"
+                                                Binding="{Binding OrderItemCount}"
+                                                Header="下单次数" />
+                            <DataGridTextColumn Width="120"
+                                                Binding="{Binding RoundsCount}"
+                                                Header="钟数合计" />
+                            <DataGridTextColumn Width="140"
+                                                Binding="{Binding Revenue, StringFormat='¥{0:F2}'}"
+                                                Header="营业额" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
             </Border>
         </TabItem>
 
-        <!-- 客流 -->
+        <!--  客流  -->
         <TabItem Header="客流">
-            <Border Background="White" CornerRadius="4" Padding="16" Margin="0,8,0,0">
+            <Border Margin="0,8,0,0"
+                    Padding="16"
+                    Background="White"
+                    CornerRadius="4">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                        <TextBlock DockPanel.Dock="Left" Text="客流" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock VerticalAlignment="Center"
+                                   DockPanel.Dock="Left"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Text="客流" />
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <DatePicker SelectedDate="{Binding RangeFrom}" Width="130" />
-                            <TextBlock Text=" ~ " VerticalAlignment="Center" />
-                            <DatePicker SelectedDate="{Binding RangeTo}" Width="130" />
-                            <Button Content="查询" Padding="12,6" Margin="8,0,0,0" Command="{Binding LoadFlowCommand}" />
+                            <DatePicker Width="130" SelectedDate="{Binding RangeFrom}" />
+                            <TextBlock VerticalAlignment="Center" Text=" ~ " />
+                            <DatePicker Width="130" SelectedDate="{Binding RangeTo}" />
+                            <Button Margin="8,0,0,0"
+                                    Padding="12,6"
+                                    Command="{Binding LoadFlowCommand}"
+                                    Content="查询" />
                         </StackPanel>
                     </DockPanel>
-                    <DataGrid Grid.Row="1" ItemsSource="{Binding CustomerFlow}" AutoGenerateColumns="False"
-                              CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                              AlternatingRowBackground="#FAFAFA">
+                    <DataGrid Grid.Row="1"
+                              AlternatingRowBackground="#FAFAFA"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              ItemsSource="{Binding CustomerFlow}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="日期" Binding="{Binding Date, StringFormat='{}{0:yyyy-MM-dd}'}" Width="160" />
-                            <DataGridTextColumn Header="订单数" Binding="{Binding OrderCount}" Width="140" />
-                            <DataGridTextColumn Header="唯一会员" Binding="{Binding UniqueMembers}" Width="140" />
+                            <DataGridTextColumn Width="160"
+                                                Binding="{Binding Date, StringFormat='{}{0:yyyy-MM-dd}'}"
+                                                Header="日期" />
+                            <DataGridTextColumn Width="140"
+                                                Binding="{Binding OrderCount}"
+                                                Header="订单数" />
+                            <DataGridTextColumn Width="140"
+                                                Binding="{Binding UniqueMembers}"
+                                                Header="唯一会员" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
             </Border>
         </TabItem>
 
-        <!-- 会员分析 -->
+        <!--  会员分析  -->
         <TabItem Header="会员分析">
-            <Border Background="White" CornerRadius="4" Padding="16" Margin="0,8,0,0">
+            <Border Margin="0,8,0,0"
+                    Padding="16"
+                    Background="White"
+                    CornerRadius="4">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,12">
-                        <TextBlock DockPanel.Dock="Left" Text="会员分析" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
-                        <Button DockPanel.Dock="Right" Content="刷新" Padding="12,6" Command="{Binding LoadMemberAnalysisCommand}" />
+                        <TextBlock VerticalAlignment="Center"
+                                   DockPanel.Dock="Left"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Text="会员分析" />
+                        <Button Padding="12,6"
+                                Command="{Binding LoadMemberAnalysisCommand}"
+                                Content="刷新"
+                                DockPanel.Dock="Right" />
                     </DockPanel>
-                    <Border Background="#F8FAFC" CornerRadius="4" Padding="16">
+                    <Border Padding="16"
+                            Background="#F8FAFC"
+                            CornerRadius="4">
                         <StackPanel DataContext="{Binding MemberAnalysis}">
-                            <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8">
-                                <Run Text="会员总数 " /><Run Text="{Binding TotalMembers}" />
-                                <Run Text="    本月新增 " /><Run Text="{Binding NewMembersThisMonth}" />
+                            <TextBlock Margin="0,0,0,8"
+                                       FontSize="14"
+                                       FontWeight="SemiBold">
+                                <Run Text="会员总数 " /><Run Text="{Binding TotalMembers, Mode=OneWay}" />
+                                <Run Text="    本月新增 " /><Run Text="{Binding NewMembersThisMonth, Mode=OneWay}" />
                             </TextBlock>
-                            <UniformGrid Columns="4" Margin="0,0,0,8">
-                                <TextBlock><Run Text="活跃(30天内) " /><Run Text="{Binding ActiveMembers}" /></TextBlock>
-                                <TextBlock><Run Text="沉睡(31-90天) " /><Run Text="{Binding DormantMembers}" /></TextBlock>
-                                <TextBlock><Run Text="流失(90天+) " /><Run Text="{Binding LostMembers}" /></TextBlock>
-                                <TextBlock><Run Text="从未消费 " /><Run Text="{Binding NeverConsumed}" /></TextBlock>
+                            <UniformGrid Margin="0,0,0,8" Columns="4">
+                                <TextBlock><Run Text="活跃(30天内) " /><Run Text="{Binding ActiveMembers, Mode=OneWay}" /></TextBlock>
+                                <TextBlock><Run Text="沉睡(31-90天) " /><Run Text="{Binding DormantMembers, Mode=OneWay}" /></TextBlock>
+                                <TextBlock><Run Text="流失(90天+) " /><Run Text="{Binding LostMembers, Mode=OneWay}" /></TextBlock>
+                                <TextBlock><Run Text="从未消费 " /><Run Text="{Binding NeverConsumed, Mode=OneWay}" /></TextBlock>
                             </UniformGrid>
                             <TextBlock>
-                                <Run Text="复购会员 " /><Run Text="{Binding RepeatMembers}" />
-                                <Run Text="    复购率 " /><Run Text="{Binding RepeatRate}" /><Run Text="%" />
+                                <Run Text="复购会员 " /><Run Text="{Binding RepeatMembers, Mode=OneWay}" />
+                                <Run Text="    复购率 " /><Run Text="{Binding RepeatRate, Mode=OneWay}" /><Run Text="%" />
                             </TextBlock>
                         </StackPanel>
                     </Border>
@@ -244,62 +392,108 @@
             </Border>
         </TabItem>
 
-        <!-- 服务趋势 -->
+        <!--  服务趋势  -->
         <TabItem Header="服务趋势">
-            <Border Background="White" CornerRadius="4" Padding="16" Margin="0,8,0,0">
+            <Border Margin="0,8,0,0"
+                    Padding="16"
+                    Background="White"
+                    CornerRadius="4">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                        <TextBlock DockPanel.Dock="Left" Text="服务热度趋势" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock VerticalAlignment="Center"
+                                   DockPanel.Dock="Left"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Text="服务热度趋势" />
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <TextBlock Text="趋势月数：" VerticalAlignment="Center" />
-                            <TextBox Text="{Binding TrendMonths, UpdateSourceTrigger=PropertyChanged}" Width="56" Height="30"
-                                     VerticalContentAlignment="Center" />
-                            <Button Content="查询" Padding="12,6" Margin="8,0,0,0" Command="{Binding LoadServiceTrendCommand}" />
+                            <TextBlock VerticalAlignment="Center" Text="趋势月数：" />
+                            <TextBox Width="56"
+                                     Height="30"
+                                     VerticalContentAlignment="Center"
+                                     Text="{Binding TrendMonths, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Margin="8,0,0,0"
+                                    Padding="12,6"
+                                    Command="{Binding LoadServiceTrendCommand}"
+                                    Content="查询" />
                         </StackPanel>
                     </DockPanel>
-                    <DataGrid Grid.Row="1" ItemsSource="{Binding ServiceTrendRows}" AutoGenerateColumns="False"
-                              CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                              AlternatingRowBackground="#FAFAFA">
+                    <DataGrid Grid.Row="1"
+                              AlternatingRowBackground="#FAFAFA"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              ItemsSource="{Binding ServiceTrendRows}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="服务" Binding="{Binding ServiceName}" Width="160" />
-                            <DataGridTextColumn Header="总钟数" Binding="{Binding TotalRounds}" Width="90" />
-                            <DataGridTextColumn Header="逐月钟数" Binding="{Binding MonthsText}" Width="*" />
+                            <DataGridTextColumn Width="160"
+                                                Binding="{Binding ServiceName}"
+                                                Header="服务" />
+                            <DataGridTextColumn Width="90"
+                                                Binding="{Binding TotalRounds}"
+                                                Header="总钟数" />
+                            <DataGridTextColumn Width="*"
+                                                Binding="{Binding MonthsText}"
+                                                Header="逐月钟数" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
             </Border>
         </TabItem>
 
-        <!-- 技师质量 -->
+        <!--  技师质量  -->
         <TabItem Header="技师质量">
-            <Border Background="White" CornerRadius="4" Padding="16" Margin="0,8,0,0">
+            <Border Margin="0,8,0,0"
+                    Padding="16"
+                    Background="White"
+                    CornerRadius="4">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                        <TextBlock DockPanel.Dock="Left" Text="技师质量（投诉率）" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock VerticalAlignment="Center"
+                                   DockPanel.Dock="Left"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Text="技师质量（投诉率）" />
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <DatePicker SelectedDate="{Binding RangeFrom}" Width="130" />
-                            <TextBlock Text=" ~ " VerticalAlignment="Center" />
-                            <DatePicker SelectedDate="{Binding RangeTo}" Width="130" />
-                            <Button Content="查询" Padding="12,6" Margin="8,0,0,0" Command="{Binding LoadQualityCommand}" />
+                            <DatePicker Width="130" SelectedDate="{Binding RangeFrom}" />
+                            <TextBlock VerticalAlignment="Center" Text=" ~ " />
+                            <DatePicker Width="130" SelectedDate="{Binding RangeTo}" />
+                            <Button Margin="8,0,0,0"
+                                    Padding="12,6"
+                                    Command="{Binding LoadQualityCommand}"
+                                    Content="查询" />
                         </StackPanel>
                     </DockPanel>
-                    <DataGrid Grid.Row="1" ItemsSource="{Binding Quality}" AutoGenerateColumns="False"
-                              CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                              AlternatingRowBackground="#FAFAFA">
+                    <DataGrid Grid.Row="1"
+                              AlternatingRowBackground="#FAFAFA"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              ItemsSource="{Binding Quality}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="工号" Binding="{Binding EmployeeNo}" Width="70" />
-                            <DataGridTextColumn Header="技师" Binding="{Binding TechnicianName}" Width="140" />
-                            <DataGridTextColumn Header="钟数" Binding="{Binding RoundCount}" Width="100" />
-                            <DataGridTextColumn Header="投诉数" Binding="{Binding ComplaintCount}" Width="100" />
-                            <DataGridTextColumn Header="投诉率%" Binding="{Binding ComplaintRate}" Width="120" />
+                            <DataGridTextColumn Width="70"
+                                                Binding="{Binding EmployeeNo}"
+                                                Header="工号" />
+                            <DataGridTextColumn Width="140"
+                                                Binding="{Binding TechnicianName}"
+                                                Header="技师" />
+                            <DataGridTextColumn Width="100"
+                                                Binding="{Binding RoundCount}"
+                                                Header="钟数" />
+                            <DataGridTextColumn Width="100"
+                                                Binding="{Binding ComplaintCount}"
+                                                Header="投诉数" />
+                            <DataGridTextColumn Width="120"
+                                                Binding="{Binding ComplaintRate}"
+                                                Header="投诉率%" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
