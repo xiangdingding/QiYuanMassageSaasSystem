@@ -19,17 +19,21 @@ public partial class MembersViewModel : ObservableObject
         _ = ReloadAsync();
     }
 
+    /// <summary>按手机号聚合的会员组（一人多卡）。每组含名下所有卡，UI 可展开。</summary>
     [ObservableProperty]
-    private ObservableCollection<MemberDto> rows = new();
+    private ObservableCollection<MemberGroupViewModel> groups = new();
 
     [ObservableProperty]
     private string keyword = string.Empty;
 
+    /// <summary>是否含已关闭的卡/会员。</summary>
+    [ObservableProperty]
+    private bool includeClosed;
+
     [ObservableProperty]
     private bool isBusy;
 
-    [ObservableProperty]
-    private MemberDto? selected;
+    partial void OnIncludeClosedChanged(bool value) => _ = ReloadAsync();
 
     [RelayCommand]
     public async Task ReloadAsync()
@@ -37,14 +41,23 @@ public partial class MembersViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            var data = await _api.GetMembersAsync(
+            var data = await _api.GetMemberGroupedAsync(
                 page: 1, pageSize: 100,
                 keyword: string.IsNullOrWhiteSpace(Keyword) ? null : Keyword,
-                storeId: _context.ActiveStoreId);
-            Rows = new ObservableCollection<MemberDto>(data.Items);
+                storeId: _context.ActiveStoreId,
+                includeClosed: IncludeClosed);
+            Groups = new ObservableCollection<MemberGroupViewModel>(data.Items.Select(g => new MemberGroupViewModel(g)));
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
         finally { IsBusy = false; }
+    }
+
+    [RelayCommand]
+    private void Reset()
+    {
+        Keyword = string.Empty;
+        IncludeClosed = false;
+        _ = ReloadAsync();
     }
 
     [RelayCommand]
@@ -69,14 +82,24 @@ public partial class MembersViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task CreateAsync()
+    private Task CreateAsync() => OpenCardAsync(null);
+
+    /// <summary>为某手机号加办一张新卡（预填手机号）。</summary>
+    [RelayCommand]
+    private Task CreateForPhoneAsync(string? phone) => OpenCardAsync(phone);
+
+    /// <summary>按会员类型开卡（充值卡/计次卡，按模板校验充值/次数并写赠送/折扣/到期）。</summary>
+    private async Task OpenCardAsync(string? presetPhone)
     {
         if (_context.ActiveStoreId is null) { MessageBox.Show("未选择门店"); return; }
-        var dlg = new Views.MemberFormWindow(null, _context.ActiveStoreId.Value);
-        if (dlg.ShowDialog() != true) return;
+        var dlg = new Views.MemberOpenCardWindow(_api, _context.ActiveStoreId.Value, presetPhone)
+        {
+            Owner = Application.Current?.MainWindow
+        };
+        if (dlg.ShowDialog() != true || dlg.Built is null) return;
         try
         {
-            await _api.CreateMemberAsync(dlg.BuildCreateRequest());
+            await _api.CreateMemberAsync(dlg.Built);
             await ReloadAsync();
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
@@ -126,6 +149,15 @@ public partial class MembersViewModel : ObservableObject
             await ReloadAsync();
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
+    }
+
+    /// <summary>办卡：给已有会员卡按类型追加（充值卡加余额含赠送 / 计次卡发套餐）。</summary>
+    [RelayCommand]
+    private async Task IssueCardAsync(MemberDto? m)
+    {
+        if (m is null) return;
+        var dlg = new Views.MemberIssueCardWindow(_api, m) { Owner = Application.Current?.MainWindow };
+        if (dlg.ShowDialog() == true) await ReloadAsync();
     }
 
     /// <summary>会员流水：资金流水 + 消费记录。</summary>

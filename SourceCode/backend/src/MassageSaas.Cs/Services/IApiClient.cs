@@ -87,6 +87,14 @@ public interface IApiClient
         [Query] long? storeId = null,
         [Query] bool includeClosed = false);
 
+    [Get("/members/grouped")]
+    Task<PagedResult<MemberPhoneGroupDto>> GetMemberGroupedAsync(
+        [Query] int page = 1,
+        [Query] int pageSize = 50,
+        [Query] string? keyword = null,
+        [Query] long? storeId = null,
+        [Query] bool includeClosed = false);
+
     [Get("/members/{id}")]
     Task<MemberDto> GetMemberAsync(long id);
 
@@ -98,6 +106,9 @@ public interface IApiClient
 
     [Post("/members/recharge")]
     Task<RechargeRecordDto> RechargeAsync([Body] RechargeRequest req);
+
+    [Post("/members/{id}/issue-card")]
+    Task<IssueCardResultDto> IssueCardAsync(long id, [Body] IssueCardRequest req);
 
     [Get("/members/{id}/recharges")]
     Task<List<RechargeRecordDto>> GetRechargeHistoryAsync(long id);

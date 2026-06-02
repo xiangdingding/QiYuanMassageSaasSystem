@@ -10,11 +10,17 @@ public partial class MemberFormWindow : Window
     private readonly MemberDto? _editing;
     private readonly long _storeId;
 
-    public MemberFormWindow(MemberDto? editing, long storeId)
+    public MemberFormWindow(MemberDto? editing, long storeId, string? presetPhone = null)
     {
         InitializeComponent();
         _editing = editing;
         _storeId = storeId;
+        // 加办一张卡：预填该会员手机号，光标落到卡号
+        if (editing is null && !string.IsNullOrWhiteSpace(presetPhone))
+        {
+            PhoneBox.Text = presetPhone;
+            CardNoBox.Focus();
+        }
         if (editing is not null)
         {
             Title = $"编辑会员 - {editing.CardNo}";
