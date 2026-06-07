@@ -1,61 +1,119 @@
 <Window x:Class="MassageSaas.Cs.Views.MemberFormWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="会员资料"
-        Height="520" Width="420"
+        Title="编辑会员"
+        Height="560" Width="480"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize">
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-
-        <TextBlock Grid.Row="0" Text="卡号" Margin="0,0,0,4" />
-        <TextBox Grid.Row="1" x:Name="CardNoBox" Padding="6" Margin="0,0,0,12" />
-
-        <TextBlock Grid.Row="2" Text="手机号" Margin="0,0,0,4" />
-        <TextBox Grid.Row="3" x:Name="PhoneBox" Padding="6" Margin="0,0,0,12" />
-
-        <TextBlock Grid.Row="4" Text="姓名" Margin="0,0,0,4" />
-        <TextBox Grid.Row="5" x:Name="NameBox" Padding="6" Margin="0,0,0,12" />
-
-        <Grid Grid.Row="6" Margin="0,0,0,12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="折扣" Margin="0,0,0,4" />
-                <TextBox x:Name="DiscountBox" Padding="6" Text="1.0" />
-            </StackPanel>
-            <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                <TextBlock Text="性别" Margin="0,0,0,4" />
-                <ComboBox x:Name="GenderBox" Padding="6">
-                    <ComboBoxItem Content="" />
-                    <ComboBoxItem Content="男" />
-                    <ComboBoxItem Content="女" />
-                </ComboBox>
-            </StackPanel>
-        </Grid>
-
-        <TextBlock Grid.Row="7" Text="初始充值（仅开卡）" Margin="0,0,0,4" />
-        <TextBox Grid.Row="8" x:Name="InitialBalanceBox" Padding="6" Margin="0,0,0,12" Text="0" />
-
-        <Border Grid.Row="10" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
+    <Window.Resources>
+        <Style x:Key="FL" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,12,0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="#606266" />
+        </Style>
+    </Window.Resources>
+    <DockPanel Margin="20">
+        <Border DockPanel.Dock="Bottom" Margin="0,12,0,0" Padding="0,12,0,0"
+                BorderBrush="#E5E7EB" BorderThickness="0,1,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="取消" Padding="16,6" Margin="0,0,8,0" Click="Cancel_Click" />
-                <Button Content="保存" Padding="16,6" Background="#2D6A4F" Foreground="White" BorderThickness="0" Click="Save_Click" />
+                <Button Content="取消" Padding="20,0" Margin="0,0,8,0"
+                        Style="{StaticResource GhostBtn}" Click="Cancel_Click"
+                        AutomationProperties.Name="取消" />
+                <Button Content="保存" Padding="20,0"
+                        Style="{StaticResource PrimaryBtn}" Click="Save_Click"
+                        AutomationProperties.Name="保存" />
             </StackPanel>
         </Border>
-    </Grid>
+
+        <StackPanel>
+            <!--  手机号  -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Style="{StaticResource FL}"><Run Foreground="#D9534F" Text="* " /><Run Text="手机号" /></TextBlock>
+                <TextBox Grid.Column="1" x:Name="PhoneBox" MaxLength="20"
+                         Style="{StaticResource FieldText}" AutomationProperties.Name="手机号" />
+            </Grid>
+
+            <!--  卡号（不可改）  -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="卡号" Style="{StaticResource FL}" />
+                <TextBox Grid.Column="1" x:Name="CardNoBox" IsEnabled="False"
+                         Style="{StaticResource FieldText}" AutomationProperties.Name="卡号（不可修改）" />
+            </Grid>
+
+            <!--  姓名  -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="姓名" Style="{StaticResource FL}" />
+                <TextBox Grid.Column="1" x:Name="NameBox" MaxLength="32"
+                         Style="{StaticResource FieldText}" AutomationProperties.Name="姓名" />
+            </Grid>
+
+            <!--  性别  -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="性别" Style="{StaticResource FL}" />
+                <StackPanel Grid.Column="1" x:Name="GenderPanel" Orientation="Horizontal" Height="34">
+                    <RadioButton Content="男" CommandParameter="男" GroupName="Gender" IsChecked="True"
+                                 BorderThickness="1,1,1,1" Tag="6,0,0,6" Style="{StaticResource SegRadio}" />
+                    <RadioButton Content="女" CommandParameter="女" GroupName="Gender" Tag="0,6,6,0" Style="{StaticResource SegRadio}" />
+                </StackPanel>
+            </Grid>
+
+            <!--  生日  -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="生日" Style="{StaticResource FL}" />
+                <DatePicker Grid.Column="1" x:Name="BirthdayBox" HorizontalAlignment="Stretch"
+                            AutomationProperties.Name="生日" />
+            </Grid>
+
+            <!--  引荐人  -->
+            <Grid Margin="0,0,0,2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="引荐人" Style="{StaticResource FL}" />
+                <ComboBox Grid.Column="1" x:Name="ReferrerBox"
+                          Style="{StaticResource FieldComboEditable}"
+                          IsTextSearchEnabled="False" StaysOpenOnEdit="True"
+                          DisplayMemberPath="Label"
+                          KeyUp="ReferrerBox_KeyUp" SelectionChanged="Referrer_Picked"
+                          AutomationProperties.Name="引荐人，输入卡号或手机号搜索" />
+            </Grid>
+            <TextBlock Grid.Column="1" Margin="84,0,0,12" Foreground="#888" FontSize="12">
+                <Run Text="已选：" /><Run x:Name="ReferrerSelLabel" Text="无" FontWeight="SemiBold" Foreground="#374151" />
+            </TextBlock>
+
+            <!--  备注  -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="备注" Style="{StaticResource FL}" VerticalAlignment="Top" Margin="0,7,12,0" />
+                <TextBox Grid.Column="1" x:Name="RemarkBox" Height="56" MaxLength="500"
+                         Style="{StaticResource FieldTextMultiline}" AutomationProperties.Name="备注" />
+            </Grid>
+        </StackPanel>
+    </DockPanel>
 </Window>

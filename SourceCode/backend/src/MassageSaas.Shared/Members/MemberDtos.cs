@@ -21,6 +21,8 @@ public record MemberDto(
     string? CloseReason,
     long? ReferredByMemberId,
     string? ReferredByMemberName,
+    long? ReferredByStaffId,
+    string? ReferredByStaffName,
     decimal ReferralRewardEarned,
     string? WechatOpenId,
     DateTime CreatedAt,
@@ -62,6 +64,8 @@ public record CreateMemberRequest(
     decimal InitialBalance = 0m,
     string? Remark = null,
     long? ReferredByMemberId = null,
+    /// <summary>店内员工推荐人（可与顾客推荐人并存）；开卡时按租户配置给该员工记一笔推荐提成。</summary>
+    long? ReferredByStaffId = null,
     /// <summary>开卡时绑定的会员类型；选了即按模板规则校验最低充值/最低次数并写赠送、折扣、到期日。</summary>
     long? MemberTypeId = null,
     /// <summary>仅计次卡：购买次数（必须 ≥ 模板 MinPurchaseCount）。</summary>

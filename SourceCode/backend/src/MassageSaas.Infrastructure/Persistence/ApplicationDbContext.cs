@@ -47,6 +47,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<PayrollPeriod> PayrollPeriods => Set<PayrollPeriod>();
     public DbSet<PayrollItem> PayrollItems => Set<PayrollItem>();
     public DbSet<PayrollAdjustment> PayrollAdjustments => Set<PayrollAdjustment>();
+    public DbSet<StaffReferralRecord> StaffReferralRecords => Set<StaffReferralRecord>();
     public DbSet<NotificationOutbox> NotificationOutbox => Set<NotificationOutbox>();
     public DbSet<ServiceComplaint> ServiceComplaints => Set<ServiceComplaint>();
     public DbSet<StaffTransfer> StaffTransfers => Set<StaffTransfer>();

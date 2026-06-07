@@ -4,15 +4,33 @@
              xmlns:vm="clr-namespace:MassageSaas.Cs.ViewModels"
              xmlns:vmpos="clr-namespace:MassageSaas.Cs.ViewModels.Pos"
              xmlns:views="clr-namespace:MassageSaas.Cs.Views"
-             xmlns:conv="clr-namespace:MassageSaas.Cs.Converters">
+             xmlns:conv="clr-namespace:MassageSaas.Cs.Converters"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
     <Application.Resources>
         <ResourceDictionary>
+            <!-- Material Design：只为使用其「日期选择器」。
+                 关键：不合并 MaterialDesign2.Defaults.xaml（它含大量隐式样式，会把全局按钮/输入框等都改成 Material 风格）。
+                 这里只引入颜色画刷（BundledTheme，纯资源、不改控件）+ 日历/日期选择器两个控件字典里的「带 Key 的样式」。
+                 这些样式不是隐式的，只有显式 Style="{StaticResource MaterialDesignDatePicker}" 的控件才会套用，
+                 其它界面完全不受影响。 -->
+            <ResourceDictionary.MergedDictionaries>
+                <materialDesign:BundledTheme BaseTheme="Light" PrimaryColor="Green" SecondaryColor="Green" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Calendar.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.DatePicker.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.ComboBox.xaml" />
+                <!-- 全系统统一的下拉框（参考预约管理状态下拉框）与日期控件（参考订单流水日期控件）。
+                     含带 Key 样式 + ComboBox/DatePicker 隐式默认，未显式设样式者自动统一。 -->
+                <ResourceDictionary Source="/Themes/FilterControls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
             <conv:NullToCollapsedConverter x:Key="NullToCollapsed" />
             <conv:InverseNullToCollapsedConverter x:Key="InverseNullToCollapsed" />
             <conv:CountToVisibleConverter x:Key="CountToVisible" />
             <conv:BoolInverseConverter x:Key="BoolInverse" />
             <conv:BoolToVisibilityConverter x:Key="BoolToVisible" />
             <conv:EnumLabelConverter x:Key="EnumLabel" />
+            <conv:MemberTypeMetaConverter x:Key="MemberTypeMeta" />
+            <conv:RechargeKindBrushConverter x:Key="RechargeKindBrush" />
             <conv:StringEqualsConverter x:Key="StringEquals" />
             <conv:NotNullToBoolConverter x:Key="NotNullToBool" />
             <conv:DecimalGreaterThanZeroConverter x:Key="DecimalToVisible" />
@@ -20,6 +38,11 @@
             <conv:RatingToTextConverter x:Key="RatingToText" />
             <conv:CardExpiryConverter x:Key="CardExpiry" />
             <conv:CardDaysRemainingConverter x:Key="CardDaysRemaining" />
+            <conv:VarianceToBrushConverter x:Key="VarianceToBrush" />
+            <conv:ComplaintRateToBrushConverter x:Key="ComplaintRateToBrush" />
+            <conv:BoolLabelConverter x:Key="BoolLabel" />
+            <conv:LeaveLabelConverter x:Key="LeaveLabel" />
+            <conv:ComplaintLabelConverter x:Key="ComplaintLabel" />
 
             <DataTemplate DataType="{x:Type vmpos:PosViewModel}">
                 <views:PosView />
@@ -86,6 +109,81 @@
             <SolidColorBrush x:Key="SidebarText" Color="#BFCBD9" />
             <SolidColorBrush x:Key="AccentBrush" Color="#2D6A4F" />
             <SolidColorBrush x:Key="DangerBrush" Color="#D9534F" />
+
+            <!-- 列头左右两侧的拖拽改宽手柄（透明、鼠标变左右箭头），保证自定义模板下仍能拉动列宽 -->
+            <Style x:Key="ColumnHeaderGripperStyle" TargetType="{x:Type Thumb}">
+                <Setter Property="Width" Value="8" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Cursor" Value="SizeWE" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Thumb}">
+                            <Border Background="{TemplateBinding Background}" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 全局列头样式：扁平化（去掉 WPF 默认渐变/立体描边）、加高、半粗体浅灰底、文字水平+垂直居中。
+                 保留左右拖拽手柄可改列宽。隐式样式自动套用所有 DataGrid，无需逐页声明。 -->
+            <Style TargetType="{x:Type DataGridColumnHeader}">
+                <Setter Property="Height" Value="46" />
+                <Setter Property="Background" Value="#F3F5F7" />
+                <Setter Property="Foreground" Value="#374151" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="Padding" Value="8,0" />
+                <Setter Property="SeparatorBrush" Value="#E5E9ED" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridColumnHeader}">
+                            <Grid>
+                                <Border Background="{TemplateBinding Background}"
+                                        BorderBrush="#E5E9ED" BorderThickness="0,0,1,1"
+                                        Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                                    <ContentPresenter VerticalAlignment="Center"
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                                </Border>
+                                <Thumb x:Name="PART_LeftHeaderGripper" HorizontalAlignment="Left"
+                                       Style="{StaticResource ColumnHeaderGripperStyle}" />
+                                <Thumb x:Name="PART_RightHeaderGripper" HorizontalAlignment="Right"
+                                       Style="{StaticResource ColumnHeaderGripperStyle}" />
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 全局单元格样式：内容垂直居中、左右留白；水平对齐保持各列默认（文字靠左，数字列自配靠右）。
+                 用 TemplateBinding Background 保留选中高亮。隐式样式自动套用所有 DataGrid。 -->
+            <Style TargetType="{x:Type DataGridCell}">
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type DataGridCell}">
+                            <Border Background="{TemplateBinding Background}" Padding="8,0" SnapsToDevicePixels="True">
+                                <ContentPresenter VerticalAlignment="Center" />
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- 全局表格样式：统一行高 48 / 字号 13 / 全网格线 + 柔和线色 / 斑马纹（对齐预约管理列表）。
+                 隐式样式自动套用所有 DataGrid，各列表无需逐页声明这些视觉属性。 -->
+            <Style TargetType="{x:Type DataGrid}">
+                <Setter Property="RowHeight" Value="48" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="GridLinesVisibility" Value="All" />
+                <Setter Property="HorizontalGridLinesBrush" Value="#ECEFF2" />
+                <Setter Property="VerticalGridLinesBrush" Value="#ECEFF2" />
+                <Setter Property="AlternatingRowBackground" Value="#FAFAFA" />
+                <Setter Property="RowBackground" Value="White" />
+                <Setter Property="BorderBrush" Value="#E5E9ED" />
+                <Setter Property="BorderThickness" Value="1" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

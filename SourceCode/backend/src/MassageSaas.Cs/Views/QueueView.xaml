@@ -11,6 +11,17 @@
 
             <DockPanel Grid.Row="0" Margin="0,0,0,12">
                 <TextBlock DockPanel.Dock="Left" Text="技师排队看板" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
+                    <Border Background="#E6F4EA" CornerRadius="3" Padding="8,3" Margin="0,0,6,0">
+                        <TextBlock Foreground="#2D6A4F" FontSize="13"><Run Text="在岗 " /><Run Text="{Binding OnDutyCount, Mode=OneWay}" /></TextBlock>
+                    </Border>
+                    <Border Background="#FEF3C7" CornerRadius="3" Padding="8,3" Margin="0,0,6,0">
+                        <TextBlock Foreground="#92400E" FontSize="13"><Run Text="休息 " /><Run Text="{Binding RestingCount, Mode=OneWay}" /></TextBlock>
+                    </Border>
+                    <Border Background="#F0F2F5" CornerRadius="3" Padding="8,3">
+                        <TextBlock Foreground="#6B7280" FontSize="13"><Run Text="下班 " /><Run Text="{Binding OffDutyCount, Mode=OneWay}" /></TextBlock>
+                    </Border>
+                </StackPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                     <Button Padding="12,6" Margin="0,0,8,0" Background="#2D6A4F" Foreground="White" BorderThickness="0"
                             Content="叫号"
@@ -31,7 +42,7 @@
 
             <DataGrid Grid.Row="2" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
                       CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
-                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      HeadersVisibility="Column" GridLinesVisibility="All"
                       AlternatingRowBackground="#FAFAFA"
                       AutomationProperties.Name="技师排队列表">
                 <DataGrid.RowStyle>
@@ -51,7 +62,7 @@
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="工号" Binding="{Binding EmployeeNo}" Width="60" />
-                    <DataGridTextColumn Header="姓名" Binding="{Binding TechnicianName}" Width="120" />
+                    <DataGridTextColumn Header="姓名" Binding="{Binding TechnicianName}" Width="*" MinWidth="120" />
                     <DataGridTextColumn Header="状态" Binding="{Binding State, Converter={StaticResource EnumLabel}}" Width="80" />
                     <DataGridTextColumn Header="排队号" Binding="{Binding QueuePosition}" Width="60" />
                     <DataGridTextColumn Header="今日轮次" Binding="{Binding TodayRoundCount}" Width="80" />

@@ -40,6 +40,11 @@ public class Member : BaseEntity, ITenantScoped
     public long? ReferredByMemberId { get; set; }
     public Member? ReferredByMember { get; set; }
 
+    /// <summary>引荐人员工 Id（店内员工推荐），可空。与 ReferredByMemberId 可并存、各拿各的奖励。
+    /// 开卡时按租户配置给该员工记一笔推荐提成（StaffReferralRecord），工资单按月汇总并入净额。</summary>
+    public long? ReferredByStaffId { get; set; }
+    public User? ReferredByStaff { get; set; }
+
     /// <summary>本会员作为引荐人累计获得的返佣金额（不含其它流水）。</summary>
     public decimal ReferralRewardEarned { get; set; }
 

@@ -91,14 +91,36 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>顶栏用户区：登录人显示名（真实姓名优先，回退账号）。</summary>
+    public string UserName => Session.User is { } u ? (u.RealName ?? u.Username) : string.Empty;
+
+    /// <summary>顶栏用户区：角色中文标签。</summary>
+    public string UserRoleLabel => Session.User is { } u ? RoleLabel(u.Role) : string.Empty;
+
+    /// <summary>个人设置改名后刷新顶栏展示。</summary>
+    public void RefreshUser()
+    {
+        OnPropertyChanged(nameof(UserName));
+        OnPropertyChanged(nameof(UserRoleLabel));
+        OnPropertyChanged(nameof(CurrentUserDisplay));
+    }
+
     public string? SubscriptionWarning
     {
         get
         {
-            if (Context.SubscriptionStatus == "Active" && Context.DaysToExpire is int d && d <= 30 && d > 0)
-                return $"订阅 {d} 天后到期";
-            if (Context.SubscriptionStatus is not null and not "Active")
+            // 与 BS 版（MainLayout.vue）保持一致：Trial / Active / Expired|Disabled 三态
+            var status = Context.SubscriptionStatus;
+            var days = Context.DaysToExpire;
+            // 只有 Expired / Disabled 才是真正"到期、仅只读"
+            if (status is "Expired" or "Disabled")
                 return "订阅已到期，仅支持只读";
+            // 试用中：走「试用中，剩 X 天」，不再重复弹"X 天后到期"
+            if (status == "Trial")
+                return days is int td ? $"试用中，剩 {td} 天" : "试用中";
+            // 正式订阅临近到期（30 天内）才提醒
+            if (status == "Active" && days is int d && d > 0 && d <= 30)
+                return $"订阅 {d} 天后到期";
             return null;
         }
     }
@@ -172,7 +194,17 @@ public partial class MainViewModel : ObservableObject
         object vm;
         if (item.Key == "pos")
         {
-            vm = _cachedPosVm ??= (PosViewModel)item.Factory();
+            if (_cachedPosVm is null)
+            {
+                // 首建：构造函数已 LoadAsync，无需重复加载
+                _cachedPosVm = (PosViewModel)item.Factory();
+            }
+            else
+            {
+                // 复用缓存实例：重新进入时刷新房间/服务/技师（房间管理改动后及时可见），购物车保留
+                _cachedPosVm.ReloadCommand.Execute(null);
+            }
+            vm = _cachedPosVm;
         }
         else
         {

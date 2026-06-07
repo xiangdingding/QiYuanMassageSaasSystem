@@ -12,8 +12,23 @@ public class Tenant : BaseEntity
     public long? CurrentPlanId { get; set; }
     public Plan? CurrentPlan { get; set; }
 
-    /// <summary>引荐返佣百分比（0-100）。0 = 关闭返佣。充值时按 Amount × Percent / 100 给引荐人加余额。</summary>
+    /// <summary>顾客推荐返佣模式：None=关闭 / PercentPerRecharge=充值返佣百分比 / FixedPerCard=固定推荐费每张。百分比与固定二选一，不可并行。</summary>
+    public CustomerReferralMode CustomerReferralMode { get; set; } = CustomerReferralMode.None;
+
+    /// <summary>顾客引荐返佣百分比（0-100）。仅当 CustomerReferralMode=PercentPerRecharge 时生效。被引荐人每次充值时按 Amount × Percent / 100 给引荐顾客加余额。</summary>
     public decimal ReferralRewardPercent { get; set; }
+
+    /// <summary>顾客引荐固定推荐费/张（≥0）。仅当 CustomerReferralMode=FixedPerCard 时生效。开卡时一次性给引荐顾客加余额。</summary>
+    public decimal CustomerReferralFixedReward { get; set; }
+
+    /// <summary>员工推荐提成模式：None=关闭 / FixedPerCard=固定金额每张 / PercentOfOpenCard=开卡实收百分比。固定与百分比二选一。</summary>
+    public StaffReferralMode StaffReferralMode { get; set; } = StaffReferralMode.None;
+
+    /// <summary>员工推荐提成·固定金额/张（≥0）。仅当 StaffReferralMode=FixedPerCard 时生效。开卡时一次性记入该员工工资。</summary>
+    public decimal StaffReferralFixedAmount { get; set; }
+
+    /// <summary>员工推荐提成·开卡实收百分比（0-100）。仅当 StaffReferralMode=PercentOfOpenCard 时生效。开卡时一次性记入该员工工资。</summary>
+    public decimal StaffReferralPercent { get; set; }
 
     public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
     public ICollection<Store> Stores { get; set; } = new List<Store>();

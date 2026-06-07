@@ -59,6 +59,11 @@ public partial class PosViewModel : ObservableObject
 
     public bool HasTimedRooms => TimedRoomCards.Count > 0;
 
+    /// <summary>购物车行「房间」下拉只列普通房间，排除计时房（与 BS availableRooms 一致；计时房走 roomCharge 另一条线）。</summary>
+    public IEnumerable<RoomDto> RoomOptions => Rooms.Where(r => !r.IsTimedRoom);
+
+    partial void OnRoomsChanged(ObservableCollection<RoomDto> value) => OnPropertyChanged(nameof(RoomOptions));
+
     [ObservableProperty]
     private ObservableCollection<CartItemViewModel> cart = new();
 
@@ -141,6 +146,17 @@ public partial class PosViewModel : ObservableObject
 
     public decimal Payable => Math.Max(0, Total - MemberDiscount - VoucherDiscount);
 
+    /// <summary>
+    /// 是否可结账（与 BS canCheckout 一致）：购物车非空、每个服务项已派技师、已选门店、
+    /// 会员模式必须已关联会员、且无计时房会员不一致。控制「下单并结账」按钮可用性。
+    /// </summary>
+    public bool CanCheckout =>
+        Cart.Count > 0
+        && Cart.All(c => !c.IsService || c.Technician is not null)
+        && _context.ActiveStoreId is not null
+        && !(IsMemberMode && !HasMember)
+        && !MismatchedRoomCharges.Any();
+
     public decimal Change => PayMethod == "Cash" && CashReceived > Payable ? CashReceived - Payable : 0m;
 
     partial void OnPayMethodChanged(string value)
@@ -201,7 +217,15 @@ public partial class PosViewModel : ObservableObject
         }
         // 没有会员时，会员卡支付不可用，回退现金
         if (!HasMember && PayMethod == "MemberCard") PayMethod = "Cash";
+        RefreshRoomChargeMismatch();
         Recompute();
+    }
+
+    /// <summary>刷新每个计时房费行的「会员不一致」标记，供购物车行内红标展示。</summary>
+    private void RefreshRoomChargeMismatch()
+    {
+        foreach (var c in Cart.Where(x => x.IsRoomCharge))
+            c.IsMemberMismatch = IsRoomChargeMismatch(c);
     }
 
     /// <summary>按购物车内容刷新各卡可选性：次卡仅当其绑定服务在购物车里才可选；
@@ -248,6 +272,13 @@ public partial class PosViewModel : ObservableObject
         MemberKeyword = string.Empty;
         RecomputeMemberState();
     }
+
+    /// <summary>
+    /// 重新进入收银台时刷新服务/技师/房间/计时房（房间管理改了房间信息后及时可见）。
+    /// 仅重载基础数据，<see cref="Cart"/> 保留——RebuildTimedRoomCards 会按购物车回标"已加入"。
+    /// </summary>
+    [RelayCommand]
+    private Task Reload() => LoadAsync();
 
     private async Task LoadAsync()
     {
@@ -337,9 +368,10 @@ public partial class PosViewModel : ObservableObject
         };
         Cart.Add(item);
         item.PropertyChanged += (_, __) => Recompute();
+        item.IsMemberMismatch = IsRoomChargeMismatch(item);
         Recompute();
         RebuildTimedRoomCards(); // 标记该房"已加入"
-        if (IsRoomChargeMismatch(item))
+        if (item.IsMemberMismatch)
             _speech.SayAsync($"{card.RoomNo} 开台会员与当前结算会员不一致，结算前请关联同一会员");
     }
 
@@ -392,9 +424,9 @@ public partial class PosViewModel : ObservableObject
             _speech.SayAsync("没有匹配的服务");
             return;
         }
-        AddService(first);
+        // 与 BS quickAddFirst 一致：同样走「指派技师」弹窗（AddService 内部已处理语音播报）
         ServiceFilter = string.Empty;
-        _speech.SayAsync($"已加入 {first.Name}");
+        AddService(first);
     }
 
     private void ApplyFilter()
@@ -473,21 +505,30 @@ public partial class PosViewModel : ObservableObject
     private void AddService(ServiceItemDto? svc)
     {
         if (svc is null) return;
+        // 指派技师弹窗（对齐 BS）：先选技师（必选）+ 上钟方式 + 数量，确认后再加入购物车
+        var dlg = new Views.PickTechnicianWindow(svc, Technicians.ToList(), HasMember)
+        {
+            Owner = Application.Current?.MainWindow
+        };
+        if (dlg.ShowDialog() != true || dlg.ResultTechnician is null) return;
+
         var unit = HasMember ? svc.MemberPrice : svc.Price;
-        var defaultTech = Technicians.FirstOrDefault();
-        Cart.Add(new CartItemViewModel
+        var item = new CartItemViewModel
         {
             ServiceId = svc.Id,
             ServiceName = svc.Name,
             DurationMinutes = svc.DurationMinutes,
             UnitPrice = unit,
-            Technician = defaultTech,
-            Quantity = 1
-        });
-        Cart.Last().PropertyChanged += (_, __) => Recompute();
+            Technician = dlg.ResultTechnician,
+            AssignmentSource = dlg.ResultSource,
+            Quantity = dlg.ResultQuantity
+        };
+        Cart.Add(item);
+        item.PropertyChanged += (_, __) => Recompute();
         Recompute();
         // 购物车项变化可能让某些次卡变为可选/不可选
         RefreshCardEligibility();
+        _speech.SayAsync($"已加入 {svc.Name}");
     }
 
     [RelayCommand]
@@ -535,6 +576,13 @@ public partial class PosViewModel : ObservableObject
             MessageBox.Show("未选择门店", "提示");
             return;
         }
+        // 会员收银模式必须先关联会员（勾选会员卡），否则无法结算
+        if (IsMemberMode && !HasMember)
+        {
+            MessageBox.Show("请选择会员卡", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+            _speech.SayAsync("请选择会员卡");
+            return;
+        }
         // 计时房费绑定会员必须与当前结算会员一致，否则不允许结算（避免归账到错的会员）
         var mismatched = MismatchedRoomCharges.ToList();
         if (mismatched.Count > 0)
@@ -543,17 +591,6 @@ public partial class PosViewModel : ObservableObject
             MessageBox.Show($"计时房费 {desc} 与当前结算会员不一致，请关联同一会员或将该房费从订单中移除。",
                 "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
             _speech.SayAsync("计时房费会员不一致，无法结算");
-            return;
-        }
-        // 会员卡支付：用所有勾选卡的合计余额判断是否够付（合并结算）
-        if (PayMethod == "MemberCard" && (!HasMember || SelectedBalance < Payable))
-        {
-            MessageBox.Show("会员卡余额不足或未关联会员", "提示");
-            return;
-        }
-        if (PayMethod == "Cash" && CashReceived < Payable)
-        {
-            MessageBox.Show("实收金额不足", "提示");
             return;
         }
         // 次卡只能在购物车含其绑定服务时才允许结算；否则等同后端 PunchCardMismatch 提示
@@ -570,6 +607,16 @@ public partial class PosViewModel : ObservableObject
             }
         }
 
+        // 结账弹窗（对齐 BS CheckoutDialog）：选支付方式、录实收金额与备注。
+        // 窗口内已按 BS 规则校验「会员卡余额≥应收」「现金实收≥应收」，不满足时禁用确认。
+        var dlg = new Views.CheckoutDialog(Total, Payable, HasMember, SelectedBalance,
+            AppliedVoucher?.Code, VoucherDiscount)
+        { Owner = Application.Current?.MainWindow };
+        if (dlg.ShowDialog() != true) return;
+        PayMethod = dlg.ResultPayMethod;
+        CashReceived = dlg.ResultPaidAmount ?? Payable;
+        Remark = dlg.ResultRemark;
+
         IsBusy = true;
         try
         {
@@ -579,15 +626,14 @@ public partial class PosViewModel : ObservableObject
             var created = await _api.CreateOrderAsync(new CreateOrderRequest(
                 StoreId: _context.ActiveStoreId.Value,
                 MemberId: PrimaryMember?.Id,
-                // TODO(轮钟/点钟): CS POS 尚未接入 queue/call-next 与 radio UI；
-                // 不传 AssignmentSource 时后端 ParseSource 兜底为 Designation，
-                // 提成自动按"仅点钟"或"通配"规则计算。BS POS 已支持完整切换，
-                // 待 CS 端补 radio + 叫下一钟按钮后再透传 AssignmentSource。
+                // 上钟方式由购物车行内「轮钟/点钟」下拉透传（默认轮钟），与 BS POS 一致，
+                // 后端据此按对应提成规则计算。
                 Items: serviceLines.Select(c => new OrderItemInputDto(
                     ServiceId: c.ServiceId,
                     TechnicianId: c.Technician!.Id,
                     Quantity: c.Quantity,
-                    RoomId: c.Room?.Id)).ToList(),
+                    RoomId: c.Room?.Id,
+                    AssignmentSource: c.AssignmentSource)).ToList(),
                 Remark: null,
                 RoomSessionIds: roomSessionIds.Count > 0 ? roomSessionIds : null));
 
@@ -616,14 +662,13 @@ public partial class PosViewModel : ObservableObject
                 Remark: Remark,
                 SecondaryMemberIds: secondary.Count > 0 ? secondary : null));
 
-            // 结算即评价：弹出快速评价窗（默认满意），收银员可逐项调整或跳过
-            if (checkedOut.Items.Count > 0)
-            {
-                var reviewDlg = new Views.CheckoutReviewWindow(_api, checkedOut);
-                reviewDlg.ShowDialog();
-            }
+            var paidPayMethod = PayMethod;
+            var paidCash = CashReceived;
 
-            ShowReceipt(checkedOut);
+            // 结账成功对话框（小票明细 + 独立服务评价，对齐 BS）：模态阻塞，点「完成」后才返回
+            ShowReceipt(checkedOut, paidPayMethod, paidCash);
+
+            // 只有点「完成」关闭结账成功窗后才清空当前订单（清台）
             Cart.Clear();
             ClearMemberInternal();
             Remark = null;
@@ -638,9 +683,9 @@ public partial class PosViewModel : ObservableObject
         finally { IsBusy = false; }
     }
 
-    private void ShowReceipt(OrderDto o)
+    private void ShowReceipt(OrderDto o, string payMethod, decimal cashReceived)
     {
-        var change = PayMethod == "Cash" && CashReceived > o.PaidAmount ? CashReceived - o.PaidAmount : 0m;
+        var change = payMethod == "Cash" && cashReceived > o.PaidAmount ? cashReceived - o.PaidAmount : 0m;
         // 合计金额优先用面值（含次卡），缺失时退回 Total（兼容旧订单）
         var headlineTotal = o.ListTotal > 0 ? o.ListTotal : o.Total;
         var punchCount = o.PunchCardUsedCount;
@@ -670,25 +715,15 @@ public partial class PosViewModel : ObservableObject
             Change: change,
             PayMethod: o.PayMethod,
             PunchCardUsedCount: punchCount));
-        if (PayMethod == "Cash") _printer.OpenCashDrawer();
+        if (payMethod == "Cash") _printer.OpenCashDrawer();
         _display.ShowAmount("实收", o.PaidAmount);
 
-        var lines = new List<string>
+        // 结账成功对话框（订单摘要 + 消费明细 + 逐项满意度评价，对齐 BS 端结账成功 el-dialog）
+        var dlg = new Views.CheckoutReceiptWindow(_api, o, payMethod, cashReceived)
         {
-            $"订单：{o.OrderNo}",
-            $"合计：¥{headlineTotal:F2}    实收：¥{o.PaidAmount:F2}（{o.PayMethod}）"
+            Owner = Application.Current?.MainWindow
         };
-        if (punchCount > 0) lines.Add($"消费次数：{punchCount} 次（次卡核销）");
-        if (change > 0) lines.Add($"找零：¥{change:F2}");
-        if (o.DiscountAmount > 0) lines.Add($"优惠：¥{o.DiscountAmount:F2}");
-        lines.Add(string.Empty);
-        foreach (var i in o.Items)
-        {
-            var tag = i.MemberPackageId.HasValue ? " [次卡]" : "";
-            lines.Add($"· {i.ServiceName} × {i.Quantity}次  技师 {i.TechnicianName} ¥{ItemListAmount(i):F2}{tag}");
-        }
-        MessageBox.Show(string.Join(Environment.NewLine, lines), "结账成功",
-            MessageBoxButton.OK, MessageBoxImage.Information);
+        dlg.ShowDialog();
     }
 
     /// <summary>取明细的面值小计：优先 ListAmount，否则按 ListUnitPrice 算，再不济退回 ItemTotal。</summary>
@@ -714,6 +749,7 @@ public partial class PosViewModel : ObservableObject
         OnPropertyChanged(nameof(VoucherDiscount));
         OnPropertyChanged(nameof(Payable));
         OnPropertyChanged(nameof(Change));
+        OnPropertyChanged(nameof(CanCheckout));
         if (PayMethod == "Cash" && CashReceived < Payable) CashReceived = Payable;
         _display.ShowAmount("应付", Payable);
     }

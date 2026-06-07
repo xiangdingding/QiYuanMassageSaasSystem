@@ -41,6 +41,8 @@ public class PayrollItem : BaseEntity, ITenantScoped
 
     public decimal BaseSalary { get; set; }
     public decimal CommissionTotal { get; set; }
+    /// <summary>本月员工推荐提成合计（开卡推荐，按 StaffReferralRecord 当月汇总；计入 NetTotal）。</summary>
+    public decimal ReferralCommissionTotal { get; set; }
     /// <summary>本月小费合计（不计入 NetTotal，由技师从客人手里直接拿；这里只汇总便于核对）。</summary>
     public decimal TipsTotal { get; set; }
     public decimal OvertimeHours { get; set; }

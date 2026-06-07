@@ -54,9 +54,9 @@
         <TextBlock Grid.Row="9" Text="阶梯档位（仅 Tiered 用）" Margin="0,0,0,4" />
         <Border Grid.Row="10" Background="#F8FAFC" Padding="8" CornerRadius="4" Margin="0,0,0,12">
             <StackPanel>
-                <DataGrid x:Name="TiersGrid" Height="140" AutoGenerateColumns="False"
+                <DataGrid x:Name="TiersGrid" Height="140" AutoGenerateColumns="False" RowHeight="34"
                           CanUserAddRows="False" CanUserDeleteRows="False"
-                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                          HeadersVisibility="Column" GridLinesVisibility="All"
                           AlternatingRowBackground="#FAFAFA">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="从第几单起" Binding="{Binding FromQty}" Width="140" />

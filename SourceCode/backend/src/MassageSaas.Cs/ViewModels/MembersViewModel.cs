@@ -33,7 +33,27 @@ public partial class MembersViewModel : ObservableObject
     [ObservableProperty]
     private bool isBusy;
 
-    partial void OnIncludeClosedChanged(bool value) => _ = ReloadAsync();
+    // ---- 分页（对齐 BS） ----
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageInfo))]
+    [NotifyPropertyChangedFor(nameof(CanPrev))]
+    [NotifyPropertyChangedFor(nameof(CanNext))]
+    private int page = 1;
+
+    [ObservableProperty]
+    private int pageSize = 20;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageInfo))]
+    [NotifyPropertyChangedFor(nameof(CanNext))]
+    private int total;
+
+    public int TotalPages => Total <= 0 ? 1 : (Total + PageSize - 1) / PageSize;
+    public string PageInfo => $"第 {Page} / {TotalPages} 页 · 共 {Total} 位会员";
+    public bool CanPrev => Page > 1;
+    public bool CanNext => Page < TotalPages;
+
+    partial void OnIncludeClosedChanged(bool value) { Page = 1; _ = ReloadAsync(); }
 
     [RelayCommand]
     public async Task ReloadAsync()
@@ -42,14 +62,39 @@ public partial class MembersViewModel : ObservableObject
         try
         {
             var data = await _api.GetMemberGroupedAsync(
-                page: 1, pageSize: 100,
+                page: Page, pageSize: PageSize,
                 keyword: string.IsNullOrWhiteSpace(Keyword) ? null : Keyword,
                 storeId: _context.ActiveStoreId,
                 includeClosed: IncludeClosed);
             Groups = new ObservableCollection<MemberGroupViewModel>(data.Items.Select(g => new MemberGroupViewModel(g)));
+            Total = data.Total;
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
         finally { IsBusy = false; }
+    }
+
+    /// <summary>查询：回到第 1 页再查（对齐 BS）。</summary>
+    [RelayCommand]
+    private async Task Search()
+    {
+        Page = 1;
+        await ReloadAsync();
+    }
+
+    [RelayCommand]
+    private async Task PrevPage()
+    {
+        if (!CanPrev) return;
+        Page--;
+        await ReloadAsync();
+    }
+
+    [RelayCommand]
+    private async Task NextPage()
+    {
+        if (!CanNext) return;
+        Page++;
+        await ReloadAsync();
     }
 
     [RelayCommand]
@@ -57,6 +102,7 @@ public partial class MembersViewModel : ObservableObject
     {
         Keyword = string.Empty;
         IncludeClosed = false;
+        Page = 1;
         _ = ReloadAsync();
     }
 
@@ -64,21 +110,9 @@ public partial class MembersViewModel : ObservableObject
     private async Task RechargeAsync(MemberDto? m)
     {
         if (m is null) return;
-        var dlg = new Views.RechargeWindow(m);
-        if (dlg.ShowDialog() != true) return;
-
-        try
-        {
-            await _api.RechargeAsync(new RechargeRequest(
-                MemberId: m.Id,
-                Amount: dlg.Amount,
-                BonusAmount: dlg.BonusAmount,
-                PayMethod: dlg.PayMethod,
-                Remark: dlg.Remark));
-            MessageBox.Show($"充值成功，到账 ¥{(dlg.Amount + dlg.BonusAmount):F2}", "提示");
-            await ReloadAsync();
-        }
-        catch (Exception ex) { ErrorReporter.Show(ex); }
+        // 窗口内部按卡的会员类型自行走 issueCard / recharge 并提示，成功后这里只负责刷新（对齐 BS doRecharge）
+        var dlg = new Views.RechargeWindow(_api, m) { Owner = Application.Current?.MainWindow };
+        if (dlg.ShowDialog() == true) await ReloadAsync();
     }
 
     [RelayCommand]
@@ -109,7 +143,7 @@ public partial class MembersViewModel : ObservableObject
     private async Task EditAsync(MemberDto? m)
     {
         if (m is null) return;
-        var dlg = new Views.MemberFormWindow(m, m.StoreId);
+        var dlg = new Views.MemberFormWindow(_api, m) { Owner = Application.Current?.MainWindow };
         if (dlg.ShowDialog() != true) return;
         try
         {

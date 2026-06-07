@@ -33,6 +33,7 @@ public record PayrollItemDto(
     int? EmployeeNo,
     decimal BaseSalary,
     decimal CommissionTotal,
+    decimal ReferralCommissionTotal,
     decimal TipsTotal,
     decimal OvertimeHours,
     decimal OvertimeAmount,

@@ -13,9 +13,13 @@
             <DockPanel Grid.Row="0" Margin="0,0,0,12">
                 <TextBlock DockPanel.Dock="Left" Text="日结 / 交接班" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <TextBlock Text="{Binding CutoffText}" VerticalAlignment="Center" Foreground="#909399" FontSize="12"
+                               Margin="0,0,12,0" Visibility="{Binding CutoffText, Converter={StaticResource NullToCollapsed}}" />
                     <TextBlock Text="营业日：" VerticalAlignment="Center" />
-                    <DatePicker Width="140" SelectedDate="{Binding BusinessDate}" />
-                    <Button Content="刷新" Padding="12,6" Margin="8,0,0,0" Command="{Binding LoadCommand}" />
+                    <DatePicker Width="140" SelectedDate="{Binding BusinessDate}"
+                                AutomationProperties.Name="营业日" />
+                    <Button Content="刷新" Padding="12,6" Margin="8,0,0,0" Command="{Binding LoadCommand}"
+                            AutomationProperties.Name="刷新" />
                 </StackPanel>
             </DockPanel>
 
@@ -51,14 +55,19 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="实际现金：" VerticalAlignment="Center" />
-                <TextBox Grid.Column="1" Padding="6" Text="{Binding ActualCash}" />
-                <TextBlock Grid.Column="2" Margin="12,0,0,0" VerticalAlignment="Center">
+                <TextBox Grid.Column="1" Padding="6" Text="{Binding ActualCash}"
+                         IsEnabled="{Binding CanEditCount}" AutomationProperties.Name="实际现金" />
+                <TextBlock Grid.Column="2" Margin="12,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold"
+                           Foreground="{Binding Variance, Converter={StaticResource VarianceToBrush}}">
                     <Run Text="差额 ¥" /><Run Text="{Binding Variance, StringFormat='F2', Mode=OneWay}" />
                 </TextBlock>
-                <TextBox Grid.Column="3" Margin="12,0,0,0" Padding="6" Text="{Binding Remark}" />
+                <TextBox Grid.Column="3" Margin="12,0,0,0" Padding="6" Text="{Binding Remark}"
+                         IsEnabled="{Binding CanEditCount}" AutomationProperties.Name="备注" />
                 <Button Grid.Column="4" Content="提交日结" Padding="16,6" Margin="12,0,0,0"
                         Background="#2D6A4F" Foreground="White" BorderThickness="0"
-                        Command="{Binding SubmitCommand}" />
+                        Command="{Binding SubmitCommand}"
+                        Visibility="{Binding CanEditCount, Converter={StaticResource BoolToVisible}}"
+                        AutomationProperties.Name="提交日结" />
             </Grid>
 
             <DataGrid Grid.Row="3" ItemsSource="{Binding History}" AutoGenerateColumns="False"
@@ -70,9 +79,16 @@
                     <DataGridTextColumn Header="营业额" Binding="{Binding RevenueTotal, StringFormat='¥{0:F2}'}" Width="120" />
                     <DataGridTextColumn Header="预期现金" Binding="{Binding ExpectedCash, StringFormat='¥{0:F2}'}" Width="120" />
                     <DataGridTextColumn Header="实收" Binding="{Binding ActualCash, StringFormat='¥{0:F2}'}" Width="120" />
-                    <DataGridTextColumn Header="差额" Binding="{Binding Variance, StringFormat='¥{0:F2}'}" Width="100" />
+                    <DataGridTextColumn Header="差额" Binding="{Binding Variance, StringFormat='¥{0:F2}'}" Width="100">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                                <Setter Property="Foreground" Value="{Binding Variance, Converter={StaticResource VarianceToBrush}}" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
                     <DataGridTextColumn Header="操作员" Binding="{Binding OperatorName}" Width="120" />
-                    <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="240" />
+                    <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*" MinWidth="200" />
                     <DataGridTemplateColumn Header="操作" Width="80"
                                             Visibility="{Binding DataContext.CanRevoke, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisible}}">
                         <DataGridTemplateColumn.CellTemplate>

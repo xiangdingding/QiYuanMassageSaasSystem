@@ -1,5 +1,7 @@
 <template>
   <div class="page">
+    <el-tabs v-model="activeTab" class="rule-tabs">
+      <el-tab-pane label="提成规则" name="commission">
     <el-card shadow="never">
       <div class="toolbar">
         <el-select v-model="filterServiceId" placeholder="按服务过滤" clearable filterable style="width: 300px">
@@ -48,6 +50,66 @@
       </el-table>
       </div>
     </el-card>
+      </el-tab-pane>
+
+      <el-tab-pane label="推荐规则" name="referral">
+        <el-card shadow="never" v-loading="referralLoading" class="referral-card">
+          <!-- 顾客推荐 -->
+          <div class="ref-title">顾客推荐</div>
+          <div class="muted ref-desc">顾客介绍新客开卡的奖励，发到推荐顾客的卡内余额。充值返佣与固定推荐费二选一，或全部关闭。</div>
+          <div class="ref-block">
+            <el-form :inline="true" class="ref-inline">
+              <el-form-item label="返佣方式">
+                <el-select v-model="referral.customerReferralMode" style="width: 200px">
+                  <el-option label="关闭" value="None" />
+                  <el-option label="充值返佣百分比" value="PercentPerRecharge" />
+                  <el-option label="固定推荐费 / 每张卡" value="FixedPerCard" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="充值返佣百分比">
+                <el-input-number v-model="referral.customerRewardPercent" :min="0" :max="100" :precision="2" :step="1"
+                                 :disabled="referral.customerReferralMode !== 'PercentPerRecharge'" style="width: 160px" />
+                <span class="muted ref-unit">%</span>
+              </el-form-item>
+              <el-form-item label="固定推荐费/张">
+                <el-input-number v-model="referral.customerFixedReward" :min="0" :precision="2" :step="10"
+                                 :disabled="referral.customerReferralMode !== 'FixedPerCard'" style="width: 160px" />
+                <span class="muted ref-unit">元</span>
+              </el-form-item>
+            </el-form>
+            <div class="muted ref-note">充值返佣：被推荐人每次充值按比例返到推荐顾客余额；固定推荐费：每推荐开一张卡一次性返到推荐顾客余额。</div>
+          </div>
+
+          <!-- 员工推荐 -->
+          <div class="ref-title">员工推荐</div>
+          <div class="muted ref-desc">店内员工介绍客户开卡的提成，开卡时记一笔，按月并入该员工工资净额。</div>
+          <div class="ref-block">
+            <el-form :inline="true" class="ref-inline">
+              <el-form-item label="提成模式">
+                <el-select v-model="referral.staffReferralMode" style="width: 200px">
+                  <el-option label="关闭" value="None" />
+                  <el-option label="固定金额 / 每张卡" value="FixedPerCard" />
+                  <el-option label="开卡实收 × 百分比" value="PercentOfOpenCard" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="固定提成金额/张">
+                <el-input-number v-model="referral.staffReferralFixedAmount" :min="0" :precision="2" :step="10"
+                                 :disabled="referral.staffReferralMode !== 'FixedPerCard'" style="width: 160px" />
+                <span class="muted ref-unit">元</span>
+              </el-form-item>
+              <el-form-item label="开卡实收百分比">
+                <el-input-number v-model="referral.staffReferralPercent" :min="0" :max="100" :precision="2" :step="1"
+                                 :disabled="referral.staffReferralMode !== 'PercentOfOpenCard'" style="width: 160px" />
+                <span class="muted ref-unit">%</span>
+              </el-form-item>
+            </el-form>
+            <div class="muted ref-note">固定金额：每推荐开一张卡固定记一笔；开卡实收百分比：按开卡实收金额的比例记一笔，均并入该员工当月工资。</div>
+          </div>
+
+          <el-button type="primary" :loading="referralSaving" @click="saveReferral">保存推荐规则</el-button>
+        </el-card>
+      </el-tab-pane>
+    </el-tabs>
 
     <el-dialog v-model="formOpen" :title="formMode === 'create' ? '新建提成规则' : '编辑提成规则'" width="720px">
       <el-form :model="form" label-width="120px">
@@ -251,8 +313,11 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { commissionsApi, servicesApi, staffApi } from '@/api/modules';
+import { commissionsApi, referralSettingsApi, servicesApi, staffApi } from '@/api/modules';
+import type { ReferralSetting } from '@/api/modules';
 import type { CommissionRule, ServiceItem, Staff } from '@/api/types';
+
+const activeTab = ref<'commission' | 'referral'>('commission');
 
 const rows = ref<CommissionRule[]>([]);
 const services = ref<ServiceItem[]>([]);
@@ -543,9 +608,41 @@ async function onDelete(row: CommissionRule) {
   reload();
 }
 
+// ============ 推荐规则（全店统一，与 CS 端「推荐规则」Tab 一致）============
+const referralLoading = ref(false);
+const referralSaving = ref(false);
+const referral = reactive<ReferralSetting>({
+  customerReferralMode: 'None',
+  customerRewardPercent: 0,
+  customerFixedReward: 0,
+  staffReferralMode: 'None',
+  staffReferralFixedAmount: 0,
+  staffReferralPercent: 0
+});
+
+async function loadReferral() {
+  referralLoading.value = true;
+  try {
+    Object.assign(referral, await referralSettingsApi.get());
+  } finally {
+    referralLoading.value = false;
+  }
+}
+
+async function saveReferral() {
+  referralSaving.value = true;
+  try {
+    Object.assign(referral, await referralSettingsApi.update({ ...referral }));
+    ElMessage.success('推荐规则已保存');
+  } finally {
+    referralSaving.value = false;
+  }
+}
+
 onMounted(async () => {
   await loadOptions();
   reload();
+  loadReferral();
 });
 </script>
 
@@ -562,4 +659,23 @@ onMounted(async () => {
 .tier-table th { font-weight: 500; color: var(--el-text-color-regular); font-size: 13px; padding: 4px 8px; text-align: left; }
 .tier-table td { padding: 4px 8px; }
 .bulk-multi-row { display: flex; gap: 8px; align-items: center; }
+/* 让标签页参与「全高链」，使「提成规则」表格仍能撑满内滚（原全局规则按 .page>.el-card 直接子选择，被 tabs 隔断后在此补回） */
+.rule-tabs { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.rule-tabs :deep(.el-tabs__content) { flex: 1 1 auto; min-height: 0; }
+.rule-tabs :deep(.el-tab-pane) { height: 100%; display: flex; flex-direction: column; }
+.rule-tabs :deep(.el-tab-pane) > .el-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.rule-tabs :deep(.el-card__body) { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: auto; }
+.ref-title { font-size: 15px; font-weight: 600; color: var(--el-text-color-primary); margin-bottom: 4px; }
+.ref-desc { margin-bottom: 12px; line-height: 1.5; }
+/* 区块：浅灰底 + 描边，宽度撑满整个区域 */
+.ref-block {
+  background: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  padding: 18px 18px 4px;
+  margin-bottom: 22px;
+}
+.ref-inline :deep(.el-form-item) { margin-right: 36px; margin-bottom: 14px; }
+.ref-unit { margin-left: 6px; }
+.ref-note { line-height: 1.5; margin-top: 2px; }
 </style>

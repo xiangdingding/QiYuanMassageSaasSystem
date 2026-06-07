@@ -102,11 +102,43 @@ public partial class RoomsViewModel : ObservableObject
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
+        if (r.IsActive)
+        {
+            MessageBox.Show($"请先停用房间 {r.RoomNo}，停用后才能删除。", "提示",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
         if (MessageBox.Show($"删除房间 {r.RoomNo}？", "提示",
                 MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
         try
         {
             await _api.DeleteRoomAsync(r.Id);
+            await ReloadAsync();
+        }
+        catch (Exception ex) { ErrorReporter.Show(ex); }
+    }
+
+    /// <summary>停用/启用房间：弹确认框，确定后才改 IsActive（停用 = IsActive:false）。计时中禁止停用。</summary>
+    [RelayCommand]
+    private async Task ToggleActiveAsync(RoomRowViewModel? r)
+    {
+        if (!CanManage || r is null) return;
+        var deactivating = r.IsActive;
+        if (deactivating && r.HasOpenSession)
+        {
+            MessageBox.Show($"{r.RoomNo} 号房正在计时，请先结束或取消计时再停用。", "提示",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        var verb = deactivating ? "停用" : "启用";
+        if (MessageBox.Show($"确认{verb}房间 {r.RoomNo}？", "提示",
+                MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
+        try
+        {
+            var d = r.Dto;
+            await _api.UpdateRoomAsync(r.Id, new UpdateRoomRequest(
+                RoomNo: d.RoomNo, Capacity: d.Capacity, RoomType: d.RoomType, Remark: d.Remark,
+                IsActive: !d.IsActive, IsTimedRoom: d.IsTimedRoom, HourlyRate: d.HourlyRate));
             await ReloadAsync();
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }

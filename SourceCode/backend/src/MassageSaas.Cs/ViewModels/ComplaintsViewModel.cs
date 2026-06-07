@@ -32,7 +32,32 @@ public partial class ComplaintsViewModel : ObservableObject
     [ObservableProperty]
     private bool isBusy;
 
-    partial void OnStatusFilterChanged(int value) => _ = ReloadAsync();
+    // ---- 分页（对齐 BS / 订单页） ----
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageInfo))]
+    [NotifyPropertyChangedFor(nameof(CanPrev))]
+    [NotifyPropertyChangedFor(nameof(CanNext))]
+    private int page = 1;
+
+    [ObservableProperty]
+    private int pageSize = 20;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageInfo))]
+    [NotifyPropertyChangedFor(nameof(CanNext))]
+    private int total;
+
+    public int TotalPages => Total <= 0 ? 1 : (Total + PageSize - 1) / PageSize;
+    public string PageInfo => $"第 {Page} / {TotalPages} 页 · 共 {Total} 条";
+    public bool CanPrev => Page > 1;
+    public bool CanNext => Page < TotalPages;
+
+    /// <summary>状态下拉选值即查，回到第 1 页。</summary>
+    partial void OnStatusFilterChanged(int value)
+    {
+        Page = 1;
+        _ = ReloadAsync();
+    }
 
     [RelayCommand]
     public async Task ReloadAsync()
@@ -48,14 +73,31 @@ public partial class ComplaintsViewModel : ObservableObject
                 3 => "Cancelled",
                 _ => null
             };
-            var paged = await _api.GetComplaintsAsync(storeId: sid, status: status, pageSize: 100);
+            var paged = await _api.GetComplaintsAsync(storeId: sid, status: status, page: Page, pageSize: PageSize);
             Rows = new ObservableCollection<ComplaintDto>(paged.Items);
+            Total = paged.Total;
 
             var staff = await _api.GetStaffAsync(pageSize: 100, role: "Technician", storeId: sid);
             _technicians = staff.Items.Where(s => s.IsActive).ToList();
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
         finally { IsBusy = false; }
+    }
+
+    [RelayCommand]
+    private async Task PrevPage()
+    {
+        if (!CanPrev) return;
+        Page--;
+        await ReloadAsync();
+    }
+
+    [RelayCommand]
+    private async Task NextPage()
+    {
+        if (!CanNext) return;
+        Page++;
+        await ReloadAsync();
     }
 
     /// <summary>登记投诉：查询订单(按技师+日期)选服务项登记，或不指定项目做匿名投诉。</summary>

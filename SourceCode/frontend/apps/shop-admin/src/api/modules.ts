@@ -243,6 +243,27 @@ export const commissionsApi = {
     http().post<{ created: number; updated: number; skipped: number }>('/commission-rules/bulk', body).then((r) => r.data)
 };
 
+/** 推荐规则（全店统一，存于 Tenant）。与 CS 端「推荐规则」Tab 一致。 */
+export interface ReferralSetting {
+  /** 顾客返佣方式：None / PercentPerRecharge / FixedPerCard（百分比与固定二选一）。 */
+  customerReferralMode: string;
+  /** 顾客充值返佣百分比（0-100）。 */
+  customerRewardPercent: number;
+  /** 顾客固定推荐费/张。 */
+  customerFixedReward: number;
+  /** 员工推荐提成模式：None / FixedPerCard / PercentOfOpenCard。 */
+  staffReferralMode: string;
+  /** 员工推荐提成·固定金额/张。 */
+  staffReferralFixedAmount: number;
+  /** 员工推荐提成·开卡实收百分比（0-100）。 */
+  staffReferralPercent: number;
+}
+
+export const referralSettingsApi = {
+  get: () => http().get<ReferralSetting>('/referral-settings').then((r) => r.data),
+  update: (body: ReferralSetting) => http().put<ReferralSetting>('/referral-settings', body).then((r) => r.data)
+};
+
 export interface MonthlyReportPoint { day: string; orderCount: number; revenue: number; rounds: number; }
 export interface MonthlyReport {
   year: number; month: number; storeId: number;

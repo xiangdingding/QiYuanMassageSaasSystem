@@ -1,0 +1,212 @@
+<Window x:Class="MassageSaas.Cs.Views.CheckoutDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="结账"
+        Width="540" SizeToContent="Height" MaxHeight="720"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Window.Resources>
+        <!-- 分段式支付方式开关：选中绿底白字 -->
+        <Style x:Key="SegToggle" TargetType="RadioButton">
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Foreground" Value="#555" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bd" Background="White" BorderBrush="#CBD5E0"
+                                BorderThickness="1" CornerRadius="6" SnapsToDevicePixels="True">
+                            <TextBlock Text="{TemplateBinding Content}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       FontWeight="{TemplateBinding FontWeight}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#2D6A4F" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#2D6A4F" />
+                                <Setter Property="Foreground" Value="White" />
+                                <Setter Property="FontWeight" Value="Bold" />
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsChecked" Value="False" />
+                                    <Condition Property="IsMouseOver" Value="True" />
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#2D6A4F" />
+                                <Setter Property="Foreground" Value="#2D6A4F" />
+                            </MultiTrigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Background" Value="#F0F0F0" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#E0E0E0" />
+                                <Setter Property="Foreground" Value="#BBB" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#2D6A4F" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#245A41" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Background" Value="#9CC3B0" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="GhostButton" TargetType="Button">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="#374151" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                BorderBrush="#D1D5DB" BorderThickness="1"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#F3F4F6" />
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#2D6A4F" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- 应收 -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,14">
+            <TextBlock DockPanel.Dock="Left" Text="应收" Width="84" FontSize="14" Foreground="#666"
+                       VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock x:Name="PayableText" FontSize="26" FontWeight="Bold" Foreground="#D9534F"
+                           AutomationProperties.Name="应收金额" />
+                <TextBlock x:Name="TotalHintText" FontSize="13" Foreground="#999" Margin="10,0,0,0"
+                           VerticalAlignment="Center" Visibility="Collapsed" />
+            </StackPanel>
+        </DockPanel>
+
+        <!-- 优惠券抵扣 -->
+        <DockPanel x:Name="VoucherRow" Grid.Row="1" Margin="0,0,0,12" Visibility="Collapsed">
+            <TextBlock DockPanel.Dock="Left" Text="优惠券" Width="84" FontSize="14" Foreground="#666"
+                       VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Border x:Name="VoucherCodeChip" Background="#E6F4EA" CornerRadius="3" Padding="6,2" Margin="0,0,8,0">
+                    <TextBlock x:Name="VoucherCodeText" Foreground="#2D6A4F" FontSize="12" />
+                </Border>
+                <TextBlock x:Name="VoucherCutText" Foreground="#2D6A4F" FontSize="14" FontWeight="SemiBold" />
+            </StackPanel>
+        </DockPanel>
+
+        <!-- 支付方式 -->
+        <DockPanel Grid.Row="2" Margin="0,0,0,12">
+            <TextBlock DockPanel.Dock="Left" Text="支付方式" Width="84" FontSize="14" Foreground="#666"
+                       VerticalAlignment="Center" />
+            <UniformGrid Columns="5" Rows="1">
+                <RadioButton x:Name="RbCash" Content="现金" GroupName="Pay" Margin="0,0,6,0"
+                             Style="{StaticResource SegToggle}" Checked="PayMethod_Checked"
+                             AutomationProperties.Name="现金" />
+                <RadioButton x:Name="RbMember" Content="会员卡" GroupName="Pay" Margin="0,0,6,0"
+                             Style="{StaticResource SegToggle}" Checked="PayMethod_Checked"
+                             AutomationProperties.Name="会员卡" />
+                <RadioButton x:Name="RbWechat" Content="微信" GroupName="Pay" Margin="0,0,6,0"
+                             Style="{StaticResource SegToggle}" Checked="PayMethod_Checked"
+                             AutomationProperties.Name="微信" />
+                <RadioButton x:Name="RbAlipay" Content="支付宝" GroupName="Pay" Margin="0,0,6,0"
+                             Style="{StaticResource SegToggle}" Checked="PayMethod_Checked"
+                             AutomationProperties.Name="支付宝" />
+                <RadioButton x:Name="RbBank" Content="银行卡" GroupName="Pay"
+                             Style="{StaticResource SegToggle}" Checked="PayMethod_Checked"
+                             AutomationProperties.Name="银行卡" />
+            </UniformGrid>
+        </DockPanel>
+
+        <!-- 会员余额（会员卡支付时显示） -->
+        <DockPanel x:Name="MemberBalanceRow" Grid.Row="3" Margin="0,0,0,12" Visibility="Collapsed">
+            <TextBlock DockPanel.Dock="Left" Text="会员余额" Width="84" FontSize="14" Foreground="#666"
+                       VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock x:Name="MemberBalanceText" FontSize="16" VerticalAlignment="Center"
+                           AutomationProperties.Name="会员余额" />
+                <Border x:Name="InsufficientTag" Background="#FDE2E1" CornerRadius="3" Padding="6,2" Margin="8,0,0,0"
+                        VerticalAlignment="Center" Visibility="Collapsed">
+                    <TextBlock Text="余额不足" Foreground="#D9534F" FontSize="12" />
+                </Border>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- 实收金额（现金支付时显示） -->
+        <DockPanel x:Name="CashRow" Grid.Row="4" Margin="0,0,0,12">
+            <TextBlock DockPanel.Dock="Left" Text="实收金额" Width="84" FontSize="14" Foreground="#666"
+                       VerticalAlignment="Center" />
+            <StackPanel>
+                <TextBox x:Name="CashBox" Height="40" Width="220" HorizontalAlignment="Left" FontSize="18"
+                         FontWeight="SemiBold" Padding="10,0" VerticalContentAlignment="Center"
+                         TextChanged="CashBox_TextChanged"
+                         AutomationProperties.Name="实收金额"
+                         AutomationProperties.HelpText="输入实收现金金额，不少于应收" />
+                <TextBlock x:Name="ChangeText" FontSize="13" Foreground="#888" Margin="0,6,0,0"
+                           Visibility="Collapsed" AutomationProperties.Name="找零" />
+            </StackPanel>
+        </DockPanel>
+
+        <!-- 备注 -->
+        <DockPanel Grid.Row="5" Margin="0,0,0,16">
+            <TextBlock DockPanel.Dock="Left" Text="备注" Width="84" FontSize="14" Foreground="#666"
+                       VerticalAlignment="Top" Margin="0,8,0,0" />
+            <TextBox x:Name="RemarkBox" Height="56" Padding="10" FontSize="14"
+                     AcceptsReturn="True" TextWrapping="Wrap" MaxLength="200"
+                     VerticalContentAlignment="Top"
+                     AutomationProperties.Name="结账备注"
+                     AutomationProperties.HelpText="可选，留言会写到订单备注" />
+        </DockPanel>
+
+        <!-- 底栏：取消 / 确认结账 -->
+        <Border Grid.Row="6" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="取消" Padding="22,8" Margin="0,0,10,0"
+                        Style="{StaticResource GhostButton}" Click="Cancel_Click"
+                        AutomationProperties.Name="取消，放弃结账" />
+                <Button x:Name="ConfirmButton" Content="确认结账" Padding="28,8"
+                        Style="{StaticResource PrimaryButton}" FontWeight="Bold" Click="Confirm_Click"
+                        AutomationProperties.Name="确认结账" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -229,8 +229,10 @@ public class OrderCheckoutTests
     }
 
     [Fact]
-    public async Task Checkout_AppliesMemberDiscountAutomatically()
+    public async Task Checkout_DoesNotReapplyMemberDiscount()
     {
+        // 设计：会员优惠通过服务会员价(MemberPrice)体现，Member.Discount 不参与定价、结账也不二次打折。
+        // Seed：原价200 / 会员价200(无服务级优惠) / 卡折0.9 —— 卡折被忽略，应付仍为 200。
         var (db, ctx, member, svc, tech, _) = Seed(balance: 500m, discount: 0.9m, price: 200m, memberPrice: 200m);
         var ctl = NewController(db, ctx);
 
@@ -239,14 +241,14 @@ public class OrderCheckoutTests
             Items: new[] { new OrderItemInputDto(svc.Id, tech.Id) }, Remark: null), default))
             .Result as ObjectResult;
         var orderDto = created!.Value as OrderDto;
-        orderDto!.Total.Should().Be(200m);
+        orderDto!.Total.Should().Be(200m, "会员价=原价，无服务级优惠；卡折不参与定价");
 
         var result = (await ctl.Checkout(orderDto.Id, new CheckoutRequest(
-            PayMethod: "Cash", PaidAmount: 180m, DiscountAmount: 0m), default))
+            PayMethod: "Cash", PaidAmount: 200m, DiscountAmount: 0m), default))
             .Result as OkObjectResult;
         var dto = result!.Value as OrderDto;
 
-        dto!.DiscountAmount.Should().Be(20m, "10% off via member.Discount=0.9");
-        dto.PaidAmount.Should().Be(180m);
+        dto!.DiscountAmount.Should().Be(0m, "Member.Discount 不在结账二次打折");
+        dto.PaidAmount.Should().Be(200m);
     }
 }

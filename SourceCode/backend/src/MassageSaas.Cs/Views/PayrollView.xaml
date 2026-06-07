@@ -29,11 +29,11 @@
                         </DockPanel>
                         <DataGrid Grid.Row="1" ItemsSource="{Binding Periods}" AutoGenerateColumns="False"
                                   CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                                  GridLinesVisibility="Horizontal" AlternatingRowBackground="#FAFAFA">
+                                  GridLinesVisibility="All" AlternatingRowBackground="#FAFAFA">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="年" Binding="{Binding Year}" Width="70" />
                                 <DataGridTextColumn Header="月" Binding="{Binding Month}" Width="50" />
-                                <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="80" />
+                                <DataGridTextColumn Header="状态" Binding="{Binding Status, Converter={StaticResource EnumLabel}}" Width="80" />
                                 <DataGridTextColumn Header="人数" Binding="{Binding ItemCount}" Width="70" />
                                 <DataGridTextColumn Header="工资总额" Binding="{Binding TotalAmount, StringFormat='¥{0:F2}'}" Width="120" />
                                 <DataGridTextColumn Header="生成时间" Binding="{Binding GeneratedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="150" />
@@ -46,12 +46,15 @@
                                                         Command="{Binding DataContext.ViewDetailCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                         CommandParameter="{Binding}" />
                                                 <Button Margin="2" Padding="6,2" Content="封盘"
+                                                        IsEnabled="{Binding Status, Converter={StaticResource StringEquals}, ConverterParameter=Draft}"
                                                         Command="{Binding DataContext.LockCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                         CommandParameter="{Binding}" />
                                                 <Button Margin="2" Padding="6,2" Content="已发放" Background="#2D6A4F" Foreground="White" BorderThickness="0"
+                                                        IsEnabled="{Binding Status, Converter={StaticResource StringEquals}, ConverterParameter=Locked}"
                                                         Command="{Binding DataContext.MarkPaidCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                         CommandParameter="{Binding}" />
                                                 <Button Margin="2" Padding="6,2" Content="删除" Background="#D9534F" Foreground="White" BorderThickness="0"
+                                                        IsEnabled="{Binding Status, Converter={StaticResource StringEquals}, ConverterParameter=Draft}"
                                                         Command="{Binding DataContext.DeleteDraftCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                         CommandParameter="{Binding}" />
                                             </StackPanel>
@@ -78,12 +81,13 @@
 
                         <DataGrid Grid.Row="1" ItemsSource="{Binding DetailItems}" SelectedItem="{Binding SelectedItem}"
                                   AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
-                                  HeadersVisibility="Column" GridLinesVisibility="Horizontal" AlternatingRowBackground="#FAFAFA">
+                                  HeadersVisibility="Column" GridLinesVisibility="All" AlternatingRowBackground="#FAFAFA">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="工号" Binding="{Binding EmployeeNo}" Width="60" />
                                 <DataGridTextColumn Header="员工" Binding="{Binding UserName}" Width="100" />
                                 <DataGridTextColumn Header="底薪" Binding="{Binding BaseSalary, StringFormat='¥{0:F0}'}" Width="80" />
                                 <DataGridTextColumn Header="提成" Binding="{Binding CommissionTotal, StringFormat='¥{0:F0}'}" Width="80" />
+                                <DataGridTextColumn Header="推荐提成" Binding="{Binding ReferralCommissionTotal, StringFormat='¥{0:F0}'}" Width="90" />
                                 <DataGridTextColumn Header="加班" Binding="{Binding OvertimeAmount, StringFormat='¥{0:F0}'}" Width="80" />
                                 <DataGridTextColumn Header="满勤" Binding="{Binding AttendanceBonus, StringFormat='¥{0:F0}'}" Width="70" />
                                 <DataGridTextColumn Header="奖扣" Binding="{Binding AdjustmentTotal, StringFormat='¥{0:F0}'}" Width="70" />
@@ -95,9 +99,11 @@
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal">
                                                 <Button Margin="2" Padding="6,2" Content="改加班/满勤"
+                                                        IsEnabled="{Binding DataContext.CurrentPeriod.Status, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource StringEquals}, ConverterParameter=Draft}"
                                                         Command="{Binding DataContext.EditItemCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                         CommandParameter="{Binding}" />
                                                 <Button Margin="2" Padding="6,2" Content="奖/扣"
+                                                        IsEnabled="{Binding DataContext.CurrentPeriod.Status, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource StringEquals}, ConverterParameter=Draft}"
                                                         Command="{Binding DataContext.AddAdjustmentCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                         CommandParameter="{Binding}" />
                                             </StackPanel>
@@ -112,9 +118,9 @@
 
                         <DataGrid Grid.Row="3" ItemsSource="{Binding SelectedItem.Adjustments}" AutoGenerateColumns="False"
                                   CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                                  GridLinesVisibility="Horizontal" Background="#F7F9FB">
+                                  GridLinesVisibility="All" Background="#F7F9FB">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="类型" Binding="{Binding Kind}" Width="80" />
+                                <DataGridTextColumn Header="类型" Binding="{Binding Kind, Converter={StaticResource EnumLabel}}" Width="80" />
                                 <DataGridTextColumn Header="金额" Binding="{Binding Amount, StringFormat='¥{0:F2}'}" Width="100" />
                                 <DataGridTextColumn Header="原因" Binding="{Binding Reason}" Width="240" />
                                 <DataGridTextColumn Header="操作人" Binding="{Binding OperatorName}" Width="100" />
@@ -146,7 +152,7 @@
                     <TextBlock Grid.Row="0" Text="员工薪资档案（底薪 / 加班时薪 / 满勤奖）" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12" />
                     <DataGrid Grid.Row="1" ItemsSource="{Binding Profiles}" AutoGenerateColumns="False"
                               CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                              GridLinesVisibility="Horizontal" AlternatingRowBackground="#FAFAFA">
+                              GridLinesVisibility="All" AlternatingRowBackground="#FAFAFA">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="员工" Binding="{Binding UserName}" Width="160" />
                             <DataGridTextColumn Header="月底薪" Binding="{Binding BaseMonthly, StringFormat='¥{0:F2}'}" Width="120" />

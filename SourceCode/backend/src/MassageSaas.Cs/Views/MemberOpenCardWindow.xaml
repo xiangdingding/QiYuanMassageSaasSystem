@@ -1,0 +1,321 @@
+<Window x:Class="MassageSaas.Cs.Views.MemberOpenCardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctrl="clr-namespace:MassageSaas.Cs.Controls"
+        Title="开卡"
+        Width="720"
+        Height="890"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <Style x:Key="Cap" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="Foreground" Value="#666" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+    </Window.Resources>
+    <DockPanel Margin="20">
+        <Border Margin="0,12,0,0"
+                Padding="0,12,0,0"
+                BorderBrush="#E5E7EB"
+                BorderThickness="0,1,0,0"
+                DockPanel.Dock="Bottom">
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button Margin="0,0,8,0"
+                        Padding="20,0"
+                        AutomationProperties.Name="取消"
+                        Click="Cancel_Click"
+                        Content="取消"
+                        Style="{StaticResource GhostBtn}" />
+                <Button Padding="20,0"
+                        AutomationProperties.Name="保存"
+                        Click="Save_Click"
+                        Content="保存"
+                        Style="{StaticResource PrimaryBtn}" />
+            </StackPanel>
+        </Border>
+
+        <StackPanel>
+            <!--  手机号 | 卡号  -->
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Style="{StaticResource Cap}"><Run Foreground="#D9534F" Text="* " /><Run Text="手机号" /></TextBlock>
+                    <TextBox x:Name="PhoneBox"
+                             AutomationProperties.Name="手机号"
+                             MaxLength="20"
+                             Style="{StaticResource FieldText}"
+                             Tag="手机号" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Style="{StaticResource Cap}"><Run Foreground="#D9534F" Text="* " /><Run Text="卡号" /></TextBlock>
+                    <TextBox x:Name="CardNoBox"
+                             AutomationProperties.Name="卡号"
+                             MaxLength="32"
+                             Style="{StaticResource FieldText}"
+                             Tag="卡号" />
+                </StackPanel>
+            </Grid>
+            <TextBlock x:Name="LockTip"
+                       Margin="0,-6,0,10"
+                       FontSize="12"
+                       Foreground="#999"
+                       Text="为该客户加办新卡，手机号已锁定"
+                       Visibility="Collapsed" />
+
+            <!--  姓名 | 性别  -->
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Style="{StaticResource Cap}" Text="姓名" />
+                    <TextBox x:Name="NameBox"
+                             AutomationProperties.Name="姓名"
+                             MaxLength="32"
+                             Style="{StaticResource FieldText}" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Style="{StaticResource Cap}" Text="性别" />
+                    <WrapPanel x:Name="GenderPanel"
+                               Height="34"
+                               Margin="0,10,0,0"
+                               VerticalAlignment="Center">
+                        <RadioButton Margin="0,0,18,0"
+                                     VerticalAlignment="Center"
+                                     AutomationProperties.Name="性别男"
+                                     Content="男"
+                                     FontSize="16"
+                                     GroupName="Gender"
+                                     Tag="男" />
+                        <RadioButton VerticalAlignment="Center"
+                                     AutomationProperties.Name="性别女"
+                                     Content="女"
+                                     FontSize="16"
+                                     GroupName="Gender"
+                                     Tag="女" />
+                    </WrapPanel>
+                </StackPanel>
+            </Grid>
+
+            <!--  生日 | 会员类型  -->
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Style="{StaticResource Cap}" Text="生日" />
+                    <DatePicker x:Name="BirthdayBox"
+                                HorizontalAlignment="Stretch"
+                                AutomationProperties.Name="生日" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Style="{StaticResource Cap}"><Run Foreground="#D9534F" Text="* " /><Run Text="会员类型（开卡必选）" /></TextBlock>
+                    <ComboBox x:Name="TypeBox"
+                              AutomationProperties.Name="会员类型"
+                              SelectionChanged="Type_Changed">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid MinWidth="320">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               VerticalAlignment="Center"
+                                               Foreground="#1F2937"
+                                               Text="{Binding Name}" />
+                                    <!--  副标题仅在下拉项里显示；收起后的选择框只显示类型名（对齐 BS）  -->
+                                    <TextBlock Grid.Column="1"
+                                               Margin="16,0,0,0"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               FontSize="14"
+                                               Foreground="#9CA3AF"
+                                               Text="{Binding Converter={StaticResource MemberTypeMeta}}"
+                                               TextAlignment="Right"
+                                               Visibility="{Binding RelativeSource={RelativeSource AncestorType=ComboBoxItem}, Converter={StaticResource NullToCollapsed}}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+
+            <!--  类型规则摘要  -->
+            <Border x:Name="RulesBox"
+                    Margin="0,0,0,10"
+                    Padding="10,8"
+                    Background="#F5F7FA"
+                    CornerRadius="4"
+                    Visibility="Collapsed">
+                <TextBlock x:Name="RulesText"
+                           FontSize="14"
+                           FontWeight="Bold"
+                           Foreground="#2D6A4F"
+                           TextWrapping="Wrap" />
+            </Border>
+
+            <!--  充值卡：充值金额 + 实收/实充  -->
+            <StackPanel x:Name="StoredPanel"
+                        Margin="0,0,0,10"
+                        Visibility="Collapsed">
+                <TextBlock Style="{StaticResource Cap}"><Run Foreground="#D9534F" Text="* " /><Run Text="充值金额（面值）" /></TextBlock>
+                <ctrl:NumericUpDown x:Name="AmountBox"
+                                    Width="220"
+                                    HorizontalAlignment="Left"
+                                    AutomationProperties.Name="充值金额"
+                                    Decimals="2"
+                                    Maximum="1000000"
+                                    Minimum="0"
+                                    Step="100" />
+                <TextBlock x:Name="StoredCalcText"
+                           Margin="0,6,0,0"
+                           FontSize="12"
+                           Foreground="#888"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!--  计次卡：购买次数 + 实充/实收  -->
+            <StackPanel x:Name="CountPanel"
+                        Margin="0,0,0,10"
+                        Visibility="Collapsed">
+                <TextBlock Style="{StaticResource Cap}"><Run Foreground="#D9534F" Text="* " /><Run Text="购买次数" /></TextBlock>
+                <ctrl:NumericUpDown x:Name="CountBox"
+                                    Width="220"
+                                    HorizontalAlignment="Left"
+                                    AutomationProperties.Name="购买次数"
+                                    Decimals="0"
+                                    Maximum="100000"
+                                    Minimum="0"
+                                    Step="1" />
+
+                <TextBlock x:Name="CountCalcText"
+                           Margin="0,6,0,0"
+                           FontSize="14"
+                           FontWeight="ExtraBlack"
+                           Foreground="#D9534F"
+                           TextWrapping="Wrap" />
+
+            </StackPanel>
+
+            <!--  支付来源 | 折扣  -->
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Style="{StaticResource Cap}" Text="支付来源" />
+                    <StackPanel x:Name="PayPanel"
+                                Height="34"
+                                HorizontalAlignment="Left"
+                                Orientation="Horizontal">
+                        <RadioButton BorderThickness="1,1,1,1"
+                                     CommandParameter="Wechat"
+                                     Content="微信"
+                                     GroupName="Pay"
+                                     IsChecked="True"
+                                     Style="{StaticResource SegRadio}"
+                                     Tag="6,0,0,6" />
+                        <RadioButton CommandParameter="Alipay"
+                                     Content="支付宝"
+                                     GroupName="Pay"
+                                     Style="{StaticResource SegRadio}"
+                                     Tag="0" />
+                        <RadioButton CommandParameter="BankCard"
+                                     Content="银行卡"
+                                     GroupName="Pay"
+                                     Style="{StaticResource SegRadio}"
+                                     Tag="0" />
+                        <RadioButton CommandParameter="Cash"
+                                     Content="现金"
+                                     GroupName="Pay"
+                                     Style="{StaticResource SegRadio}"
+                                     Tag="0" />
+                        <RadioButton CommandParameter="Other"
+                                     Content="其它"
+                                     GroupName="Pay"
+                                     Style="{StaticResource SegRadio}"
+                                     Tag="0,6,6,0" />
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Style="{StaticResource Cap}" Text="折扣（按类型）" />
+                    <TextBox x:Name="DiscountBox"
+                             AutomationProperties.Name="折扣，按会员类型决定"
+                             IsReadOnly="True"
+                             Style="{StaticResource FieldText}"
+                             Text="—" />
+                </StackPanel>
+            </Grid>
+
+            <!--  员工推荐人（店内员工，可与顾客推荐人并存，各拿各的奖励）  -->
+            <TextBlock Style="{StaticResource Cap}" Text="员工推荐人（可选）" />
+            <ComboBox x:Name="StaffReferrerBox" Margin="0,0,0,10"
+                      DisplayMemberPath="Name"
+                      SelectionChanged="StaffReferrer_Picked"
+                      AutomationProperties.Name="员工推荐人，店内员工" />
+
+            <!--  顾客推荐人：输入卡号/手机号即时搜索、按人聚合、选中即用、可清空（对齐 BS filterable remote clearable）  -->
+            <TextBlock Style="{StaticResource Cap}" Text="顾客推荐人（可选）" />
+            <ComboBox x:Name="ReferrerBox"
+                      Margin="0,0,0,4"
+                      AutomationProperties.Name="引荐人，输入卡号或手机号搜索，按人聚合，选中即可"
+                      DisplayMemberPath="Label"
+                      IsTextSearchEnabled="False"
+                      KeyUp="ReferrerBox_KeyUp"
+                      SelectionChanged="Referrer_Picked"
+                      StaysOpenOnEdit="True"
+                      Style="{StaticResource FieldComboEditable}" />
+            <TextBlock Margin="0,0,0,10"
+                       FontSize="12"
+                       Foreground="#888">
+                <Run Text="按手机号聚合，一人一行（含名下所有卡）。已选：" /><Run x:Name="ReferrerSelLabel"
+                     FontWeight="SemiBold"
+                     Foreground="#374151"
+                     Text="无" />
+            </TextBlock>
+
+            <!--  推荐奖励预估：选了推荐人后按当前推荐规则实时预估，纯展示  -->
+            <Border x:Name="ReferralPreviewBox"
+                    Margin="0,0,0,10"
+                    Padding="10,8"
+                    Background="#FFF7E6"
+                    BorderBrush="#FFD591"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock Margin="0,0,0,4"
+                               FontSize="12"
+                               Foreground="#B26A00"
+                               Text="开卡后将产生的推荐奖励（按当前推荐规则预估）" />
+                    <TextBlock x:Name="ReferralPreviewText"
+                               AutomationProperties.Name="推荐奖励预估"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="#874D00"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <!--  备注  -->
+            <TextBlock Style="{StaticResource Cap}" Text="备注" />
+            <TextBox x:Name="RemarkBox"
+                     Height="56"
+                     AutomationProperties.Name="备注"
+                     MaxLength="500"
+                     Style="{StaticResource FieldTextMultiline}" />
+        </StackPanel>
+    </DockPanel>
+</Window>

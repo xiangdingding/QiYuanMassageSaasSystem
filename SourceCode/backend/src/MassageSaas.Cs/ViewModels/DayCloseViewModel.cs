@@ -43,10 +43,20 @@ public partial class DayCloseViewModel : ObservableObject
 
     public decimal Variance => ActualCash - (Preview?.ExpectedCash ?? 0m);
 
+    /// <summary>营业日切日提示（HH:MM），切日 0 点时不显示。对齐 BS 切日提示。</summary>
+    public string? CutoffText => Preview is { DayCloseCutoffMinutes: > 0 } p
+        ? $"营业日切日 {p.DayCloseCutoffMinutes / 60:D2}:{p.DayCloseCutoffMinutes % 60:D2}"
+        : null;
+
+    /// <summary>已日结则锁定清点输入（对齐 BS 的 disabled 状态）。</summary>
+    public bool CanEditCount => Preview is { AlreadyClosed: false };
+
     partial void OnPreviewChanged(DayClosePreviewDto? value)
     {
         if (value is not null) ActualCash = value.ExpectedCash;
         OnPropertyChanged(nameof(Variance));
+        OnPropertyChanged(nameof(CutoffText));
+        OnPropertyChanged(nameof(CanEditCount));
     }
 
     partial void OnActualCashChanged(decimal value) => OnPropertyChanged(nameof(Variance));

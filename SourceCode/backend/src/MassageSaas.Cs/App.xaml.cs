@@ -1,7 +1,12 @@
+using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
+using System.Windows.Markup;
+using System.Windows.Media;
+using MaterialDesignThemes.Wpf;
 using MassageSaas.Cs.Services;
 using MassageSaas.Cs.Services.Devices;
 using MassageSaas.Cs.Services.Devices.EscPos;
@@ -24,6 +29,21 @@ public partial class App : Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // WPF 的 FrameworkElement.Language 默认写死 en-US，导致日历/日期控件标题显示英文（如 "March 2026"）。
+        // 覆盖为当前系统区域（中文 Windows 即 zh-CN），让日历标题、月份/星期按中文显示。
+        FrameworkElement.LanguageProperty.OverrideMetadata(
+            typeof(FrameworkElement),
+            new FrameworkPropertyMetadata(
+                XmlLanguage.GetLanguage(CultureInfo.CurrentCulture.IetfLanguageTag)));
+
+        // Material Design 主色改为品牌绿 #2D6A4F，使日历/控件的强调色与界面主题统一
+        var palette = new PaletteHelper();
+        var theme = palette.GetTheme();
+        var brand = (Color)ColorConverter.ConvertFromString("#2D6A4F");
+        theme.SetPrimaryColor(brand);
+        theme.SetSecondaryColor(brand);
+        palette.SetTheme(theme);
 
         // ESC/POS 中文小票走 GBK，.NET 默认不带该编码，需注册代码页提供程序
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -138,11 +158,36 @@ public partial class App : Application
         var w = new LoginWindow { DataContext = vm };
         vm.LoginSucceeded += () =>
         {
+            _sessionExpiredHandling = false;   // 重新登录成功后，下次再过期可再次处理
             ShowMain();
             w.Close();
         };
         Current.MainWindow = w;
         w.Show();
+    }
+
+    /// <summary>并发的多次 401 只处理一次（提示 + 登出 + 跳登录），避免弹多个框/开多个登录窗。</summary>
+    private static bool _sessionExpiredHandling;
+
+    /// <summary>
+    /// 登录失效（401）：提示"登录已失效，请重新登录"，点确定后登出并跳回登录界面。
+    /// 由 <see cref="ErrorReporter"/> 在捕获到 401 时调用；可能从后台线程触发，故包一层 Dispatcher。
+    /// </summary>
+    public static void HandleSessionExpired(string message)
+    {
+        Current?.Dispatcher.Invoke(() =>
+        {
+            if (_sessionExpiredHandling) return;
+            _sessionExpiredHandling = true;
+
+            MessageBox.Show(message, "登录已失效", MessageBoxButton.OK, MessageBoxImage.Warning);
+            try { Resolve<SessionService>().SignOut(); } catch { /* ignore */ }
+
+            // 先打开登录窗（成为新的 MainWindow），再关掉主窗口与残留弹窗，避免"最后一个窗口关闭即退出"
+            ShowLogin();
+            foreach (var win in Current.Windows.OfType<Window>().ToList())
+                if (win is not LoginWindow) win.Close();
+        });
     }
 
     public static void ShowMain()

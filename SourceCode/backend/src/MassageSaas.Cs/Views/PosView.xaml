@@ -1,8 +1,9 @@
 <UserControl x:Class="MassageSaas.Cs.Views.PosView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vmpos="clr-namespace:MassageSaas.Cs.ViewModels.Pos">
     <UserControl.Resources>
-        <!-- 分段式开关样式：把 RadioButton 渲染成实心按钮，选中态绿底白字，比圆点更直观 -->
+        <!--  分段式开关样式：把 RadioButton 渲染成实心按钮，选中态绿底白字，比圆点更直观  -->
         <Style x:Key="SegToggle" TargetType="RadioButton">
             <Setter Property="Height" Value="38" />
             <Setter Property="Foreground" Value="#555" />
@@ -13,12 +14,17 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="Bd" Background="White" BorderBrush="#CBD5E0"
-                                BorderThickness="1" CornerRadius="4" SnapsToDevicePixels="True">
-                            <TextBlock Text="{TemplateBinding Content}"
-                                       Foreground="{TemplateBinding Foreground}"
+                        <Border x:Name="Bd"
+                                Background="White"
+                                BorderBrush="#CBD5E0"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                SnapsToDevicePixels="True">
+                            <TextBlock HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
                                        FontWeight="{TemplateBinding FontWeight}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                       Foreground="{TemplateBinding Foreground}"
+                                       Text="{TemplateBinding Content}" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
@@ -45,15 +51,113 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!--  主操作按钮（查询会员）：绿底圆角，悬停加深、禁用变浅  -->
+        <Style x:Key="PosPrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#2D6A4F" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd"
+                                Padding="{TemplateBinding Padding}"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#245A41" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Background" Value="#9CC3B0" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--  危险操作按钮（清空 / 移除）：白底红边圆角，悬停红底白字  -->
+        <Style x:Key="PosDangerButton" TargetType="Button">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="#D9534F" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd"
+                                Padding="{TemplateBinding Padding}"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="#E0A3A1"
+                                BorderThickness="1"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#D9534F" />
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#D9534F" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#E5E7EB" />
+                                <Setter Property="Foreground" Value="#BBB" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--  次操作按钮（✕ 取消关联）：白底描边圆角，悬停浅灰+绿边  -->
+        <Style x:Key="PosGhostButton" TargetType="Button">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="#6B7280" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd"
+                                Padding="{TemplateBinding Padding}"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="#D1D5DB"
+                                BorderThickness="1"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#F3F4F6" />
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#2D6A4F" />
+                                <Setter Property="Foreground" Value="#2D6A4F" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" MinWidth="520" />
-            <ColumnDefinition Width="500" />
+            <ColumnDefinition Width="*" MinWidth="480" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="720" MinWidth="600" />
         </Grid.ColumnDefinitions>
 
-        <!-- Left: services -->
-        <Border Grid.Column="0" Background="White" CornerRadius="4" Padding="16">
+        <!--  Left: services  -->
+        <Border Grid.Column="0"
+                Padding="16"
+                Background="White"
+                CornerRadius="4">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -61,19 +165,32 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <DockPanel Grid.Row="0" LastChildFill="True" Margin="0,0,0,12">
-                    <TextBlock DockPanel.Dock="Left" Text="选择服务项目" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
-                    <Button DockPanel.Dock="Right" Width="38" Height="32" Margin="6,0,0,0" Content="✕"
-                            Visibility="{Binding ServiceFilter, Converter={StaticResource NullToCollapsed}}"
-                            Command="{Binding ClearServiceFilterCommand}"
+                <DockPanel Grid.Row="0"
+                           Margin="0,0,0,12"
+                           LastChildFill="True">
+                    <TextBlock VerticalAlignment="Center"
+                               DockPanel.Dock="Left"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Text="选择服务项目" />
+                    <Button Width="38"
+                            Height="32"
+                            Margin="6,0,0,0"
+                            AutomationProperties.HelpText="清空搜索框，恢复显示全部服务"
                             AutomationProperties.Name="清除服务搜索"
-                            AutomationProperties.HelpText="清空搜索框，恢复显示全部服务" />
+                            Command="{Binding ClearServiceFilterCommand}"
+                            Content="✕"
+                            DockPanel.Dock="Right"
+                            Visibility="{Binding ServiceFilter, Converter={StaticResource NullToCollapsed}}" />
                     <TextBox x:Name="ServiceFilterBox"
-                             Width="240" Height="32" HorizontalAlignment="Right"
-                             Text="{Binding ServiceFilter, UpdateSourceTrigger=PropertyChanged}"
-                             AutomationProperties.Name="服务搜索框"
+                             Width="240"
+                             Height="32"
+                             Padding="6,0"
+                             HorizontalAlignment="Right"
+                             VerticalContentAlignment="Center"
                              AutomationProperties.HelpText="输入编码或名称，按回车快速加入第一项，按 Esc 清空"
-                             VerticalContentAlignment="Center" Padding="6,0">
+                             AutomationProperties.Name="服务搜索框"
+                             Text="{Binding ServiceFilter, UpdateSourceTrigger=PropertyChanged}">
                         <TextBox.InputBindings>
                             <KeyBinding Key="Enter" Command="{Binding QuickAddFirstCommand}" />
                             <KeyBinding Key="Esc" Command="{Binding ClearServiceFilterCommand}" />
@@ -90,35 +207,49 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Width="216" Height="138" Margin="7"
+                                <Button Width="216"
+                                        Height="138"
+                                        Margin="7"
+                                        AutomationProperties.HelpText="点击加入订单"
+                                        AutomationProperties.Name="{Binding Name}"
                                         Background="#F0F4F8"
                                         BorderBrush="#CBD5E0"
                                         BorderThickness="1"
-                                        Cursor="Hand"
-                                        AutomationProperties.Name="{Binding Name}"
-                                        AutomationProperties.HelpText="点击加入订单"
                                         Command="{Binding DataContext.AddServiceCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                        CommandParameter="{Binding}">
+                                        CommandParameter="{Binding}"
+                                        Cursor="Hand">
                                     <StackPanel Margin="10,8">
-                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="17" TextWrapping="Wrap" />
-                                        <TextBlock Margin="0,6,0,0" FontSize="13" Foreground="#666">
+                                        <TextBlock FontSize="17"
+                                                   FontWeight="Bold"
+                                                   Text="{Binding Name}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Margin="0,6,0,0"
+                                                   FontSize="13"
+                                                   Foreground="#666">
                                             <Run Text="{Binding DurationMinutes, StringFormat='{}{0} 分钟', Mode=OneWay}" />
                                             <Run Text="   " />
-                                            <Run Text="{Binding Code}" Foreground="#999" />
+                                            <Run Foreground="#999" Text="{Binding Code}" />
                                         </TextBlock>
-                                        <!-- 两种价格都显示；当前收银模式生效的那个高亮加粗，另一个淡化 -->
-                                        <TextBlock x:Name="StdPrice" Margin="0,8,0,0" FontSize="16" Foreground="#2D6A4F" FontWeight="Bold">
+                                        <!--  两种价格都显示；当前收银模式生效的那个高亮加粗，另一个淡化  -->
+                                        <TextBlock x:Name="StdPrice"
+                                                   Margin="0,8,0,0"
+                                                   FontSize="16"
+                                                   FontWeight="Bold"
+                                                   Foreground="#2D6A4F">
                                             <Run Text="标准 ¥" />
                                             <Run Text="{Binding Price, StringFormat='F2', Mode=OneWay}" />
                                         </TextBlock>
-                                        <TextBlock x:Name="MemPrice" Margin="0,2,0,0" FontSize="13" Foreground="#888">
+                                        <TextBlock x:Name="MemPrice"
+                                                   Margin="0,2,0,0"
+                                                   FontSize="13"
+                                                   Foreground="#888">
                                             <Run Text="会员 ¥" />
                                             <Run Text="{Binding MemberPrice, StringFormat='F2', Mode=OneWay}" />
                                         </TextBlock>
                                     </StackPanel>
                                 </Button>
                                 <DataTemplate.Triggers>
-                                    <!-- 会员模式：突出会员价、淡化标准价 -->
+                                    <!--  会员模式：突出会员价、淡化标准价  -->
                                     <DataTrigger Binding="{Binding DataContext.IsMemberMode, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Value="True">
                                         <Setter TargetName="MemPrice" Property="FontSize" Value="16" />
                                         <Setter TargetName="MemPrice" Property="FontWeight" Value="Bold" />
@@ -133,16 +264,27 @@
                     </ItemsControl>
                 </ScrollViewer>
 
-                <!-- 计时房费：点「开台」由收银开始计时；点「加入订单」把当前房费加入购物车一起结算 -->
-                <Border Grid.Row="2" Margin="0,12,0,0"
+                <!--  计时房费：点「开台」由收银开始计时；点「加入订单」把当前房费加入购物车一起结算  -->
+                <Border Grid.Row="2"
+                        Margin="0,12,0,0"
                         Visibility="{Binding HasTimedRooms, Converter={StaticResource BoolToVisible}}">
                     <StackPanel>
                         <DockPanel Margin="0,0,0,6">
-                            <TextBlock DockPanel.Dock="Left" Text="计时房费" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
-                            <TextBlock DockPanel.Dock="Left" Margin="10,0,0,0" VerticalAlignment="Center"
-                                       Foreground="#999" FontSize="12" Text="开台计时 · 加入订单一起结算" />
+                            <TextBlock VerticalAlignment="Center"
+                                       DockPanel.Dock="Left"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Text="计时房费" />
+                            <TextBlock Margin="10,0,0,0"
+                                       VerticalAlignment="Center"
+                                       DockPanel.Dock="Left"
+                                       FontSize="12"
+                                       Foreground="#999"
+                                       Text="开台计时 · 加入订单一起结算" />
                         </DockPanel>
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="248">
+                        <ScrollViewer MinHeight="220"
+                                      MaxHeight="420"
+                                      VerticalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding TimedRoomCards}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
@@ -151,28 +293,45 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Width="216" Margin="7" Background="#F0F4F8" BorderBrush="#CBD5E0"
-                                                BorderThickness="1" CornerRadius="4" Padding="10,8">
+                                        <Border Width="216"
+                                                Margin="7"
+                                                Padding="10,8"
+                                                Background="#F0F4F8"
+                                                BorderBrush="#CBD5E0"
+                                                BorderThickness="1"
+                                                CornerRadius="4">
                                             <StackPanel>
                                                 <DockPanel>
-                                                    <TextBlock DockPanel.Dock="Left" Text="{Binding RoomNo}" FontWeight="Bold" FontSize="16" />
-                                                    <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" Foreground="#666" FontSize="12" VerticalAlignment="Center">
+                                                    <TextBlock DockPanel.Dock="Left"
+                                                               FontSize="16"
+                                                               FontWeight="Bold"
+                                                               Text="{Binding RoomNo}" />
+                                                    <TextBlock HorizontalAlignment="Right"
+                                                               VerticalAlignment="Center"
+                                                               DockPanel.Dock="Right"
+                                                               FontSize="12"
+                                                               Foreground="#666">
                                                         <Run Text="¥" />
                                                         <Run Text="{Binding HourlyRate, StringFormat='F2', Mode=OneWay}" />
                                                         <Run Text="/时" />
                                                     </TextBlock>
                                                 </DockPanel>
 
-                                                <!-- 计时中 -->
-                                                <StackPanel Margin="0,6,0,0"
-                                                            Visibility="{Binding HasOpenSession, Converter={StaticResource BoolToVisible}}">
+                                                <!--  计时中  -->
+                                                <StackPanel Margin="0,6,0,0" Visibility="{Binding HasOpenSession, Converter={StaticResource BoolToVisible}}">
                                                     <TextBlock FontSize="13" Foreground="#444">
                                                         <Run Text="已计时 " />
-                                                        <Run Text="{Binding ElapsedMinutes, Mode=OneWay}" FontWeight="Bold" />
+                                                        <Run FontWeight="Bold" Text="{Binding ElapsedMinutes, Mode=OneWay}" />
                                                         <Run Text=" 分钟" />
                                                     </TextBlock>
-                                                    <TextBlock FontSize="12" Foreground="#888" Text="{Binding CustomerLabel}" TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock FontSize="14" Foreground="#2D6A4F" FontWeight="Bold" Margin="0,2,0,0">
+                                                    <TextBlock FontSize="12"
+                                                               Foreground="#888"
+                                                               Text="{Binding CustomerLabel}"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Margin="0,2,0,0"
+                                                               FontSize="14"
+                                                               FontWeight="Bold"
+                                                               Foreground="#2D6A4F">
                                                         <Run Text="≈ ¥" />
                                                         <Run Text="{Binding EstimatedAmount, StringFormat='F2', Mode=OneWay}" />
                                                     </TextBlock>
@@ -181,31 +340,46 @@
                                                             <ColumnDefinition Width="*" />
                                                             <ColumnDefinition Width="*" />
                                                         </Grid.ColumnDefinitions>
-                                                        <Button Grid.Column="0" Height="32" Margin="0,0,3,0"
-                                                                Background="#2D6A4F" Foreground="White" BorderThickness="0" Cursor="Hand"
-                                                                Content="{Binding AddButtonLabel}"
-                                                                IsEnabled="{Binding CanAddToCart}"
+                                                        <Button Grid.Column="0"
+                                                                Height="32"
+                                                                Margin="0,0,3,0"
+                                                                AutomationProperties.Name="加入订单"
+                                                                Background="#2D6A4F"
+                                                                BorderThickness="0"
                                                                 Command="{Binding DataContext.AddRoomChargeCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                                 CommandParameter="{Binding}"
-                                                                AutomationProperties.Name="加入订单" />
-                                                        <Button Grid.Column="1" Height="32" Margin="3,0,0,0"
-                                                                Background="Transparent" BorderBrush="#D9534F" Foreground="#D9534F" Cursor="Hand"
-                                                                Content="取消计时"
+                                                                Content="{Binding AddButtonLabel}"
+                                                                Cursor="Hand"
+                                                                Foreground="White"
+                                                                IsEnabled="{Binding CanAddToCart}" />
+                                                        <Button Grid.Column="1"
+                                                                Height="32"
+                                                                Margin="3,0,0,0"
+                                                                AutomationProperties.Name="取消计时"
+                                                                Background="Transparent"
+                                                                BorderBrush="#D9534F"
                                                                 Command="{Binding DataContext.CancelTimingCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                                 CommandParameter="{Binding}"
-                                                                AutomationProperties.Name="取消计时" />
+                                                                Content="取消计时"
+                                                                Cursor="Hand"
+                                                                Foreground="#D9534F" />
                                                     </Grid>
                                                 </StackPanel>
 
-                                                <!-- 空闲 -->
-                                                <Button Margin="0,8,0,0" Height="34"
-                                                        Background="#2D6A4F" Foreground="White" BorderThickness="0" Cursor="Hand"
-                                                        FontWeight="SemiBold" Content="开台"
-                                                        Visibility="{Binding IsIdle, Converter={StaticResource BoolToVisible}}"
+                                                <!--  空闲  -->
+                                                <Button Height="34"
+                                                        Margin="0,8,0,0"
+                                                        AutomationProperties.HelpText="为该计时房开台计时"
+                                                        AutomationProperties.Name="{Binding RoomNo}"
+                                                        Background="#2D6A4F"
+                                                        BorderThickness="0"
                                                         Command="{Binding DataContext.OpenStartTimingCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                         CommandParameter="{Binding}"
-                                                        AutomationProperties.Name="{Binding RoomNo}"
-                                                        AutomationProperties.HelpText="为该计时房开台计时" />
+                                                        Content="开台"
+                                                        Cursor="Hand"
+                                                        FontWeight="SemiBold"
+                                                        Foreground="White"
+                                                        Visibility="{Binding IsIdle, Converter={StaticResource BoolToVisible}}" />
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
@@ -217,8 +391,36 @@
             </Grid>
         </Border>
 
-        <!-- Right: cart + checkout -->
-        <Border Grid.Column="1" Background="White" CornerRadius="4" Margin="12,0,0,0" Padding="16">
+        <!--  中间分隔条：拖动调整左右区域宽度  -->
+        <GridSplitter Grid.Column="1"
+                      Width="12"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch"
+                      AutomationProperties.HelpText="按住拖动，可调整服务区与收银区的宽度比例"
+                      AutomationProperties.Name="左右区域宽度调整"
+                      Background="Transparent"
+                      Cursor="SizeWE"
+                      ResizeBehavior="PreviousAndNext"
+                      ResizeDirection="Columns"
+                      ShowsPreview="False">
+            <GridSplitter.Template>
+                <ControlTemplate TargetType="GridSplitter">
+                    <Grid Background="{TemplateBinding Background}">
+                        <!--  居中一条浅色竖线作为可见抓手  -->
+                        <Border Width="2"
+                                HorizontalAlignment="Center"
+                                Background="#CBD5E0"
+                                CornerRadius="1" />
+                    </Grid>
+                </ControlTemplate>
+            </GridSplitter.Template>
+        </GridSplitter>
+
+        <!--  Right: cart + checkout  -->
+        <Border Grid.Column="2"
+                Padding="16"
+                Background="White"
+                CornerRadius="4">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -230,26 +432,41 @@
                 </Grid.RowDefinitions>
 
                 <DockPanel Grid.Row="0" Margin="0,0,0,8">
-                    <TextBlock DockPanel.Dock="Left" Text="当前订单" FontSize="16" FontWeight="SemiBold" />
-                    <Button DockPanel.Dock="Right" Content="清空" Background="Transparent" BorderThickness="0"
-                            Foreground="#D9534F" Cursor="Hand" Command="{Binding ClearCommand}"
-                            HorizontalAlignment="Right" />
+                    <TextBlock DockPanel.Dock="Left"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Text="当前订单" />
+                    <Button Height="30"
+                            Padding="14,5"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="清空订单"
+                            Command="{Binding ClearCommand}"
+                            Content="清空"
+                            DockPanel.Dock="Right"
+                            Style="{StaticResource PosDangerButton}" />
                 </DockPanel>
 
-                <!-- 收银模式：会员收银（按会员价、可关联卡合并结算）/ 散客收银（标准价、无会员） -->
-                <UniformGrid Grid.Row="1" Columns="2" Margin="0,0,0,8">
-                    <RadioButton GroupName="PosMode" Content="会员收银" Margin="0,0,6,0"
-                                 Style="{StaticResource SegToggle}"
+                <!--  收银模式：会员收银（按会员价、可关联卡合并结算）/ 散客收银（标准价、无会员）  -->
+                <UniformGrid Grid.Row="1"
+                             Margin="0,0,0,8"
+                             Columns="2">
+                    <RadioButton Margin="0,0,6,0"
                                  AutomationProperties.Name="会员收银模式"
-                                 IsChecked="{Binding Mode, Converter={StaticResource StringEquals}, ConverterParameter=member, Mode=TwoWay}" />
-                    <RadioButton GroupName="PosMode" Content="散客收银"
-                                 Style="{StaticResource SegToggle}"
-                                 AutomationProperties.Name="散客收银模式"
-                                 IsChecked="{Binding Mode, Converter={StaticResource StringEquals}, ConverterParameter=walkin, Mode=TwoWay}" />
+                                 Content="会员收银"
+                                 GroupName="PosMode"
+                                 IsChecked="{Binding Mode, Converter={StaticResource StringEquals}, ConverterParameter=member, Mode=TwoWay}"
+                                 Style="{StaticResource SegToggle}" />
+                    <RadioButton AutomationProperties.Name="散客收银模式"
+                                 Content="散客收银"
+                                 GroupName="PosMode"
+                                 IsChecked="{Binding Mode, Converter={StaticResource StringEquals}, ConverterParameter=walkin, Mode=TwoWay}"
+                                 Style="{StaticResource SegToggle}" />
                 </UniformGrid>
 
-                <!-- 会员区：仅会员模式可见。按手机号查询 → 列出名下所有卡 → 勾选多张合并结算 -->
-                <StackPanel Grid.Row="2" Margin="0,0,0,8"
+                <!--  会员区：仅会员模式可见。按手机号查询 → 列出名下所有卡 → 勾选多张合并结算  -->
+                <StackPanel Grid.Row="2"
+                            Margin="0,0,0,8"
                             Visibility="{Binding IsMemberMode, Converter={StaticResource BoolToVisible}}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -257,64 +474,102 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBox Grid.Column="0" Height="38" FontSize="15" Padding="8,0" VerticalContentAlignment="Center"
-                                 Text="{Binding MemberKeyword, UpdateSourceTrigger=PropertyChanged}"
+                        <TextBox Grid.Column="0"
+                                 Height="38"
+                                 Padding="8,0"
+                                 VerticalContentAlignment="Center"
+                                 AutomationProperties.HelpText="输入卡号或手机号，回车按人查询名下所有卡"
                                  AutomationProperties.Name="会员卡号或手机号"
-                                 AutomationProperties.HelpText="输入卡号或手机号，回车按人查询名下所有卡">
+                                 FontSize="15"
+                                 Text="{Binding MemberKeyword, UpdateSourceTrigger=PropertyChanged}">
                             <TextBox.InputBindings>
                                 <KeyBinding Key="Enter" Command="{Binding LookupMemberCommand}" />
                             </TextBox.InputBindings>
                         </TextBox>
-                        <Button Grid.Column="1" Margin="6,0,0,0" Padding="16,0" Height="38" FontSize="14" Content="查询会员"
-                                Command="{Binding LookupMemberCommand}" />
-                        <Button Grid.Column="2" Margin="6,0,0,0" Padding="12,0" Height="38" Content="✕"
-                                Visibility="{Binding HasMemberCards, Converter={StaticResource BoolToVisible}}"
+                        <Button Grid.Column="1"
+                                Height="38"
+                                Margin="8,0,0,0"
+                                Padding="20,0"
+                                AutomationProperties.Name="查询会员"
+                                Command="{Binding LookupMemberCommand}"
+                                Content="查询会员"
+                                Style="{StaticResource PosPrimaryButton}" />
+                        <Button Grid.Column="2"
+                                Height="38"
+                                Margin="8,0,0,0"
+                                Padding="14,0"
+                                AutomationProperties.Name="取消关联会员"
                                 Command="{Binding ClearMemberCommand}"
-                                AutomationProperties.Name="取消关联会员" />
+                                Content="✕"
+                                FontSize="15"
+                                Style="{StaticResource PosGhostButton}"
+                                Visibility="{Binding HasMemberCards, Converter={StaticResource BoolToVisible}}" />
                     </Grid>
 
-                    <Border Background="#F5F7FA" CornerRadius="3" Padding="8" Margin="0,8,0,0"
+                    <Border Margin="0,8,0,0"
+                            Padding="8"
+                            Background="#F5F7FA"
+                            CornerRadius="3"
                             Visibility="{Binding HasMemberCards, Converter={StaticResource BoolToVisible}}">
                         <StackPanel>
-                            <TextBlock FontSize="12" Foreground="#666"
-                                       AutomationProperties.Name="会员卡组">
+                            <TextBlock AutomationProperties.Name="会员卡组"
+                                       FontSize="12"
+                                       Foreground="#666">
                                 <Run Text="手机号 " />
-                                <Run Text="{Binding PrimaryPhone, Mode=OneWay}" FontWeight="Bold" />
+                                <Run FontWeight="Bold" Text="{Binding PrimaryPhone, Mode=OneWay}" />
                                 <Run Text="  共 " />
                                 <Run Text="{Binding MemberCards.Count, Mode=OneWay}" />
                                 <Run Text=" 张卡，可勾选合并结算" />
                             </TextBlock>
 
-                            <ItemsControl ItemsSource="{Binding MemberCards}" Margin="0,4,0,0">
+                            <ItemsControl Margin="0,4,0,0" ItemsSource="{Binding MemberCards}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border Padding="0,3">
                                             <StackPanel>
                                                 <DockPanel>
-                                                    <TextBlock DockPanel.Dock="Right" Foreground="#D9534F" FontSize="11"
-                                                               VerticalAlignment="Center" HorizontalAlignment="Right" Margin="6,0,0,0"
-                                                               Visibility="{Binding ShowEligibilityHint, Converter={StaticResource BoolToVisible}}"
-                                                               Text="{Binding EligibilityHint}" />
-                                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                              IsEnabled="{Binding CanSelect}"
-                                                              VerticalAlignment="Center"
-                                                              AutomationProperties.Name="{Binding CardNo}">
+                                                    <TextBlock Margin="6,0,0,0"
+                                                               HorizontalAlignment="Right"
+                                                               VerticalAlignment="Center"
+                                                               DockPanel.Dock="Right"
+                                                               FontSize="11"
+                                                               Foreground="#D9534F"
+                                                               Text="{Binding EligibilityHint}"
+                                                               Visibility="{Binding ShowEligibilityHint, Converter={StaticResource BoolToVisible}}" />
+                                                    <CheckBox VerticalAlignment="Center"
+                                                              AutomationProperties.Name="{Binding CardNo}"
+                                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                              IsEnabled="{Binding CanSelect}">
                                                         <StackPanel Orientation="Horizontal">
-                                                            <TextBlock Text="{Binding CardNo}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                                            <Border Background="#EEE" CornerRadius="2" Padding="4,1" Margin="6,0,0,0">
-                                                                <TextBlock Text="{Binding TypeLabel}" FontSize="10" Foreground="#555" />
+                                                            <TextBlock VerticalAlignment="Center"
+                                                                       FontWeight="SemiBold"
+                                                                       Text="{Binding CardNo}" />
+                                                            <Border Margin="6,0,0,0"
+                                                                    Padding="4,1"
+                                                                    Background="#EEE"
+                                                                    CornerRadius="2">
+                                                                <TextBlock FontSize="10"
+                                                                           Foreground="#555"
+                                                                           Text="{Binding TypeLabel}" />
                                                             </Border>
-                                                            <TextBlock Margin="6,0,0,0" Foreground="#D9534F" VerticalAlignment="Center">
+                                                            <TextBlock Margin="6,0,0,0"
+                                                                       VerticalAlignment="Center"
+                                                                       Foreground="#D9534F">
                                                                 <Run Text="余额 ¥" />
                                                                 <Run Text="{Binding Balance, StringFormat='F2', Mode=OneWay}" />
                                                             </TextBlock>
-                                                            <TextBlock Margin="6,0,0,0" Foreground="#888" FontSize="11" VerticalAlignment="Center"
+                                                            <TextBlock Margin="6,0,0,0"
+                                                                       VerticalAlignment="Center"
+                                                                       FontSize="11"
+                                                                       Foreground="#888"
                                                                        Text="{Binding RemainText}" />
                                                         </StackPanel>
                                                     </CheckBox>
                                                 </DockPanel>
-                                                <TextBlock FontSize="10" Foreground="#999" Margin="22,1,0,0"
-                                                           AutomationProperties.Name="会员卡有效期">
+                                                <TextBlock Margin="22,1,0,0"
+                                                           AutomationProperties.Name="会员卡有效期"
+                                                           FontSize="10"
+                                                           Foreground="#999">
                                                     <Run Text="开卡 " />
                                                     <Run Text="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd}', Mode=OneWay}" />
                                                     <Run Text="  到期 " />
@@ -329,12 +584,17 @@
                             </ItemsControl>
 
                             <DockPanel Margin="0,6,0,0">
-                                <TextBlock DockPanel.Dock="Left" FontSize="12" Foreground="#666">
+                                <TextBlock DockPanel.Dock="Left"
+                                           FontSize="12"
+                                           Foreground="#666">
                                     <Run Text="已选 " />
                                     <Run Text="{Binding SelectedCount, Mode=OneWay}" />
                                     <Run Text=" 张 · 合计余额" />
                                 </TextBlock>
-                                <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" Foreground="#D9534F" FontWeight="Bold">
+                                <TextBlock HorizontalAlignment="Right"
+                                           DockPanel.Dock="Right"
+                                           FontWeight="Bold"
+                                           Foreground="#D9534F">
                                     <Run Text="¥" />
                                     <Run Text="{Binding SelectedBalance, StringFormat='F2', Mode=OneWay}" />
                                 </TextBlock>
@@ -344,8 +604,8 @@
                 </StackPanel>
 
                 <DockPanel Grid.Row="3">
-                    <!-- 列头：与每行下方控件列对齐（同一组固定列宽） -->
-                    <Grid DockPanel.Dock="Top" Margin="10,0,10,4">
+                    <!--  列头：与每行同一组固定列宽对齐（* 列吸收滚动条差值）  -->
+                    <Grid Margin="0,0,0,6" DockPanel.Dock="Top">
                         <Grid.Style>
                             <Style TargetType="Grid">
                                 <Style.Triggers>
@@ -356,20 +616,64 @@
                             </Style>
                         </Grid.Style>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" MinWidth="96" />
+                            <ColumnDefinition Width="132" />
                             <ColumnDefinition Width="84" />
-                            <ColumnDefinition Width="104" />
                             <ColumnDefinition Width="80" />
+                            <ColumnDefinition Width="104" />
+                            <ColumnDefinition Width="86" />
+                            <ColumnDefinition Width="58" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="技师" FontSize="12" Foreground="#999" />
-                        <TextBlock Grid.Column="1" Text="房间" FontSize="12" Foreground="#999" Margin="6,0,0,0" />
-                        <TextBlock Grid.Column="2" Text="数量" FontSize="12" Foreground="#999" HorizontalAlignment="Center" />
-                        <TextBlock Grid.Column="3" Text="小计" FontSize="12" Foreground="#999" HorizontalAlignment="Right" />
+                        <TextBlock Grid.Column="0"
+                                   FontSize="14"
+                                   FontWeight="Bold"
+                                   Foreground="#999"
+                                   Text="项目" />
+                        <TextBlock Grid.Column="1"
+                                   HorizontalAlignment="Center"
+                                   FontSize="14"
+                                   FontWeight="Bold"
+                                   Foreground="#999"
+                                   Text="技师" />
+                        <TextBlock Grid.Column="2"
+                                   HorizontalAlignment="Center"
+                                   FontSize="14"
+                                   FontWeight="Bold"
+                                   Foreground="#999"
+                                   Text="排钟" />
+                        <TextBlock Grid.Column="3"
+                                   HorizontalAlignment="Center"
+                                   FontSize="14"
+                                   FontWeight="Bold"
+                                   Foreground="#999"
+                                   Text="房间" />
+                        <TextBlock Grid.Column="4"
+                                   HorizontalAlignment="Center"
+                                   FontSize="14"
+                                   FontWeight="Bold"
+                                   Foreground="#999"
+                                   Text="钟数" />
+                        <TextBlock Grid.Column="5"
+                                   HorizontalAlignment="Right"
+                                   FontSize="14"
+                                   FontWeight="Bold"
+                                   Foreground="#999"
+                                   Text="小计" />
+                        <TextBlock Grid.Column="6"
+                                   HorizontalAlignment="Center"
+                                   FontSize="14"
+                                   FontWeight="Bold"
+                                   Foreground="#999"
+                                   Text="操作" />
                     </Grid>
 
-                    <!-- 空车提示 -->
-                    <TextBlock DockPanel.Dock="Top" Text="未添加任何项目" Foreground="#AAB" FontSize="14"
-                               HorizontalAlignment="Center" Margin="0,24,0,0">
+                    <!--  空车提示  -->
+                    <TextBlock Margin="0,24,0,0"
+                               HorizontalAlignment="Center"
+                               DockPanel.Dock="Top"
+                               FontSize="14"
+                               Foreground="#AAB"
+                               Text="未添加任何项目">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Visibility" Value="Collapsed" />
@@ -382,100 +686,194 @@
                         </TextBlock.Style>
                     </TextBlock>
 
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding Cart}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Padding="10,8" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
-                                        <StackPanel>
-                                            <DockPanel>
-                                                <Button DockPanel.Dock="Right" Content="移除" Background="Transparent" BorderThickness="0"
-                                                        Foreground="#D9534F" Cursor="Hand" FontSize="13" Padding="6,0"
-                                                        Command="{Binding DataContext.RemoveCartItemCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                        CommandParameter="{Binding}"
-                                                        AutomationProperties.Name="移除此项" />
-                                                <Border DockPanel.Dock="Left" Background="#2D6A4F" CornerRadius="2" Padding="5,1" Margin="0,0,6,0"
+                                    <Border Padding="0,6"
+                                            BorderBrush="#EEF1F5"
+                                            BorderThickness="0,0,0,1">
+                                        <Grid VerticalAlignment="Center">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" MinWidth="96" />
+                                                <ColumnDefinition Width="132" />
+                                                <ColumnDefinition Width="84" />
+                                                <ColumnDefinition Width="80" />
+                                                <ColumnDefinition Width="104" />
+                                                <ColumnDefinition Width="86" />
+                                                <ColumnDefinition Width="58" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <!--  项目（计时房标签 + 名称 + 会员不一致标签）  -->
+                                            <DockPanel Grid.Column="0"
+                                                       Margin="0,0,6,0"
+                                                       VerticalAlignment="Center">
+                                                <Border Margin="0,0,6,0"
+                                                        Padding="5,1"
                                                         VerticalAlignment="Center"
+                                                        Background="#2D6A4F"
+                                                        CornerRadius="2"
+                                                        DockPanel.Dock="Left"
                                                         Visibility="{Binding IsRoomCharge, Converter={StaticResource BoolToVisible}}">
-                                                    <TextBlock Text="计时房" Foreground="White" FontSize="11" />
+                                                    <TextBlock FontSize="11"
+                                                               Foreground="White"
+                                                               Text="计时房" />
                                                 </Border>
-                                                <TextBlock Text="{Binding ServiceName}" FontWeight="SemiBold" FontSize="15"
-                                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                                <Border Margin="6,0,0,0"
+                                                        Padding="5,1"
+                                                        VerticalAlignment="Center"
+                                                        Background="#FDE2E1"
+                                                        CornerRadius="2"
+                                                        DockPanel.Dock="Right"
+                                                        Visibility="{Binding IsMemberMismatch, Converter={StaticResource BoolToVisible}}">
+                                                    <TextBlock FontSize="11"
+                                                               Foreground="#D9534F"
+                                                               Text="会员不一致" />
+                                                </Border>
+                                                <TextBlock VerticalAlignment="Center"
+                                                           FontSize="14"
+                                                           FontWeight="SemiBold"
+                                                           Text="{Binding ServiceName}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding ServiceName}" />
                                             </DockPanel>
 
-                                            <!-- 计时房费行：无技师/数量，仅展示时长与小计 -->
-                                            <DockPanel Margin="0,8,0,0"
-                                                       Visibility="{Binding IsRoomCharge, Converter={StaticResource BoolToVisible}}">
-                                                <TextBlock DockPanel.Dock="Left" Foreground="#888" FontSize="13" VerticalAlignment="Center">
-                                                    <Run Text="已计时 " />
-                                                    <Run Text="{Binding ElapsedMinutes, Mode=OneWay}" />
-                                                    <Run Text=" 分钟" />
-                                                </TextBlock>
-                                                <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                                           FontWeight="Bold" FontSize="15" Foreground="#D9534F">
-                                                    <Run Text="¥" />
-                                                    <Run Text="{Binding LineTotal, StringFormat='F2', Mode=OneWay}" />
-                                                </TextBlock>
-                                            </DockPanel>
+                                            <!--  技师  -->
+                                            <ComboBox Grid.Column="1"
+                                                      Height="34"
+                                                      Margin="6,0,0,0"
+                                                      VerticalContentAlignment="Center"
+                                                      AutomationProperties.Name="选择技师"
+                                                      ItemsSource="{Binding DataContext.Technicians, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                      SelectedItem="{Binding Technician, Mode=TwoWay}"
+                                                      Visibility="{Binding IsService, Converter={StaticResource BoolToVisible}}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock>
+                                                            <Run Text="{Binding EmployeeNo, FallbackValue='-', Mode=OneWay}" />
+                                                            <Run Text=" · " />
+                                                            <Run Text="{Binding RealName, TargetNullValue='', Mode=OneWay}" />
+                                                        </TextBlock>
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <TextBlock Grid.Column="1"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="#BBB"
+                                                       Text="—"
+                                                       Visibility="{Binding IsRoomCharge, Converter={StaticResource BoolToVisible}}" />
 
-                                            <!-- 服务项行：技师/房间/数量/小计 -->
-                                            <Grid Margin="0,8,0,0"
+                                            <!--  排钟（上钟方式）  -->
+                                            <ComboBox Grid.Column="2"
+                                                      Height="34"
+                                                      Margin="6,0,0,0"
+                                                      VerticalContentAlignment="Center"
+                                                      AutomationProperties.HelpText="选择轮钟或点钟"
+                                                      AutomationProperties.Name="上钟方式"
+                                                      DisplayMemberPath="Label"
+                                                      ItemsSource="{Binding Source={x:Static vmpos:CartItemViewModel.AssignmentOptions}}"
+                                                      SelectedValue="{Binding AssignmentSource, Mode=TwoWay}"
+                                                      SelectedValuePath="Value"
+                                                      Visibility="{Binding IsService, Converter={StaticResource BoolToVisible}}" />
+                                            <TextBlock Grid.Column="2"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="#BBB"
+                                                       Text="—"
+                                                       Visibility="{Binding IsRoomCharge, Converter={StaticResource BoolToVisible}}" />
+
+                                            <!--  房间  -->
+                                            <ComboBox Grid.Column="3"
+                                                      Height="34"
+                                                      Margin="6,0,0,0"
+                                                      VerticalContentAlignment="Center"
+                                                      AutomationProperties.Name="选择房间"
+                                                      DisplayMemberPath="RoomNo"
+                                                      ItemsSource="{Binding DataContext.RoomOptions, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                      SelectedItem="{Binding Room, Mode=TwoWay}"
+                                                      Visibility="{Binding IsService, Converter={StaticResource BoolToVisible}}" />
+                                            <TextBlock Grid.Column="3"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="#888"
+                                                       Text="{Binding RoomNo}"
+                                                       Visibility="{Binding IsRoomCharge, Converter={StaticResource BoolToVisible}}" />
+
+                                            <!--  钟数：服务项用 −/＋ 步进；计时房展示时长  -->
+                                            <Grid Grid.Column="4"
+                                                  Height="34"
+                                                  Margin="6,0,0,0"
                                                   Visibility="{Binding IsService, Converter={StaticResource BoolToVisible}}">
                                                 <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="34" />
                                                     <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="84" />
-                                                    <ColumnDefinition Width="104" />
-                                                    <ColumnDefinition Width="80" />
+                                                    <ColumnDefinition Width="34" />
                                                 </Grid.ColumnDefinitions>
-                                                <ComboBox Grid.Column="0" Height="34"
-                                                          ItemsSource="{Binding DataContext.Technicians, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                          SelectedItem="{Binding Technician, Mode=TwoWay}"
-                                                          VerticalContentAlignment="Center"
-                                                          AutomationProperties.Name="选择技师">
-                                                    <ComboBox.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <TextBlock>
-                                                                <Run Text="{Binding EmployeeNo, FallbackValue='-', Mode=OneWay}" />
-                                                                <Run Text=" · " />
-                                                                <Run Text="{Binding RealName, TargetNullValue='', Mode=OneWay}" />
-                                                            </TextBlock>
-                                                        </DataTemplate>
-                                                    </ComboBox.ItemTemplate>
-                                                </ComboBox>
-                                                <ComboBox Grid.Column="1" Height="34" Margin="6,0,0,0"
-                                                          ItemsSource="{Binding DataContext.Rooms, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                          SelectedItem="{Binding Room, Mode=TwoWay}"
-                                                          VerticalContentAlignment="Center"
-                                                          AutomationProperties.Name="选择房间"
-                                                          DisplayMemberPath="RoomNo" />
-                                                <!-- 数量 −/＋ 步进 -->
-                                                <Grid Grid.Column="2" Margin="6,0,0,0" Height="34">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="34" />
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="34" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <Button Grid.Column="0" Content="−" FontSize="18" Cursor="Hand"
-                                                            Background="#EEF1F5" BorderBrush="#CBD5E0" BorderThickness="1"
-                                                            Command="{Binding DecrementCommand}"
-                                                            AutomationProperties.Name="减少数量" />
-                                                    <Border Grid.Column="1" BorderBrush="#CBD5E0" BorderThickness="0,1,0,1" Background="White">
-                                                        <TextBlock Text="{Binding Quantity}" FontSize="15" FontWeight="SemiBold"
-                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                   AutomationProperties.Name="数量" />
-                                                    </Border>
-                                                    <Button Grid.Column="2" Content="＋" FontSize="16" Cursor="Hand"
-                                                            Background="#EEF1F5" BorderBrush="#CBD5E0" BorderThickness="1"
-                                                            Command="{Binding IncrementCommand}"
-                                                            AutomationProperties.Name="增加数量" />
-                                                </Grid>
-                                                <TextBlock Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right"
-                                                           FontWeight="Bold" FontSize="15" Foreground="#D9534F">
-                                                    <Run Text="¥" />
-                                                    <Run Text="{Binding LineTotal, StringFormat='F2', Mode=OneWay}" />
-                                                </TextBlock>
+                                                <Button Grid.Column="0"
+                                                        AutomationProperties.Name="减少数量"
+                                                        Background="#EEF1F5"
+                                                        BorderBrush="#CBD5E0"
+                                                        BorderThickness="1"
+                                                        Command="{Binding DecrementCommand}"
+                                                        Content="−"
+                                                        Cursor="Hand"
+                                                        FontSize="18" />
+                                                <Border Grid.Column="1"
+                                                        Background="White"
+                                                        BorderBrush="#CBD5E0"
+                                                        BorderThickness="0,1,0,1">
+                                                    <TextBlock HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
+                                                               AutomationProperties.Name="数量"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Text="{Binding Quantity}" />
+                                                </Border>
+                                                <Button Grid.Column="2"
+                                                        AutomationProperties.Name="增加数量"
+                                                        Background="#EEF1F5"
+                                                        BorderBrush="#CBD5E0"
+                                                        BorderThickness="1"
+                                                        Command="{Binding IncrementCommand}"
+                                                        Content="＋"
+                                                        Cursor="Hand"
+                                                        FontSize="16" />
                                             </Grid>
-                                        </StackPanel>
+                                            <TextBlock Grid.Column="4"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="13"
+                                                       Foreground="#888"
+                                                       Visibility="{Binding IsRoomCharge, Converter={StaticResource BoolToVisible}}">
+                                                <Run Text="{Binding ElapsedMinutes, Mode=OneWay}" />
+                                                <Run Text=" 分" />
+                                            </TextBlock>
+
+                                            <!--  小计  -->
+                                            <TextBlock Grid.Column="5"
+                                                       HorizontalAlignment="Right"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="15"
+                                                       FontWeight="Bold"
+                                                       Foreground="#D9534F">
+                                                <Run Text="¥" />
+                                                <Run Text="{Binding LineTotal, StringFormat='F2', Mode=OneWay}" />
+                                            </TextBlock>
+
+                                            <!--  操作  -->
+                                            <Button Grid.Column="6"
+                                                    Height="28"
+                                                    Margin="6,0,0,0"
+                                                    Padding="0"
+                                                    VerticalAlignment="Center"
+                                                    AutomationProperties.Name="移除此项"
+                                                    Command="{Binding DataContext.RemoveCartItemCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="移除"
+                                                    FontSize="12"
+                                                    Style="{StaticResource PosDangerButton}" />
+                                        </Grid>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -483,78 +881,127 @@
                     </ScrollViewer>
                 </DockPanel>
 
-                <Border Grid.Row="4" Padding="0,8,0,8" BorderBrush="#E5E7EB" BorderThickness="0,1,0,1">
+                <Border Grid.Row="4"
+                        Padding="0,8,0,8"
+                        BorderBrush="#E5E7EB"
+                        BorderThickness="0,1,0,1">
                     <StackPanel>
-                        <!-- 优惠券：未应用→输入区；已应用→展示券码+抵扣+移除按钮 -->
-                        <Grid Margin="0,0,0,6" Visibility="{Binding AppliedVoucher, Converter={StaticResource InverseNullToCollapsed}}"
-                              AutomationProperties.Name="优惠券">
+                        <!--  优惠券：未应用→输入区；已应用→展示券码+抵扣+移除按钮  -->
+                        <Grid Margin="0,0,0,6"
+                              AutomationProperties.Name="优惠券"
+                              Visibility="{Binding AppliedVoucher, Converter={StaticResource InverseNullToCollapsed}}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="60" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="优惠券" VerticalAlignment="Center" FontSize="13" Foreground="#666" />
-                            <TextBox Grid.Column="1" Text="{Binding VoucherCode, UpdateSourceTrigger=PropertyChanged}"
-                                     VerticalContentAlignment="Center" Padding="6,0"
+                            <TextBlock Grid.Column="0"
+                                       VerticalAlignment="Center"
+                                       FontSize="13"
+                                       Foreground="#666"
+                                       Text="优惠券" />
+                            <TextBox Grid.Column="1"
+                                     Padding="6,0"
+                                     VerticalContentAlignment="Center"
+                                     AutomationProperties.HelpText="录入券码后按应用"
                                      AutomationProperties.Name="优惠券券码"
-                                     AutomationProperties.HelpText="录入券码后按应用">
+                                     Text="{Binding VoucherCode, UpdateSourceTrigger=PropertyChanged}">
                                 <TextBox.InputBindings>
                                     <KeyBinding Key="Enter" Command="{Binding ApplyVoucherCommand}" />
                                 </TextBox.InputBindings>
                             </TextBox>
-                            <Button Grid.Column="2" Margin="6,0,0,0" Padding="10,4"
-                                    Content="应用"
+                            <Button Grid.Column="2"
+                                    Margin="6,0,0,0"
+                                    Padding="10,4"
+                                    AutomationProperties.Name="应用优惠券"
                                     Command="{Binding ApplyVoucherCommand}"
-                                    IsEnabled="{Binding VoucherApplying, Converter={StaticResource BoolInverse}}"
-                                    AutomationProperties.Name="应用优惠券" />
+                                    Content="应用"
+                                    IsEnabled="{Binding VoucherApplying, Converter={StaticResource BoolInverse}}" />
                         </Grid>
-                        <Grid Margin="0,0,0,6" Visibility="{Binding AppliedVoucher, Converter={StaticResource NullToCollapsed}}"
-                              AutomationProperties.Name="已应用优惠券">
+                        <Grid Margin="0,0,0,6"
+                              AutomationProperties.Name="已应用优惠券"
+                              Visibility="{Binding AppliedVoucher, Converter={StaticResource NullToCollapsed}}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="60" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="优惠券" VerticalAlignment="Center" FontSize="13" Foreground="#666" />
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                <Border Background="#E6F4EA" CornerRadius="3" Padding="6,2" Margin="0,0,6,0">
-                                    <TextBlock Text="{Binding AppliedVoucher.Code}" Foreground="#2D6A4F" FontSize="12" />
+                            <TextBlock Grid.Column="0"
+                                       VerticalAlignment="Center"
+                                       FontSize="13"
+                                       Foreground="#666"
+                                       Text="优惠券" />
+                            <StackPanel Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Orientation="Horizontal">
+                                <Border Margin="0,0,6,0"
+                                        Padding="6,2"
+                                        Background="#E6F4EA"
+                                        CornerRadius="3">
+                                    <TextBlock FontSize="12"
+                                               Foreground="#2D6A4F"
+                                               Text="{Binding AppliedVoucher.Code}" />
                                 </Border>
-                                <TextBlock Text="{Binding AppliedVoucher.Title}" Foreground="#444" FontSize="12"
-                                           TextTrimming="CharacterEllipsis" MaxWidth="140" />
+                                <TextBlock MaxWidth="140"
+                                           FontSize="12"
+                                           Foreground="#444"
+                                           Text="{Binding AppliedVoucher.Title}"
+                                           TextTrimming="CharacterEllipsis" />
                             </StackPanel>
-                            <Button Grid.Column="2" Margin="6,0,0,0" Padding="10,4"
-                                    Content="移除" Background="Transparent" BorderBrush="#D9534F" Foreground="#D9534F"
+                            <Button Grid.Column="2"
+                                    Margin="6,0,0,0"
+                                    Padding="10,4"
+                                    AutomationProperties.Name="移除优惠券"
+                                    Background="Transparent"
+                                    BorderBrush="#D9534F"
                                     Command="{Binding RemoveVoucherCommand}"
-                                    AutomationProperties.Name="移除优惠券" />
+                                    Content="移除"
+                                    Foreground="#D9534F" />
                         </Grid>
 
                         <DockPanel>
-                            <TextBlock DockPanel.Dock="Left" Text="合计" FontSize="13" />
-                            <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right">
+                            <TextBlock DockPanel.Dock="Left"
+                                       FontSize="13"
+                                       Text="合计" />
+                            <TextBlock HorizontalAlignment="Right" DockPanel.Dock="Right">
                                 <Run Text="¥" />
-                                <Run Text="{Binding Total, StringFormat='F2', Mode=OneWay}" FontWeight="Bold" />
+                                <Run FontWeight="Bold" Text="{Binding Total, StringFormat='F2', Mode=OneWay}" />
                             </TextBlock>
                         </DockPanel>
-                        <DockPanel Margin="0,4,0,0"
-                                   Visibility="{Binding MemberDiscount, Converter={StaticResource DecimalToVisible}}">
-                            <TextBlock DockPanel.Dock="Left" Text="会员折扣" FontSize="12" Foreground="#888" />
-                            <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" Foreground="#888">
+                        <DockPanel Margin="0,4,0,0" Visibility="{Binding MemberDiscount, Converter={StaticResource DecimalToVisible}}">
+                            <TextBlock DockPanel.Dock="Left"
+                                       FontSize="12"
+                                       Foreground="#888"
+                                       Text="会员折扣" />
+                            <TextBlock HorizontalAlignment="Right"
+                                       DockPanel.Dock="Right"
+                                       Foreground="#888">
                                 <Run Text="-¥" />
                                 <Run Text="{Binding MemberDiscount, StringFormat='F2', Mode=OneWay}" />
                             </TextBlock>
                         </DockPanel>
-                        <DockPanel Margin="0,4,0,0"
-                                   Visibility="{Binding VoucherDiscount, Converter={StaticResource DecimalToVisible}}">
-                            <TextBlock DockPanel.Dock="Left" Text="券抵扣" FontSize="12" Foreground="#2D6A4F" />
-                            <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" Foreground="#2D6A4F">
+                        <DockPanel Margin="0,4,0,0" Visibility="{Binding VoucherDiscount, Converter={StaticResource DecimalToVisible}}">
+                            <TextBlock DockPanel.Dock="Left"
+                                       FontSize="12"
+                                       Foreground="#2D6A4F"
+                                       Text="券抵扣" />
+                            <TextBlock HorizontalAlignment="Right"
+                                       DockPanel.Dock="Right"
+                                       Foreground="#2D6A4F">
                                 <Run Text="-¥" />
                                 <Run Text="{Binding VoucherDiscount, StringFormat='F2', Mode=OneWay}" />
                             </TextBlock>
                         </DockPanel>
                         <DockPanel Margin="0,4,0,0">
-                            <TextBlock DockPanel.Dock="Left" Text="应收" FontSize="14" FontWeight="SemiBold" />
-                            <TextBlock DockPanel.Dock="Right" HorizontalAlignment="Right" Foreground="#D9534F" FontSize="20" FontWeight="Bold">
+                            <TextBlock DockPanel.Dock="Left"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Text="应收" />
+                            <TextBlock HorizontalAlignment="Right"
+                                       DockPanel.Dock="Right"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       Foreground="#D9534F">
                                 <Run Text="¥" />
                                 <Run Text="{Binding Payable, StringFormat='F2', Mode=OneWay}" />
                             </TextBlock>
@@ -563,56 +1010,34 @@
                 </Border>
 
                 <StackPanel Grid.Row="5" Margin="0,8,0,0">
-                    <TextBlock Text="支付方式" FontSize="13" Foreground="#666" Margin="0,0,0,5" />
-                    <UniformGrid Columns="5" Rows="1">
-                        <RadioButton Content="现金" GroupName="Pay" Margin="0,0,5,0" Style="{StaticResource SegToggle}"
-                                     IsChecked="{Binding PayMethod, Converter={StaticResource StringEquals}, ConverterParameter=Cash, Mode=TwoWay}" />
-                        <RadioButton Content="会员卡" GroupName="Pay" Margin="0,0,5,0" Style="{StaticResource SegToggle}"
-                                     IsEnabled="{Binding HasMember}"
-                                     IsChecked="{Binding PayMethod, Converter={StaticResource StringEquals}, ConverterParameter=MemberCard, Mode=TwoWay}" />
-                        <RadioButton Content="微信" GroupName="Pay" Margin="0,0,5,0" Style="{StaticResource SegToggle}"
-                                     IsChecked="{Binding PayMethod, Converter={StaticResource StringEquals}, ConverterParameter=Wechat, Mode=TwoWay}" />
-                        <RadioButton Content="支付宝" GroupName="Pay" Margin="0,0,5,0" Style="{StaticResource SegToggle}"
-                                     IsChecked="{Binding PayMethod, Converter={StaticResource StringEquals}, ConverterParameter=Alipay, Mode=TwoWay}" />
-                        <RadioButton Content="银行卡" GroupName="Pay" Style="{StaticResource SegToggle}"
-                                     IsChecked="{Binding PayMethod, Converter={StaticResource StringEquals}, ConverterParameter=BankCard, Mode=TwoWay}" />
-                    </UniformGrid>
-
-                    <Grid Margin="0,10,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="84" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="实收金额" VerticalAlignment="Center" Foreground="#666" FontSize="14" />
-                        <TextBox Grid.Column="1" Height="40" FontSize="18" FontWeight="SemiBold"
-                                 Text="{Binding CashReceived, StringFormat='F2', UpdateSourceTrigger=PropertyChanged}"
-                                 IsEnabled="{Binding PayMethod, Converter={StaticResource StringEquals}, ConverterParameter=Cash}"
-                                 VerticalContentAlignment="Center" Padding="8,0"
-                                 AutomationProperties.Name="实收金额" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#888" FontSize="14"
-                                   Visibility="{Binding Change, Converter={StaticResource DecimalToVisible}}">
-                            <Run Text="找零 ¥" />
-                            <Run Text="{Binding Change, StringFormat='F2', Mode=OneWay}" FontWeight="Bold" />
-                        </TextBlock>
-                    </Grid>
-
-                    <Button Margin="0,14,0,0" Height="60" Background="#2D6A4F" Foreground="White"
-                            BorderThickness="0" FontSize="19" FontWeight="Bold" Cursor="Hand"
+                    <!--  支付方式 / 实收金额改到「结账」弹窗里录入（对齐 BS 端 CheckoutDialog）  -->
+                    <!--  与 BS 一致：未满足 CanCheckout（购物车空 / 有项未派技师 / 会员模式未选会员 / 计时房会员不一致）时置灰不可点  -->
+                    <Button Height="60"
+                            Margin="0,6,0,0"
+                            AutomationProperties.HelpText="弹出结账窗口，选择支付方式并确认"
+                            AutomationProperties.Name="下单并结账"
                             Command="{Binding CheckoutCommand}"
-                            AutomationProperties.Name="下单并结账">
+                            FontSize="19"
+                            IsEnabled="{Binding CanCheckout}"
+                            Style="{StaticResource PosPrimaryButton}">
                         <TextBlock>
                             <Run Text="下单并结账   应收 ¥" />
                             <Run Text="{Binding Payable, StringFormat='F2', Mode=OneWay}" />
                         </TextBlock>
                     </Button>
 
-                    <Button Margin="0,8,0,0" Height="34" Background="Transparent"
-                            BorderBrush="#CBD5E0" BorderThickness="1" Foreground="#555" Cursor="Hand" FontSize="13"
-                            Content="测试打印小票"
-                            Command="{Binding TestPrintCommand}"
+                    <Button Height="34"
+                            Margin="0,8,0,0"
+                            AutomationProperties.HelpText="发送一张测试小票并踢钱箱，用于调试打印机"
                             AutomationProperties.Name="测试打印小票"
-                            AutomationProperties.HelpText="发送一张测试小票并踢钱箱，用于调试打印机" />
+                            Background="Transparent"
+                            BorderBrush="#CBD5E0"
+                            BorderThickness="1"
+                            Command="{Binding TestPrintCommand}"
+                            Content="测试打印小票"
+                            Cursor="Hand"
+                            FontSize="13"
+                            Foreground="#555" />
                 </StackPanel>
             </Grid>
         </Border>

@@ -1,0 +1,220 @@
+<Window x:Class="MassageSaas.Cs.Views.AppointmentFormWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="电话预约"
+        Width="520" SizeToContent="Height" MaxHeight="760"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Window.Resources>
+        <!-- 圆角输入框 + 占位提示（Tag），聚焦绿边 -->
+        <Style x:Key="FieldText" TargetType="TextBox">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="BorderBrush" Value="#D1D5DB" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="bd" Background="White" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1" CornerRadius="6">
+                            <Grid>
+                                <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
+                                <TextBlock x:Name="ph" Text="{TemplateBinding Tag}" Foreground="#9CA3AF"
+                                           Margin="11,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                                           Visibility="Collapsed" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="ph" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#2D6A4F" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 多行备注：圆角、顶部对齐 -->
+        <Style x:Key="FieldArea" TargetType="TextBox">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="AcceptsReturn" Value="True" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="BorderBrush" Value="#D1D5DB" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="bd" Background="White" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1" CornerRadius="6">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#2D6A4F" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 下拉框统一用全局样式：不可编辑用 FilterCombo、可编辑用 FieldComboEditable（见 Themes/FilterControls.xaml，参考预约管理状态下拉框） -->
+
+        <Style x:Key="PrimaryBtn" TargetType="Button">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Background" Value="#2D6A4F" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#245A41" /></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="bd" Property="Background" Value="#9CC3B0" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="GhostBtn" TargetType="Button">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="#374151" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" BorderBrush="#D1D5DB"
+                                BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#F3F4F6" />
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#2D6A4F" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 字段行标签 -->
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#4B5563" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="Margin" Value="0,0,12,0" />
+        </Style>
+    </Window.Resources>
+
+    <DockPanel Margin="0">
+        <!-- 标题栏 -->
+        <Border DockPanel.Dock="Top" Background="#F7FAF8" Padding="20,14" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
+            <TextBlock x:Name="HeaderText" FontWeight="Bold" FontSize="16" Foreground="#1F2937" />
+        </Border>
+
+        <!-- 底栏 -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="20,14">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="取消" Padding="22,0" Margin="0,0,10,0" Style="{StaticResource GhostBtn}"
+                        Click="Cancel_Click" AutomationProperties.Name="取消" />
+                <Button x:Name="SaveButton" Content="登记" Padding="26,0" Style="{StaticResource PrimaryBtn}"
+                        Click="Save_Click" AutomationProperties.Name="登记" />
+            </StackPanel>
+        </Border>
+
+        <!-- 表单 -->
+        <Grid Margin="24,18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- 客户姓名 -->
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="客户姓名" Style="{StaticResource FieldLabel}" />
+            <TextBox Grid.Row="0" Grid.Column="1" x:Name="NameBox" Margin="0,0,0,12" MaxLength="32"
+                     Style="{StaticResource FieldText}" Tag="客人称呼，如 张先生"
+                     AutomationProperties.Name="客户姓名" />
+
+            <!-- 客户电话 -->
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="客户电话" Style="{StaticResource FieldLabel}" />
+            <TextBox Grid.Row="1" Grid.Column="1" x:Name="PhoneBox" Margin="0,0,0,12" MaxLength="20"
+                     Style="{StaticResource FieldText}" Tag="11 位手机号"
+                     AutomationProperties.Name="客户电话" />
+
+            <!-- 到店时间 -->
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="到店时间" Style="{StaticResource FieldLabel}" />
+            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,12">
+                <DatePicker x:Name="DateBox" Width="150" Height="36" VerticalContentAlignment="Center"
+                            PreviewMouseLeftButtonUp="DateBox_PreviewMouseUp" AutomationProperties.Name="到店日期" />
+                <ComboBox x:Name="HourBox" Width="72" Margin="8,0,0,0" Style="{StaticResource FieldComboEditable}"
+                          IsEditable="True" MaxDropDownHeight="220"
+                          AutomationProperties.Name="到店小时，可输入或下拉选择" />
+                <TextBlock Text=":" FontSize="16" FontWeight="Bold" Foreground="#6B7280" VerticalAlignment="Center" Margin="6,0,6,0" />
+                <ComboBox x:Name="MinuteBox" Width="72" Style="{StaticResource FieldComboEditable}"
+                          IsEditable="True" MaxDropDownHeight="220"
+                          AutomationProperties.Name="到店分钟，可输入或下拉选择" />
+            </StackPanel>
+
+            <!-- 人数 -->
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="人数" Style="{StaticResource FieldLabel}" />
+            <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,12">
+                <TextBox x:Name="PartyBox" Width="100" Style="{StaticResource FieldText}" Text="1"
+                         AutomationProperties.Name="人数" />
+                <TextBlock Text="1 - 20 人" Foreground="#9CA3AF" FontSize="12" VerticalAlignment="Center" Margin="10,0,0,0" />
+            </StackPanel>
+
+            <!-- 服务项目（用显式 ItemTemplate，自定义模板下选中项也只显示 Label，不出现 ToString） -->
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="服务项目" Style="{StaticResource FieldLabel}" />
+            <ComboBox Grid.Row="4" Grid.Column="1" x:Name="ServiceBox" Margin="0,0,0,12"
+                      Style="{StaticResource FilterCombo}" SelectedValuePath="Id"
+                      AutomationProperties.Name="服务项目，可不指定">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Label}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <!-- 指定技师 -->
+            <TextBlock Grid.Row="5" Grid.Column="0" Text="指定技师" Style="{StaticResource FieldLabel}" />
+            <ComboBox Grid.Row="5" Grid.Column="1" x:Name="TechBox" Margin="0,0,0,12"
+                      Style="{StaticResource FilterCombo}" SelectedValuePath="Id"
+                      AutomationProperties.Name="指定技师，可不指定">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Label}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <!-- 备注 -->
+            <TextBlock Grid.Row="6" Grid.Column="0" Text="备注" Style="{StaticResource FieldLabel}" VerticalAlignment="Top" Margin="0,8,12,0" />
+            <TextBox Grid.Row="6" Grid.Column="1" x:Name="RemarkBox" Height="64" MaxLength="200"
+                     Style="{StaticResource FieldArea}" AutomationProperties.Name="备注" />
+        </Grid>
+    </DockPanel>
+</Window>

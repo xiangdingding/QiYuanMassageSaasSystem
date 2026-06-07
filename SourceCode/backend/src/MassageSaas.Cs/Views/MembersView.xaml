@@ -1,8 +1,9 @@
 <UserControl x:Class="MassageSaas.Cs.Views.MembersView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctrl="clr-namespace:MassageSaas.Cs.Controls">
     <UserControl.Resources>
-        <!-- 小徽标 -->
+        <!--  小徽标  -->
         <Style x:Key="Badge" TargetType="Border">
             <Setter Property="CornerRadius" Value="2" />
             <Setter Property="Padding" Value="5,1" />
@@ -12,35 +13,66 @@
         </Style>
     </UserControl.Resources>
 
-    <Border Background="White" CornerRadius="4" Padding="16">
+    <Border Padding="16"
+            Background="White"
+            CornerRadius="4">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                <TextBlock DockPanel.Dock="Left" Text="会员管理" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,16,0" />
-                <CheckBox DockPanel.Dock="Left" Content="含已关闭" VerticalAlignment="Center"
-                          IsChecked="{Binding IncludeClosed, Mode=TwoWay}" Margin="0,0,12,0" />
-                <Button DockPanel.Dock="Right" Padding="12,0" Height="32" Content="开卡"
-                        Background="#2D6A4F" Foreground="White" BorderThickness="0" Command="{Binding CreateCommand}" />
-                <Button DockPanel.Dock="Right" Padding="12,0" Height="32" Margin="0,0,8,0" Content="重置"
-                        Command="{Binding ResetCommand}" />
-                <Button DockPanel.Dock="Right" Padding="12,0" Height="32" Margin="0,0,8,0" Content="查询"
-                        Command="{Binding ReloadCommand}" />
-                <TextBox Height="32" Padding="8,0" VerticalContentAlignment="Center"
-                         Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged}"
-                         AutomationProperties.Name="搜索会员，卡号/手机号/姓名">
+                <TextBlock Margin="0,0,16,0"
+                           VerticalAlignment="Center"
+                           DockPanel.Dock="Left"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Text="会员管理" />
+                <CheckBox Margin="0,0,12,0"
+                          VerticalAlignment="Center"
+                          AutomationProperties.Name="含已关闭会员卡"
+                          Content="含已关闭"
+                          DockPanel.Dock="Left"
+                          IsChecked="{Binding IncludeClosed, Mode=TwoWay}" />
+                <Button Margin="8,0,0,0"
+                        Padding="16,0"
+                        AutomationProperties.Name="开卡"
+                        Command="{Binding CreateCommand}"
+                        Content="开卡"
+                        DockPanel.Dock="Right"
+                        Style="{StaticResource PrimaryBtn}" />
+                <Button Margin="8,0,0,0"
+                        Padding="16,0"
+                        AutomationProperties.Name="重置筛选"
+                        Command="{Binding ResetCommand}"
+                        Content="重置"
+                        DockPanel.Dock="Right"
+                        Style="{StaticResource GhostBtn}" />
+                <Button Margin="8,0,0,0"
+                        Padding="16,0"
+                        AutomationProperties.Name="查询"
+                        Command="{Binding SearchCommand}"
+                        Content="查询"
+                        DockPanel.Dock="Right"
+                        Style="{StaticResource PrimaryBtn}" />
+                <TextBox VerticalAlignment="Center"
+                         AutomationProperties.Name="搜索会员，卡号/手机号/姓名"
+                         Style="{StaticResource SearchBox}"
+                         Tag="卡号 / 手机号 / 姓名"
+                         Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged}">
                     <TextBox.InputBindings>
-                        <KeyBinding Key="Enter" Command="{Binding ReloadCommand}" />
+                        <KeyBinding Key="Enter" Command="{Binding SearchCommand}" />
                     </TextBox.InputBindings>
                 </TextBox>
             </DockPanel>
 
             <Grid Grid.Row="1">
-                <TextBlock Text="暂无会员，使用上方“开卡”按钮新开第一张" Foreground="#AAA"
-                           HorizontalAlignment="Center" Margin="0,40,0,0">
+                <TextBlock Margin="0,40,0,0"
+                           HorizontalAlignment="Center"
+                           Foreground="#AAA"
+                           Text="暂无会员，使用上方“开卡”按钮新开第一张">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
                             <Setter Property="Visibility" Value="Collapsed" />
@@ -54,115 +86,175 @@
                 </TextBlock>
 
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding Groups}" AutomationProperties.Name="会员列表，按手机号聚合">
+                    <ItemsControl AutomationProperties.Name="会员列表，按手机号聚合" ItemsSource="{Binding Groups}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Expander Margin="0,0,0,8" Background="#FAFBFC" BorderBrush="#E5E7EB" BorderThickness="1"
-                                          AutomationProperties.Name="{Binding Phone}">
+                                <Expander Margin="0,0,0,8"
+                                          AutomationProperties.Name="{Binding Phone}"
+                                          Background="#FAFBFC"
+                                          BorderBrush="#E5E7EB"
+                                          BorderThickness="1">
                                     <Expander.Header>
-                                        <DockPanel LastChildFill="True" Margin="4,4,8,4">
-                                            <Button DockPanel.Dock="Right" Content="加办一张卡" Padding="10,3" VerticalAlignment="Center"
-                                                    Background="#2D6A4F" Foreground="White" BorderThickness="0" Cursor="Hand"
+                                        <DockPanel Margin="4,4,8,4" LastChildFill="True">
+                                            <Button VerticalAlignment="Center"
+                                                    AutomationProperties.Name="加办一张卡"
                                                     Command="{Binding DataContext.CreateForPhoneCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding Phone}"
-                                                    AutomationProperties.Name="加办一张卡" />
+                                                    Content="加办一张卡"
+                                                    DockPanel.Dock="Right"
+                                                    Style="{StaticResource RowPrimary}" />
                                             <StackPanel>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding Phone}" FontWeight="Bold" FontSize="15" VerticalAlignment="Center" />
-                                                    <TextBlock Text="{Binding DisplayName}" Foreground="#444" VerticalAlignment="Center" Margin="10,0,0,0" />
-                                                    <Border Style="{StaticResource Badge}" Background="#F0E6D2"
+                                                    <TextBlock VerticalAlignment="Center"
+                                                               FontSize="15"
+                                                               FontWeight="Bold"
+                                                               Text="{Binding Phone}" />
+                                                    <TextBlock Margin="10,0,0,0"
+                                                               VerticalAlignment="Center"
+                                                               Foreground="#444"
+                                                               Text="{Binding DisplayName}" />
+                                                    <Border Background="#F0E6D2"
+                                                            Style="{StaticResource Badge}"
                                                             Visibility="{Binding HasInactive, Converter={StaticResource BoolToVisible}}">
-                                                        <TextBlock Text="含关闭卡" FontSize="11" Foreground="#9A7B3F" />
+                                                        <TextBlock FontSize="11"
+                                                                   Foreground="#9A7B3F"
+                                                                   Text="含关闭卡" />
                                                     </Border>
                                                 </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                                    <TextBlock Foreground="#888" FontSize="12">
-                                                        <Run Text="持卡 " /><Run Text="{Binding CardCount, Mode=OneWay}" FontWeight="SemiBold" Foreground="#444" /><Run Text=" 张" />
+                                                <StackPanel Margin="0,4,0,0" Orientation="Horizontal">
+                                                    <TextBlock FontSize="12" Foreground="#888">
+                                                        <Run Text="持卡 " /><Run FontWeight="SemiBold"
+                                                             Foreground="#444"
+                                                             Text="{Binding CardCount, Mode=OneWay}" /><Run Text=" 张" />
                                                     </TextBlock>
-                                                    <TextBlock Margin="16,0,0,0" Foreground="#888" FontSize="12">
-                                                        <Run Text="总余额 ¥" /><Run Text="{Binding TotalBalance, StringFormat='F2', Mode=OneWay}" FontWeight="SemiBold" Foreground="#D9534F" />
+                                                    <TextBlock Margin="16,0,0,0"
+                                                               FontSize="12"
+                                                               Foreground="#888">
+                                                        <Run Text="总余额 ¥" /><Run FontWeight="SemiBold"
+                                                             Foreground="#D9534F"
+                                                             Text="{Binding TotalBalance, StringFormat='F2', Mode=OneWay}" />
                                                     </TextBlock>
-                                                    <TextBlock Margin="16,0,0,0" Foreground="#888" FontSize="12">
-                                                        <Run Text="累计充值 ¥" /><Run Text="{Binding TotalRecharge, StringFormat='F2', Mode=OneWay}" Foreground="#444" />
+                                                    <TextBlock Margin="16,0,0,0"
+                                                               FontSize="12"
+                                                               Foreground="#888">
+                                                        <Run Text="累计充值 ¥" /><Run Foreground="#444" Text="{Binding TotalRecharge, StringFormat='F2', Mode=OneWay}" />
                                                     </TextBlock>
-                                                    <TextBlock Margin="16,0,0,0" Foreground="#888" FontSize="12">
-                                                        <Run Text="累计消费 ¥" /><Run Text="{Binding TotalConsumed, StringFormat='F2', Mode=OneWay}" Foreground="#444" />
+                                                    <TextBlock Margin="16,0,0,0"
+                                                               FontSize="12"
+                                                               Foreground="#888">
+                                                        <Run Text="累计消费 ¥" /><Run Foreground="#444" Text="{Binding TotalConsumed, StringFormat='F2', Mode=OneWay}" />
                                                     </TextBlock>
                                                 </StackPanel>
                                             </StackPanel>
                                         </DockPanel>
                                     </Expander.Header>
 
-                                    <!-- 名下卡列表 -->
-                                    <ItemsControl ItemsSource="{Binding Cards}" Margin="8,4,8,8">
+                                    <!--  名下卡列表  -->
+                                    <ItemsControl Margin="8,4,8,8" ItemsSource="{Binding Cards}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Background="White" BorderBrush="#ECEFF2" BorderThickness="1" CornerRadius="3"
-                                                        Padding="10,8" Margin="0,0,0,6">
+                                                <Border Margin="0,0,0,6"
+                                                        Padding="10,8"
+                                                        Background="White"
+                                                        BorderBrush="#ECEFF2"
+                                                        BorderThickness="1"
+                                                        CornerRadius="3">
                                                     <DockPanel LastChildFill="True">
-                                                        <!-- 操作 -->
-                                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                                            <Button Content="充值" Padding="8,2" Margin="2"
-                                                                    IsEnabled="{Binding CanRecharge}"
+                                                        <!--  操作  -->
+                                                        <StackPanel VerticalAlignment="Center"
+                                                                    DockPanel.Dock="Right"
+                                                                    Orientation="Horizontal">
+                                                            <Button AutomationProperties.Name="充值"
                                                                     Command="{Binding DataContext.RechargeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                    CommandParameter="{Binding Dto}" />
-                                                            <Button Content="办卡" Padding="8,2" Margin="2"
+                                                                    CommandParameter="{Binding Dto}"
+                                                                    Content="充值"
+                                                                    IsEnabled="{Binding CanRecharge}"
+                                                                    Style="{StaticResource RowPrimary}" />
+                                                            <!--<Button Content="办卡" Style="{StaticResource RowGhost}"
                                                                     IsEnabled="{Binding CanRecharge}"
                                                                     Command="{Binding DataContext.IssueCardCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                    CommandParameter="{Binding Dto}" />
-                                                            <Button Content="流水" Padding="8,2" Margin="2"
+                                                                    CommandParameter="{Binding Dto}"
+                                                                    AutomationProperties.Name="办卡" />-->
+                                                            <Button AutomationProperties.Name="充值与消费流水"
                                                                     Command="{Binding DataContext.ShowHistoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                    CommandParameter="{Binding Dto}" />
-                                                            <Button Content="编辑" Padding="8,2" Margin="2"
+                                                                    CommandParameter="{Binding Dto}"
+                                                                    Content="流水"
+                                                                    Style="{StaticResource RowGhost}" />
+                                                            <Button AutomationProperties.Name="编辑会员资料"
                                                                     Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                    CommandParameter="{Binding Dto}" />
-                                                            <Button Content="退卡" Padding="8,2" Margin="2"
-                                                                    IsEnabled="{Binding CanRefundOrTransfer}"
+                                                                    CommandParameter="{Binding Dto}"
+                                                                    Content="编辑"
+                                                                    Style="{StaticResource RowGhost}" />
+                                                            <Button AutomationProperties.Name="退卡"
                                                                     Command="{Binding DataContext.RefundCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                    CommandParameter="{Binding Dto}" />
-                                                            <Button Content="转赠" Padding="8,2" Margin="2"
+                                                                    CommandParameter="{Binding Dto}"
+                                                                    Content="退卡"
                                                                     IsEnabled="{Binding CanRefundOrTransfer}"
+                                                                    Style="{StaticResource RowDanger}" />
+                                                            <Button AutomationProperties.Name="转赠余额"
                                                                     Command="{Binding DataContext.TransferCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                    CommandParameter="{Binding Dto}" />
-                                                            <Button Content="引荐" Padding="8,2" Margin="2"
+                                                                    CommandParameter="{Binding Dto}"
+                                                                    Content="转赠"
+                                                                    IsEnabled="{Binding CanRefundOrTransfer}"
+                                                                    Style="{StaticResource RowDanger}" />
+                                                            <Button AutomationProperties.Name="引荐记录"
                                                                     Command="{Binding DataContext.ShowReferralsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                    CommandParameter="{Binding Dto}" />
+                                                                    CommandParameter="{Binding Dto}"
+                                                                    Content="引荐"
+                                                                    Style="{StaticResource RowGhost}" />
                                                         </StackPanel>
-                                                        <!-- 卡信息 -->
+                                                        <!--  卡信息  -->
                                                         <StackPanel>
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock VerticalAlignment="Center">
-                                                                    <Run Text="卡号 " Foreground="#888" /><Run Text="{Binding CardNo, Mode=OneWay}" FontWeight="SemiBold" />
+                                                                    <Run Foreground="#888" Text="卡号 " /><Run FontWeight="SemiBold" Text="{Binding CardNo, Mode=OneWay}" />
                                                                 </TextBlock>
-                                                                <Border Style="{StaticResource Badge}"
-                                                                        Visibility="{Binding HasMemberType, Converter={StaticResource BoolToVisible}}">
-                                                                    <TextBlock Text="{Binding MemberTypeName}" FontSize="11" Foreground="#555" />
+                                                                <Border Style="{StaticResource Badge}" Visibility="{Binding HasMemberType, Converter={StaticResource BoolToVisible}}">
+                                                                    <TextBlock FontSize="11"
+                                                                               Foreground="#555"
+                                                                               Text="{Binding MemberTypeName}" />
                                                                 </Border>
-                                                                <Border Style="{StaticResource Badge}" Background="#FDF0DC"
+                                                                <Border Background="#FDF0DC"
+                                                                        Style="{StaticResource Badge}"
                                                                         Visibility="{Binding ShowDiscount, Converter={StaticResource BoolToVisible}}">
-                                                                    <TextBlock Text="{Binding DiscountText}" FontSize="11" Foreground="#B8860B" />
+                                                                    <TextBlock FontSize="11"
+                                                                               Foreground="#B8860B"
+                                                                               Text="{Binding DiscountText}" />
                                                                 </Border>
-                                                                <Border Style="{StaticResource Badge}" Background="#EDEFF2"
+                                                                <Border Background="#EDEFF2"
+                                                                        Style="{StaticResource Badge}"
                                                                         Visibility="{Binding ShowClosed, Converter={StaticResource BoolToVisible}}">
-                                                                    <TextBlock Text="已关闭" FontSize="11" Foreground="#999" />
+                                                                    <TextBlock FontSize="11"
+                                                                               Foreground="#999"
+                                                                               Text="已关闭" />
                                                                 </Border>
                                                             </StackPanel>
-                                                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                                                <TextBlock Foreground="#888" FontSize="12">
-                                                                    <Run Text="余额 ¥" /><Run Text="{Binding Balance, StringFormat='F2', Mode=OneWay}" FontWeight="SemiBold" Foreground="#D9534F" />
+                                                            <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
+                                                                <TextBlock FontSize="12" Foreground="#888">
+                                                                    <Run Text="余额 ¥" /><Run FontWeight="SemiBold"
+                                                                         Foreground="#D9534F"
+                                                                         Text="{Binding Balance, StringFormat='F2', Mode=OneWay}" />
                                                                 </TextBlock>
-                                                                <TextBlock Margin="14,0,0,0" Foreground="#888" FontSize="12">
-                                                                    <Run Text="充值 ¥" /><Run Text="{Binding TotalRecharge, StringFormat='F2', Mode=OneWay}" Foreground="#444" />
+                                                                <TextBlock Margin="14,0,0,0"
+                                                                           FontSize="12"
+                                                                           Foreground="#888">
+                                                                    <Run Text="充值 ¥" /><Run Foreground="#444" Text="{Binding TotalRecharge, StringFormat='F2', Mode=OneWay}" />
                                                                 </TextBlock>
-                                                                <TextBlock Margin="14,0,0,0" Foreground="#888" FontSize="12">
-                                                                    <Run Text="消费 ¥" /><Run Text="{Binding TotalConsumed, StringFormat='F2', Mode=OneWay}" Foreground="#444" />
+                                                                <TextBlock Margin="14,0,0,0"
+                                                                           FontSize="12"
+                                                                           Foreground="#888">
+                                                                    <Run Text="消费 ¥" /><Run Foreground="#444" Text="{Binding TotalConsumed, StringFormat='F2', Mode=OneWay}" />
                                                                 </TextBlock>
-                                                                <TextBlock Margin="14,0,0,0" Foreground="#888" FontSize="12"
+                                                                <TextBlock Margin="14,0,0,0"
+                                                                           FontSize="12"
+                                                                           Foreground="#888"
                                                                            Visibility="{Binding IsCountBased, Converter={StaticResource BoolToVisible}}">
-                                                                    <Run Text="次数 " /><Run Text="{Binding CountText, Mode=OneWay}" Foreground="#444" />
+                                                                    <Run Text="次数 " /><Run Foreground="#444" Text="{Binding CountText, Mode=OneWay}" />
                                                                 </TextBlock>
                                                             </StackPanel>
-                                                            <TextBlock Foreground="#999" FontSize="11" Margin="0,5,0,0">
+                                                            <TextBlock Margin="0,5,0,0"
+                                                                       FontSize="11"
+                                                                       Foreground="#999">
                                                                 <Run Text="开卡 " /><Run Text="{Binding CardStartText, Mode=OneWay}" />
                                                                 <Run Text="    " /><Run Text="{Binding ValidityText, Mode=OneWay}" />
                                                             </TextBlock>
@@ -178,6 +270,15 @@
                     </ItemsControl>
                 </ScrollViewer>
             </Grid>
+
+            <!--  分页（BS 端订单流水同款样式）  -->
+            <ctrl:PaginationBar Grid.Row="2"
+                                Margin="0,10,0,0"
+                                Page="{Binding Page, Mode=TwoWay}"
+                                PageChangedCommand="{Binding ReloadCommand}"
+                                PageSize="{Binding PageSize, Mode=TwoWay}"
+                                PageSizeOptions="20,50,100,200"
+                                Total="{Binding Total}" />
         </Grid>
     </Border>
 </UserControl>

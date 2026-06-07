@@ -92,7 +92,7 @@
                             <DataGridTextColumn Width="60"
                                                 Binding="{Binding EmployeeNo}"
                                                 Header="工号" />
-                            <DataGridTextColumn Width="140"
+                            <DataGridTextColumn Width="*" MinWidth="140"
                                                 Binding="{Binding TechnicianName}"
                                                 Header="技师" />
                             <DataGridTextColumn Width="100"
@@ -104,9 +104,18 @@
                             <DataGridTextColumn Width="120"
                                                 Binding="{Binding TotalCommission, StringFormat='¥{0:F2}'}"
                                                 Header="提成" />
-                            <DataGridTextColumn Width="100"
+                            <DataGridTextColumn Width="90"
                                                 Binding="{Binding TotalDurationMinutes}"
                                                 Header="时长(分钟)" />
+                            <DataGridTextColumn Width="90"
+                                                Binding="{Binding DesignationCount}"
+                                                Header="点钟次数" />
+                            <DataGridTextColumn Width="90"
+                                                Binding="{Binding RotationCount}"
+                                                Header="轮钟次数" />
+                            <DataGridTextColumn Width="90"
+                                                Binding="{Binding DesignationRate, StringFormat='{}{0:P1}', TargetNullValue='—'}"
+                                                Header="指定率" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
@@ -162,7 +171,7 @@
                               IsReadOnly="True"
                               ItemsSource="{Binding Monthly.Daily}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Width="140"
+                            <DataGridTextColumn Width="*" MinWidth="140"
                                                 Binding="{Binding Day, StringFormat='{}{0:yyyy-MM-dd}'}"
                                                 Header="日期" />
                             <DataGridTextColumn Width="100"
@@ -227,7 +236,7 @@
                               IsReadOnly="True"
                               ItemsSource="{Binding Yearly.Monthly}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Width="140"
+                            <DataGridTextColumn Width="*" MinWidth="140"
                                                 Binding="{Binding Day, StringFormat='{}{0:yyyy-MM}'}"
                                                 Header="月份" />
                             <DataGridTextColumn Width="100"
@@ -280,7 +289,7 @@
                               IsReadOnly="True"
                               ItemsSource="{Binding Popularity}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Width="200"
+                            <DataGridTextColumn Width="*" MinWidth="200"
                                                 Binding="{Binding ServiceName}"
                                                 Header="服务" />
                             <DataGridTextColumn Width="120"
@@ -333,7 +342,7 @@
                               IsReadOnly="True"
                               ItemsSource="{Binding CustomerFlow}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Width="160"
+                            <DataGridTextColumn Width="*" MinWidth="160"
                                                 Binding="{Binding Date, StringFormat='{}{0:yyyy-MM-dd}'}"
                                                 Header="日期" />
                             <DataGridTextColumn Width="140"
@@ -482,7 +491,7 @@
                             <DataGridTextColumn Width="70"
                                                 Binding="{Binding EmployeeNo}"
                                                 Header="工号" />
-                            <DataGridTextColumn Width="140"
+                            <DataGridTextColumn Width="*" MinWidth="140"
                                                 Binding="{Binding TechnicianName}"
                                                 Header="技师" />
                             <DataGridTextColumn Width="100"
@@ -492,8 +501,15 @@
                                                 Binding="{Binding ComplaintCount}"
                                                 Header="投诉数" />
                             <DataGridTextColumn Width="120"
-                                                Binding="{Binding ComplaintRate}"
-                                                Header="投诉率%" />
+                                                Binding="{Binding ComplaintRate, StringFormat='{}{0}%'}"
+                                                Header="投诉率">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                        <Setter Property="Foreground" Value="{Binding ComplaintRate, Converter={StaticResource ComplaintRateToBrush}}" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>

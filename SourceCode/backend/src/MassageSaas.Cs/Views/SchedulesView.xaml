@@ -30,7 +30,7 @@
 
                 <DataGrid Grid.Row="1" ItemsSource="{Binding Schedules}" AutoGenerateColumns="False"
                           CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                          GridLinesVisibility="Horizontal" AlternatingRowBackground="#FAFAFA">
+                          GridLinesVisibility="All" AlternatingRowBackground="#FAFAFA">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="日期" Binding="{Binding WorkDate, StringFormat='{}{0:yyyy-MM-dd ddd}'}" Width="160" />
                         <DataGridTextColumn Header="技师" Binding="{Binding UserName}" Width="160" />
@@ -66,23 +66,25 @@
 
                 <DataGrid Grid.Row="1" ItemsSource="{Binding Leaves}" AutoGenerateColumns="False"
                           CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                          GridLinesVisibility="Horizontal" AlternatingRowBackground="#FAFAFA">
+                          GridLinesVisibility="All" AlternatingRowBackground="#FAFAFA">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="申请人" Binding="{Binding UserName}" Width="130" />
-                        <DataGridTextColumn Header="类型" Binding="{Binding Type}" Width="80" />
+                        <DataGridTextColumn Header="类型" Binding="{Binding Type, Converter={StaticResource LeaveLabel}}" Width="80" />
                         <DataGridTextColumn Header="起" Binding="{Binding FromDate, StringFormat='{}{0:MM-dd}'}" Width="80" />
                         <DataGridTextColumn Header="止" Binding="{Binding ToDate, StringFormat='{}{0:MM-dd}'}" Width="80" />
                         <DataGridTextColumn Header="事由" Binding="{Binding Reason}" Width="200" />
-                        <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="80" />
+                        <DataGridTextColumn Header="状态" Binding="{Binding Status, Converter={StaticResource LeaveLabel}}" Width="80" />
                         <DataGridTextColumn Header="审批人" Binding="{Binding ApproverName}" Width="110" />
                         <DataGridTemplateColumn Header="操作" Width="*">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
-                                        <Button Margin="2" Padding="6,2" Content="批准" Background="#2D6A4F" Foreground="White" BorderThickness="0"
+                                        <Button Margin="2" Padding="6,2" Content="同意" Background="#2D6A4F" Foreground="White" BorderThickness="0"
+                                                IsEnabled="{Binding Status, Converter={StaticResource StringEquals}, ConverterParameter=Pending}"
                                                 Command="{Binding DataContext.ApproveLeaveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                 CommandParameter="{Binding}" />
                                         <Button Margin="2" Padding="6,2" Content="驳回" Background="#D9534F" Foreground="White" BorderThickness="0"
+                                                IsEnabled="{Binding Status, Converter={StaticResource StringEquals}, ConverterParameter=Pending}"
                                                 Command="{Binding DataContext.RejectLeaveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                 CommandParameter="{Binding}" />
                                     </StackPanel>

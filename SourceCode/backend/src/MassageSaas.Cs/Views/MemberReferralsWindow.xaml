@@ -1,0 +1,39 @@
+<Window x:Class="MassageSaas.Cs.Views.MemberReferralsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="引荐情况"
+        Height="480" Width="640"
+        WindowStartupLocation="CenterOwner">
+    <DockPanel Margin="16">
+        <TextBlock x:Name="HeaderText" DockPanel.Dock="Top" FontWeight="Bold" FontSize="15" Margin="0,0,0,10" />
+
+        <Border DockPanel.Dock="Top" Background="#F5F7FA" CornerRadius="3" Padding="12" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center">
+                    <Run Text="已引荐 " />
+                    <Run x:Name="CountRun" Text="0" FontWeight="Bold" FontSize="16" />
+                    <Run Text=" 人" />
+                </TextBlock>
+                <TextBlock Margin="24,0,0,0" VerticalAlignment="Center">
+                    <Run Text="累计返佣 " />
+                    <Run x:Name="RewardRun" Text="¥0.00" FontWeight="Bold" FontSize="16" Foreground="#D9534F" />
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <TextBlock x:Name="EmptyText" DockPanel.Dock="Bottom" Text="还没有引荐过会员"
+                   Foreground="#AAA" HorizontalAlignment="Center" Margin="0,30,0,0" Visibility="Collapsed" />
+
+        <DataGrid x:Name="ReferredGrid" AutoGenerateColumns="False" CanUserAddRows="False"
+                  IsReadOnly="True" HeadersVisibility="Column" AlternatingRowBackground="#FAFAFA"
+                  AutomationProperties.Name="引荐会员列表">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="卡号" Binding="{Binding CardNo}" Width="120" />
+                <DataGridTextColumn Header="姓名" Binding="{Binding Name}" Width="100" />
+                <DataGridTextColumn Header="手机号" Binding="{Binding Phone}" Width="140" />
+                <DataGridTextColumn Header="累计充值" Binding="{Binding TotalRecharge, StringFormat='¥{0:F2}'}" Width="120" />
+                <DataGridTextColumn Header="开卡时间" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>

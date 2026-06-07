@@ -35,6 +35,7 @@ public interface IApplicationDbContext
     DbSet<PayrollPeriod> PayrollPeriods { get; }
     DbSet<PayrollItem> PayrollItems { get; }
     DbSet<PayrollAdjustment> PayrollAdjustments { get; }
+    DbSet<StaffReferralRecord> StaffReferralRecords { get; }
     DbSet<NotificationOutbox> NotificationOutbox { get; }
     DbSet<ServiceComplaint> ServiceComplaints { get; }
     DbSet<StaffTransfer> StaffTransfers { get; }

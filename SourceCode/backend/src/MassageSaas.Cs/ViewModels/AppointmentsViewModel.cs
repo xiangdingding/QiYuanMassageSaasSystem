@@ -26,6 +26,9 @@ public partial class AppointmentsViewModel : ObservableObject
     private string? statusFilter;
 
     [ObservableProperty]
+    private string? keyword;
+
+    [ObservableProperty]
     private DateTime? fromDate;
 
     [ObservableProperty]
@@ -33,6 +36,37 @@ public partial class AppointmentsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool isBusy;
+
+    // ---- 分页（对齐 BS / 订单页） ----
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageInfo))]
+    [NotifyPropertyChangedFor(nameof(CanPrev))]
+    [NotifyPropertyChangedFor(nameof(CanNext))]
+    private int page = 1;
+
+    [ObservableProperty]
+    private int pageSize = 20;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageInfo))]
+    [NotifyPropertyChangedFor(nameof(CanNext))]
+    private int total;
+
+    public int TotalPages => Total <= 0 ? 1 : (Total + PageSize - 1) / PageSize;
+    public string PageInfo => $"第 {Page} / {TotalPages} 页 · 共 {Total} 条";
+    public bool CanPrev => Page > 1;
+    public bool CanNext => Page < TotalPages;
+
+    /// <summary>重置时批量改筛选条件，用此标志压制每次属性变化都触发的自动查询，避免重复请求。</summary>
+    private bool _suppressAutoReload;
+
+    /// <summary>状态下拉框选值即查（回到第 1 页，对齐 BS：选择即筛选，无需再点查询）。</summary>
+    partial void OnStatusFilterChanged(string? value)
+    {
+        if (_suppressAutoReload) return;
+        Page = 1;
+        _ = ReloadAsync();
+    }
 
     [RelayCommand]
     public async Task ReloadAsync()
@@ -45,12 +79,52 @@ public partial class AppointmentsViewModel : ObservableObject
                 storeId: sid,
                 status: string.IsNullOrEmpty(StatusFilter) ? null : StatusFilter,
                 from: FromDate, to: ToDate,
-                page: 1, pageSize: 100);
+                page: Page, pageSize: PageSize,
+                keyword: string.IsNullOrWhiteSpace(Keyword) ? null : Keyword.Trim());
             Rows = new ObservableCollection<AppointmentRowViewModel>(
                 data.Items.Select(a => new AppointmentRowViewModel(a)));
+            Total = data.Total;
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
         finally { IsBusy = false; }
+    }
+
+    /// <summary>查询：回到第 1 页再查（关键字/日期条件变更时用，对齐 BS onSearch）。</summary>
+    [RelayCommand]
+    private async Task Search()
+    {
+        Page = 1;
+        await ReloadAsync();
+    }
+
+    /// <summary>重置筛选条件并重新查询（对齐 BS）。</summary>
+    [RelayCommand]
+    private async Task ResetQuery()
+    {
+        _suppressAutoReload = true;
+        StatusFilter = null;
+        Keyword = null;
+        FromDate = null;
+        ToDate = null;
+        Page = 1;
+        _suppressAutoReload = false;
+        await ReloadAsync();
+    }
+
+    [RelayCommand]
+    private async Task PrevPage()
+    {
+        if (!CanPrev) return;
+        Page--;
+        await ReloadAsync();
+    }
+
+    [RelayCommand]
+    private async Task NextPage()
+    {
+        if (!CanNext) return;
+        Page++;
+        await ReloadAsync();
     }
 
     /// <summary>登记电话预约（新建，状态待确认）。</summary>

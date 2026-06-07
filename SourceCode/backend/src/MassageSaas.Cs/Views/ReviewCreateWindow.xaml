@@ -33,7 +33,7 @@
         <!-- 已完成服务项：单选一行 -->
         <DataGrid Grid.Row="1" x:Name="ItemsGrid" AutoGenerateColumns="False" IsReadOnly="True"
                   CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single"
-                  HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column" GridLinesVisibility="All"
                   AlternatingRowBackground="#FAFAFA" Margin="0,0,0,10"
                   AutomationProperties.Name="已完成服务项列表，选中一行作为评价对象">
             <DataGrid.Columns>

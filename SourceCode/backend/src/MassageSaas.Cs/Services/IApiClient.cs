@@ -16,6 +16,7 @@ using MassageSaas.Shared.Rooms;
 using MassageSaas.Shared.Schedules;
 using MassageSaas.Shared.ServicePackages;
 using MassageSaas.Shared.Services;
+using MassageSaas.Shared.Settings;
 using MassageSaas.Shared.Staff;
 using MassageSaas.Shared.Stores;
 using MassageSaas.Shared.Subscriptions;
@@ -33,6 +34,15 @@ public interface IApiClient
     /// <summary>按摩店自助注册（公开匿名端点）：成功后获 30 天试用，返回店主登录手机号。</summary>
     [Post("/tenants/register")]
     Task<RegisterTenantResponse> RegisterTenantAsync([Body] RegisterTenantRequest req);
+
+    [Get("/auth/profile")]
+    Task<UserProfileDto> GetProfileAsync();
+
+    [Put("/auth/profile")]
+    Task<UserProfileDto> UpdateProfileAsync([Body] UpdateProfileRequest req);
+
+    [Post("/auth/change-password")]
+    Task ChangePasswordAsync([Body] ChangePasswordRequest req);
 
     [Get("/services")]
     Task<List<ServiceItemDto>> GetServicesAsync([Query] bool includeInactive = false);
@@ -151,7 +161,8 @@ public interface IApiClient
         [Query] long? storeId = null,
         [Query] string? status = null,
         [Query] DateTime? from = null,
-        [Query] DateTime? to = null);
+        [Query] DateTime? to = null,
+        [Query] string? keyword = null);
 
     [Get("/orders/{id}")]
     Task<OrderDto> GetOrderAsync(long id);
@@ -199,6 +210,12 @@ public interface IApiClient
 
     [Delete("/commission-rules/{id}")]
     Task DeleteCommissionRuleAsync(long id);
+
+    [Get("/referral-settings")]
+    Task<ReferralSettingDto> GetReferralSettingsAsync();
+
+    [Put("/referral-settings")]
+    Task<ReferralSettingDto> UpdateReferralSettingsAsync([Body] UpdateReferralSettingRequest req);
 
     [Post("/commission-rules/bulk")]
     Task<BulkCommissionRuleResult> BulkCreateCommissionRulesAsync([Body] BulkCommissionRuleRequest req);
@@ -256,7 +273,8 @@ public interface IApiClient
         [Query] DateTime? from = null,
         [Query] DateTime? to = null,
         [Query] int page = 1,
-        [Query] int pageSize = 20);
+        [Query] int pageSize = 20,
+        [Query] string? keyword = null);
 
     [Post("/appointments")]
     Task<AppointmentDto> CreateAppointmentAsync([Body] CreateAppointmentRequest req);

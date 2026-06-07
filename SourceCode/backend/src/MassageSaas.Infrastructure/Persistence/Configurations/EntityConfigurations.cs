@@ -15,6 +15,9 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         b.Property(x => x.ContactPhone).HasMaxLength(32).IsRequired();
         b.Property(x => x.ContactName).HasMaxLength(64);
         b.Property(x => x.ReferralRewardPercent).HasPrecision(5, 2);
+        b.Property(x => x.CustomerReferralFixedReward).HasPrecision(18, 2);
+        b.Property(x => x.StaffReferralFixedAmount).HasPrecision(18, 2);
+        b.Property(x => x.StaffReferralPercent).HasPrecision(5, 2);
         b.HasIndex(x => x.ContactPhone);
         b.HasIndex(x => x.Status);
         b.HasOne(x => x.CurrentPlan).WithMany().HasForeignKey(x => x.CurrentPlanId).OnDelete(DeleteBehavior.SetNull);
@@ -127,11 +130,13 @@ public class MemberConfiguration : IEntityTypeConfiguration<Member>
         b.HasIndex(x => new { x.TenantId, x.CardNo }).IsUnique();
         b.HasIndex(x => new { x.TenantId, x.Phone });
         b.HasIndex(x => x.ReferredByMemberId);
+        b.HasIndex(x => x.ReferredByStaffId);
         // 顾客小程序按 OpenId 跨租户反查会员（storefront/member），建索引避免全表扫描
         b.HasIndex(x => x.WechatOpenId);
         b.HasOne(x => x.Tenant).WithMany().HasForeignKey(x => x.TenantId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.ReferredByMember).WithMany().HasForeignKey(x => x.ReferredByMemberId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne(x => x.ReferredByStaff).WithMany().HasForeignKey(x => x.ReferredByStaffId).OnDelete(DeleteBehavior.SetNull);
         b.HasOne(x => x.MemberType).WithMany().HasForeignKey(x => x.MemberTypeId).OnDelete(DeleteBehavior.SetNull);
         b.HasIndex(x => x.MemberTypeId);
     }
@@ -399,6 +404,7 @@ public class PayrollItemConfiguration : IEntityTypeConfiguration<PayrollItem>
         b.HasKey(x => x.Id);
         b.Property(x => x.BaseSalary).HasPrecision(18, 2);
         b.Property(x => x.CommissionTotal).HasPrecision(18, 2);
+        b.Property(x => x.ReferralCommissionTotal).HasPrecision(18, 2);
         b.Property(x => x.TipsTotal).HasPrecision(18, 2);
         b.Property(x => x.OvertimeHours).HasPrecision(8, 2);
         b.Property(x => x.OvertimeAmount).HasPrecision(18, 2);
@@ -409,6 +415,22 @@ public class PayrollItemConfiguration : IEntityTypeConfiguration<PayrollItem>
         b.HasOne(x => x.Period).WithMany(p => p.Items).HasForeignKey(x => x.PeriodId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
         b.HasIndex(x => new { x.PeriodId, x.UserId }).IsUnique();
+    }
+}
+
+public class StaffReferralRecordConfiguration : IEntityTypeConfiguration<StaffReferralRecord>
+{
+    public void Configure(EntityTypeBuilder<StaffReferralRecord> b)
+    {
+        b.ToTable("staff_referral_records");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Amount).HasPrecision(18, 2);
+        b.Property(x => x.Remark).HasMaxLength(200);
+        b.HasOne(x => x.StaffUser).WithMany().HasForeignKey(x => x.StaffUserId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne(x => x.Member).WithMany().HasForeignKey(x => x.MemberId).OnDelete(DeleteBehavior.Cascade);
+        // 工资按 员工 + 月份(EarnedAt) 汇总
+        b.HasIndex(x => new { x.StaffUserId, x.EarnedAt });
+        b.HasIndex(x => x.StoreId);
     }
 }
 

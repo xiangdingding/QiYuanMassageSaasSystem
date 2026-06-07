@@ -1,50 +1,286 @@
 <UserControl x:Class="MassageSaas.Cs.Views.CommissionsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Border Background="White" CornerRadius="4" Padding="16">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctrl="clr-namespace:MassageSaas.Cs.Controls">
+    <Border Padding="16"
+            Background="White"
+            CornerRadius="4">
+        <TabControl>
+            <!--  Tab 1：提成规则（原有）  -->
+            <TabItem Header="提成规则">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
-            <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                <TextBlock DockPanel.Dock="Left" Text="提成规则" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <Button Content="新建" Padding="12,6" Background="#2D6A4F" Foreground="White" BorderThickness="0" Command="{Binding CreateCommand}" />
-                    <Button Content="批量设置" Padding="12,6" Margin="8,0,0,0" Background="#E6A23C" Foreground="White" BorderThickness="0" Command="{Binding BulkSetCommand}" />
-                    <Button Content="刷新" Padding="12,6" Margin="8,0,0,0" Command="{Binding ReloadCommand}" />
-                </StackPanel>
-            </DockPanel>
+                    <DockPanel Grid.Row="0" Margin="0,0,0,12">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Padding="16,0"
+                                    AutomationProperties.Name="新建提成规则"
+                                    Command="{Binding CreateCommand}"
+                                    Content="新建"
+                                    Style="{StaticResource PrimaryBtn}" />
+                            <Button Margin="8,0,0,0"
+                                    Padding="16,0"
+                                    AutomationProperties.Name="批量设置提成"
+                                    Command="{Binding BulkSetCommand}"
+                                    Content="批量设置"
+                                    Style="{StaticResource GhostBtn}" />
+                            <Button Margin="8,0,0,0"
+                                    Padding="16,0"
+                                    AutomationProperties.Name="刷新提成规则"
+                                    Command="{Binding ReloadCommand}"
+                                    Content="刷新"
+                                    Style="{StaticResource GhostBtn}" />
+                        </StackPanel>
+                        <TextBlock VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="#909399"
+                                   Text="按服务 / 技师设置提成；轮钟、点钟可分别设金额" />
+                    </DockPanel>
 
-            <DataGrid Grid.Row="1" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
-                      CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
-                      HeadersVisibility="Column" AlternatingRowBackground="#FAFAFA">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="服务" Binding="{Binding ServiceName}" Width="180" />
-                    <DataGridTextColumn Header="技师" Binding="{Binding TechnicianName}" Width="140" />
-                    <DataGridTextColumn Header="规则类型" Binding="{Binding RuleType}" Width="110" />
-                    <DataGridTextColumn Header="兜底金额" Binding="{Binding Amount, StringFormat='F4'}" Width="100" />
-                    <DataGridTextColumn Header="轮钟金额" Binding="{Binding RotationAmount, StringFormat='F4'}" Width="100" />
-                    <DataGridTextColumn Header="点钟金额" Binding="{Binding DesignationAmount, StringFormat='F4'}" Width="100" />
-                    <DataGridTextColumn Header="优先级" Binding="{Binding Priority}" Width="80" />
-                    <DataGridTextColumn Header="启用" Binding="{Binding IsActive}" Width="60" />
-                    <DataGridTemplateColumn Header="操作" Width="180">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Margin="2" Padding="6,2" Content="编辑"
-                                            Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}" />
-                                    <Button Margin="2" Padding="6,2" Content="删除" Background="#D9534F" Foreground="White" BorderThickness="0"
-                                            Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
-        </Grid>
+                    <DataGrid Grid.Row="1"
+                              AlternatingRowBackground="#FAFAFA"
+                              AutoGenerateColumns="False"
+                              AutomationProperties.Name="提成规则列表"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              ItemsSource="{Binding Rows}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Width="*"
+                                                MinWidth="180"
+                                                Binding="{Binding ServiceName, TargetNullValue='全部服务'}"
+                                                Header="适用服务" />
+                            <DataGridTextColumn Width="140"
+                                                Binding="{Binding TechnicianName, TargetNullValue='全部技师'}"
+                                                Header="适用技师" />
+                            <DataGridTextColumn Width="100"
+                                                Binding="{Binding RuleType, Converter={StaticResource EnumLabel}}"
+                                                Header="规则类型" />
+                            <DataGridTextColumn Width="100"
+                                                Binding="{Binding Amount, StringFormat='F4'}"
+                                                Header="兜底金额" />
+                            <DataGridTextColumn Width="100"
+                                                Binding="{Binding RotationAmount, StringFormat='F4'}"
+                                                Header="轮钟金额" />
+                            <DataGridTextColumn Width="100"
+                                                Binding="{Binding DesignationAmount, StringFormat='F4'}"
+                                                Header="点钟金额" />
+                            <DataGridTextColumn Width="80"
+                                                Binding="{Binding Priority}"
+                                                Header="优先级" />
+                            <DataGridTextColumn Width="70"
+                                                Binding="{Binding IsActive, Converter={StaticResource BoolLabel}, ConverterParameter='启用|停用'}"
+                                                Header="状态" />
+                            <DataGridTemplateColumn Width="170" Header="操作">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                            <Button AutomationProperties.Name="编辑提成规则"
+                                                    Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="编辑"
+                                                    Style="{StaticResource RowGhost}" />
+                                            <Button AutomationProperties.Name="删除提成规则"
+                                                    Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                    CommandParameter="{Binding}"
+                                                    Content="删除"
+                                                    Style="{StaticResource RowDanger}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <!--  Tab 2：推荐规则（全店统一）  -->
+            <TabItem Header="推荐规则">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel MaxWidth="560"
+                                Margin="4,16,4,4"
+                                HorizontalAlignment="Left">
+                        <!--  顾客推荐  -->
+                        <TextBlock Margin="0,0,0,4"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"
+                                   Foreground="#303133"
+                                   Text="顾客推荐" />
+                        <TextBlock Margin="0,0,0,12"
+                                   FontSize="12"
+                                   Foreground="#909399"
+                                   Text="顾客介绍新客开卡的奖励，发到推荐顾客的卡内余额。充值返佣与固定推荐费二选一，或全部关闭。" />
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       VerticalAlignment="Center"
+                                       Foreground="#606266"
+                                       Text="返佣方式" />
+                            <ComboBox Grid.Column="1"
+                                      Width="220"
+                                      HorizontalAlignment="Left"
+                                      AutomationProperties.Name="顾客推荐返佣方式"
+                                      SelectedValue="{Binding RefCustomerMode, Mode=TwoWay}"
+                                      SelectedValuePath="Tag"
+                                      Style="{StaticResource FilterCombo}">
+                                <ComboBoxItem Content="关闭" Tag="None" />
+                                <ComboBoxItem Content="充值返佣百分比" Tag="PercentPerRecharge" />
+                                <ComboBoxItem Content="固定推荐费 / 每张卡" Tag="FixedPerCard" />
+                            </ComboBox>
+                        </Grid>
+
+                        <Grid Margin="0,0,0,12" IsEnabled="{Binding RefCustomerMode, Converter={StaticResource StringEquals}, ConverterParameter=PercentPerRecharge}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       VerticalAlignment="Center"
+                                       Foreground="#606266"
+                                       Text="充值返佣百分比" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <ctrl:NumericUpDown Width="150"
+                                                    AutomationProperties.Name="顾客充值返佣百分比"
+                                                    Decimals="2"
+                                                    Maximum="100"
+                                                    Minimum="0"
+                                                    Step="1"
+                                                    Value="{Binding RefCustomerPercent, Mode=TwoWay}" />
+                                <TextBlock Margin="10,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Foreground="#909399"
+                                           Text="%  · 被推荐人每次充值，按此比例返到推荐顾客余额" />
+                            </StackPanel>
+                        </Grid>
+                        <Grid Margin="0,0,0,20" IsEnabled="{Binding RefCustomerMode, Converter={StaticResource StringEquals}, ConverterParameter=FixedPerCard}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       VerticalAlignment="Center"
+                                       Foreground="#606266"
+                                       Text="固定推荐费/张" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <ctrl:NumericUpDown Width="150"
+                                                    AutomationProperties.Name="顾客固定推荐费"
+                                                    Decimals="2"
+                                                    Maximum="100000"
+                                                    Minimum="0"
+                                                    Step="10"
+                                                    Value="{Binding RefCustomerFixed, Mode=TwoWay}" />
+                                <TextBlock Margin="10,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Foreground="#909399"
+                                           Text="元  · 每推荐开一张卡，一次性返到推荐顾客余额" />
+                            </StackPanel>
+                        </Grid>
+                        <Border Height="1"
+                                Margin="0,4,0,16"
+                                Background="#EBEEF5" />
+                        <!--  员工推荐  -->
+                        <TextBlock Margin="0,0,0,4"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"
+                                   Foreground="#303133"
+                                   Text="员工推荐" />
+                        <TextBlock Margin="0,0,0,12"
+                                   FontSize="12"
+                                   Foreground="#909399"
+                                   Text="店内员工介绍客户开卡的提成，开卡时记一笔，按月并入该员工工资净额。" />
+
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       VerticalAlignment="Center"
+                                       Foreground="#606266"
+                                       Text="提成模式" />
+                            <ComboBox Grid.Column="1"
+                                      Width="220"
+                                      HorizontalAlignment="Left"
+                                      AutomationProperties.Name="员工推荐提成模式"
+                                      SelectedValue="{Binding RefStaffMode, Mode=TwoWay}"
+                                      SelectedValuePath="Tag"
+                                      Style="{StaticResource FilterCombo}">
+                                <ComboBoxItem Content="关闭" Tag="None" />
+                                <ComboBoxItem Content="固定金额 / 每张卡" Tag="FixedPerCard" />
+                                <ComboBoxItem Content="开卡实收 × 百分比" Tag="PercentOfOpenCard" />
+                            </ComboBox>
+                        </Grid>
+                        <Grid Margin="0,0,0,12" IsEnabled="{Binding RefStaffMode, Converter={StaticResource StringEquals}, ConverterParameter=FixedPerCard}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       VerticalAlignment="Center"
+                                       Foreground="#606266"
+                                       Text="固定提成金额/张" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <ctrl:NumericUpDown Width="150"
+                                                    AutomationProperties.Name="员工固定推荐提成金额"
+                                                    Decimals="2"
+                                                    Maximum="100000"
+                                                    Minimum="0"
+                                                    Step="10"
+                                                    Value="{Binding RefStaffFixed, Mode=TwoWay}" />
+                                <TextBlock Margin="10,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Foreground="#909399"
+                                           Text="元  · 每推荐开一张卡，固定记一笔到该员工工资" />
+                            </StackPanel>
+                        </Grid>
+                        <Grid Margin="0,0,0,20" IsEnabled="{Binding RefStaffMode, Converter={StaticResource StringEquals}, ConverterParameter=PercentOfOpenCard}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="160" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       VerticalAlignment="Center"
+                                       Foreground="#606266"
+                                       Text="开卡实收百分比" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <ctrl:NumericUpDown Width="150"
+                                                    AutomationProperties.Name="员工推荐提成百分比"
+                                                    Decimals="2"
+                                                    Maximum="100"
+                                                    Minimum="0"
+                                                    Step="1"
+                                                    Value="{Binding RefStaffPercent, Mode=TwoWay}" />
+                                <TextBlock Margin="10,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Foreground="#909399"
+                                           Text="%  · 按开卡实收金额的此比例，记一笔到该员工工资" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Border Height="1"
+                                Margin="0,4,0,16"
+                                Background="#EBEEF5" />
+                        <Button Padding="20,0"
+                                HorizontalAlignment="Left"
+                                AutomationProperties.Name="保存推荐规则"
+                                Command="{Binding SaveReferralCommand}"
+                                Content="保存推荐规则"
+                                Style="{StaticResource PrimaryBtn}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
     </Border>
 </UserControl>

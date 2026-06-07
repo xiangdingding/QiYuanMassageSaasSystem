@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MassageSaas.Shared.Rooms;
@@ -43,6 +44,21 @@ public partial class CartItemViewModel : ObservableObject
     [ObservableProperty]
     private RoomDto? room;
 
+    /// <summary>上钟方式：Rotation 轮钟（叫号轮派）/ Designation 点钟（客人指定）。默认轮钟，与 BS 端一致。</summary>
+    [ObservableProperty]
+    private string assignmentSource = "Rotation";
+
+    /// <summary>计时房费行：开台绑定会员与当前结算会员不一致（购物车行内红标「会员不一致」）。由 PosViewModel 维护。</summary>
+    [ObservableProperty]
+    private bool isMemberMismatch;
+
+    /// <summary>购物车行内「上钟方式」下拉选项（轮钟 / 点钟），全局共享一份。</summary>
+    public static IReadOnlyList<AssignmentSourceOption> AssignmentOptions { get; } = new[]
+    {
+        new AssignmentSourceOption("Rotation", "轮钟"),
+        new AssignmentSourceOption("Designation", "点钟")
+    };
+
     public decimal LineTotal => UnitPrice * Quantity;
 
     partial void OnUnitPriceChanged(decimal value) => OnPropertyChanged(nameof(LineTotal));
@@ -63,3 +79,6 @@ public partial class CartItemViewModel : ObservableObject
     [RelayCommand]
     private void Decrement() => Quantity--;
 }
+
+/// <summary>上钟方式选项：Value 存 Rotation/Designation，Label 展示"轮钟/点钟"。</summary>
+public record AssignmentSourceOption(string Value, string Label);

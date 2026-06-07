@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Windows;
 using MassageSaas.Shared.Rooms;
 
@@ -13,16 +12,16 @@ public partial class RoomFormWindow : Window
         InitializeComponent();
         _storeId = storeId;
         // 启用开关仅编辑时有意义（新建默认启用，CreateRoomRequest 不含 IsActive）
-        ActiveBox.Visibility = editing is null ? Visibility.Collapsed : Visibility.Visible;
+        ActiveRow.Visibility = editing is null ? Visibility.Collapsed : Visibility.Visible;
         if (editing is not null)
         {
             Title = $"编辑房间 - {editing.RoomNo}";
             RoomNoBox.Text = editing.RoomNo;
-            CapacityBox.Text = editing.Capacity.ToString();
+            CapacityBox.Value = editing.Capacity;
             // 历史英文值规整成中文：保存时一并清洗
             TypeBox.Text = NormalizeRoomType(editing.RoomType);
             TimedBox.IsChecked = editing.IsTimedRoom;
-            HourlyRateBox.Text = editing.HourlyRate.ToString("0.##", CultureInfo.InvariantCulture);
+            HourlyRateBox.Value = (double)editing.HourlyRate;
             RemarkBox.Text = editing.Remark ?? string.Empty;
             ActiveBox.IsChecked = editing.IsActive;
         }
@@ -38,13 +37,11 @@ public partial class RoomFormWindow : Window
                 _ => raw.Trim()
             };
 
-    private int Capacity =>
-        int.TryParse(CapacityBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : 1;
+    private int Capacity => (int)CapacityBox.Value;
 
     private bool IsTimedRoom => TimedBox.IsChecked == true;
 
-    private decimal HourlyRate =>
-        decimal.TryParse(HourlyRateBox.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out var v) ? v : 0m;
+    private decimal HourlyRate => (decimal)HourlyRateBox.Value;
 
     public CreateRoomRequest BuildCreateRequest() => new(
         StoreId: _storeId,

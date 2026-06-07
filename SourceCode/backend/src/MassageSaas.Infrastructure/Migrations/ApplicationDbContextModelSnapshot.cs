@@ -500,6 +500,9 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Property<long?>("ReferredByMemberId")
                         .HasColumnType("bigint");
 
+                    b.Property<long?>("ReferredByStaffId")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("Remark")
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
@@ -530,6 +533,8 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.HasIndex("MemberTypeId");
 
                     b.HasIndex("ReferredByMemberId");
+
+                    b.HasIndex("ReferredByStaffId");
 
                     b.HasIndex("StoreId");
 
@@ -1224,6 +1229,10 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Property<long>("PeriodId")
                         .HasColumnType("bigint");
 
+                    b.Property<decimal>("ReferralCommissionTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("Remark")
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
@@ -1787,6 +1796,57 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.ToTable("service_reviews", (string)null);
                 });
 
+            modelBuilder.Entity("MassageSaas.Domain.Entities.StaffReferralRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("EarnedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<long>("MemberId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Remark")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<long>("StaffUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("StoreId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("TenantId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MemberId");
+
+                    b.HasIndex("StoreId");
+
+                    b.HasIndex("StaffUserId", "EarnedAt");
+
+                    b.ToTable("staff_referral_records", (string)null);
+                });
+
             modelBuilder.Entity("MassageSaas.Domain.Entities.StaffSchedule", b =>
                 {
                     b.Property<long>("Id")
@@ -2083,6 +2143,13 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Property<long?>("CurrentPlanId")
                         .HasColumnType("bigint");
 
+                    b.Property<decimal>("CustomerReferralFixedReward")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("CustomerReferralMode")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("ExpireAt")
                         .HasColumnType("datetime(6)");
 
@@ -2095,6 +2162,17 @@ namespace MassageSaas.Infrastructure.Migrations
                         .HasColumnType("varchar(200)");
 
                     b.Property<decimal>("ReferralRewardPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("StaffReferralFixedAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("StaffReferralMode")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("StaffReferralPercent")
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
 
@@ -2508,6 +2586,11 @@ namespace MassageSaas.Infrastructure.Migrations
                         .HasForeignKey("ReferredByMemberId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("MassageSaas.Domain.Entities.User", "ReferredByStaff")
+                        .WithMany()
+                        .HasForeignKey("ReferredByStaffId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("MassageSaas.Domain.Entities.Store", "Store")
                         .WithMany()
                         .HasForeignKey("StoreId")
@@ -2522,6 +2605,8 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Navigation("MemberType");
 
                     b.Navigation("ReferredByMember");
+
+                    b.Navigation("ReferredByStaff");
 
                     b.Navigation("Store");
 
@@ -2917,6 +3002,25 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Navigation("OrderItem");
 
                     b.Navigation("Technician");
+                });
+
+            modelBuilder.Entity("MassageSaas.Domain.Entities.StaffReferralRecord", b =>
+                {
+                    b.HasOne("MassageSaas.Domain.Entities.Member", "Member")
+                        .WithMany()
+                        .HasForeignKey("MemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MassageSaas.Domain.Entities.User", "StaffUser")
+                        .WithMany()
+                        .HasForeignKey("StaffUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Member");
+
+                    b.Navigation("StaffUser");
                 });
 
             modelBuilder.Entity("MassageSaas.Domain.Entities.StaffSchedule", b =>

@@ -10,6 +10,12 @@ public static class ErrorReporter
     public static void Show(Exception ex)
     {
         var (title, msg) = Parse(ex);
+        // 登录失效（401）：不只弹提示，确定后还要登出并跳回登录界面
+        if (ex is ApiException { StatusCode: HttpStatusCode.Unauthorized })
+        {
+            MassageSaas.Cs.App.HandleSessionExpired(msg);
+            return;
+        }
         MessageBox.Show(msg, title, MessageBoxButton.OK, MessageBoxImage.Warning);
     }
 

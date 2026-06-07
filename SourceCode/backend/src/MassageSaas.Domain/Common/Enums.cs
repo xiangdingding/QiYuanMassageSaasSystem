@@ -190,6 +190,22 @@ public enum PayrollAdjustmentKind
     Deduction = 10   // 扣款（减项）
 }
 
+/// <summary>员工推荐提成模式（开卡时给店内员工推荐人记提成的算法）。</summary>
+public enum StaffReferralMode
+{
+    None = 0,               // 关闭员工推荐提成
+    FixedPerCard = 1,       // 固定金额 / 每张卡
+    PercentOfOpenCard = 2   // 开卡实收金额 × 百分比
+}
+
+/// <summary>顾客推荐返佣模式（给推荐顾客的奖励算法，二选一或关闭）。</summary>
+public enum CustomerReferralMode
+{
+    None = 0,               // 关闭顾客推荐返佣
+    PercentPerRecharge = 1, // 被推荐人每次充值金额 × 百分比，返到推荐顾客余额
+    FixedPerCard = 2        // 开卡时一次性固定推荐费 / 张，返到推荐顾客余额
+}
+
 /// <summary>会员资金流水类型。Recharge 默认值兼容历史记录。</summary>
 public enum MemberRechargeKind
 {

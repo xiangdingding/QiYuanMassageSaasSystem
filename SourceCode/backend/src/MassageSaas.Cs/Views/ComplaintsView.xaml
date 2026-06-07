@@ -1,11 +1,13 @@
 <UserControl x:Class="MassageSaas.Cs.Views.ComplaintsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctrl="clr-namespace:MassageSaas.Cs.Controls">
     <Border Background="White" CornerRadius="4" Padding="16">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <DockPanel Grid.Row="0" Margin="0,0,0,12">
@@ -27,7 +29,7 @@
 
             <DataGrid Grid.Row="1" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
                       CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
-                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      HeadersVisibility="Column" GridLinesVisibility="All"
                       AlternatingRowBackground="#FAFAFA">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="150" />
@@ -36,17 +38,19 @@
                     <DataGridTextColumn Header="被投诉技师" Binding="{Binding OriginalTechnicianName}" Width="110" />
                     <DataGridTextColumn Header="会员" Binding="{Binding MemberName}" Width="100" />
                     <DataGridTextColumn Header="内容" Binding="{Binding Comment}" Width="180" />
-                    <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="80" />
-                    <DataGridTextColumn Header="处理方式" Binding="{Binding Resolution}" Width="90" />
+                    <DataGridTextColumn Header="状态" Binding="{Binding Status, Converter={StaticResource ComplaintLabel}}" Width="80" />
+                    <DataGridTextColumn Header="处理方式" Binding="{Binding Resolution, Converter={StaticResource ComplaintLabel}}" Width="90" />
                     <DataGridTextColumn Header="改派至" Binding="{Binding ReassignedToTechnicianName}" Width="100" />
                     <DataGridTemplateColumn Header="操作" Width="*">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
                                     <Button Margin="2" Padding="6,2" Content="处理" Background="#2D6A4F" Foreground="White" BorderThickness="0"
+                                            Visibility="{Binding Status, Converter={StaticResource StringEquals}, ConverterParameter=Pending, Mode=OneWay}"
                                             Command="{Binding DataContext.ResolveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                             CommandParameter="{Binding}" />
                                     <Button Margin="2" Padding="6,2" Content="撤销"
+                                            Visibility="{Binding Status, Converter={StaticResource StringEquals}, ConverterParameter=Pending, Mode=OneWay}"
                                             Command="{Binding DataContext.CancelCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                             CommandParameter="{Binding}" />
                                 </StackPanel>
@@ -55,6 +59,13 @@
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
+
+            <!-- 分页（BS 端订单流水同款样式） -->
+            <ctrl:PaginationBar Grid.Row="2" Margin="0,8,0,0"
+                                Total="{Binding Total}"
+                                Page="{Binding Page, Mode=TwoWay}"
+                                PageSize="{Binding PageSize, Mode=TwoWay}"
+                                PageChangedCommand="{Binding ReloadCommand}" />
         </Grid>
     </Border>
 </UserControl>

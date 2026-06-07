@@ -1,6 +1,7 @@
 <UserControl x:Class="MassageSaas.Cs.Views.VouchersView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctrl="clr-namespace:MassageSaas.Cs.Controls">
     <Border Background="White" CornerRadius="4" Padding="16">
         <Grid>
             <Grid.RowDefinitions>
@@ -55,7 +56,7 @@
 
             <DataGrid Grid.Row="1" Margin="0,0,0,8" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
                       CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
-                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      HeadersVisibility="Column" GridLinesVisibility="All"
                       AlternatingRowBackground="#FAFAFA">
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Header="选择" Width="50" CanUserResize="False" CanUserReorder="False">
@@ -88,26 +89,12 @@
                 </DataGrid.Columns>
             </DataGrid>
 
-            <DockPanel Grid.Row="2" Margin="0,4,0,0">
-                <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center" Foreground="#666"
-                           Text="{Binding PageDisplay}"
-                           AutomationProperties.Name="分页状态" />
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <TextBlock Text="每页" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#666" />
-                    <ComboBox SelectedItem="{Binding PageSize, Mode=TwoWay}"
-                              ItemsSource="{Binding PageSizeOptions}"
-                              Width="70" Height="28"
-                              AutomationProperties.Name="每页条数" />
-                    <Button Content="上一页" Padding="10,4" Margin="8,0,0,0"
-                            Command="{Binding PrevPageAsyncCommand}"
-                            IsEnabled="{Binding CanGoPrev}"
-                            AutomationProperties.Name="上一页" />
-                    <Button Content="下一页" Padding="10,4" Margin="6,0,0,0"
-                            Command="{Binding NextPageAsyncCommand}"
-                            IsEnabled="{Binding CanGoNext}"
-                            AutomationProperties.Name="下一页" />
-                </StackPanel>
-            </DockPanel>
+            <!-- 分页（BS 端订单流水同款样式） -->
+            <ctrl:PaginationBar Grid.Row="2" Margin="0,4,0,0" PageSizeOptions="20,50,100,200"
+                                Total="{Binding Total}"
+                                Page="{Binding Page, Mode=TwoWay}"
+                                PageSize="{Binding PageSize, Mode=TwoWay}"
+                                PageChangedCommand="{Binding ReloadCommand}" />
         </Grid>
     </Border>
 </UserControl>

@@ -23,7 +23,11 @@ public class MemberLifecycleTests
             .Options;
         var db = new ApplicationDbContext(options, ctx);
         ctx.BypassTenantFilter();
-        var t = new Tenant { Id = 1, Name = "T", ContactPhone = "x", ReferralRewardPercent = referralPct };
+        var t = new Tenant
+        {
+            Id = 1, Name = "T", ContactPhone = "x", ReferralRewardPercent = referralPct,
+            CustomerReferralMode = referralPct > 0m ? CustomerReferralMode.PercentPerRecharge : CustomerReferralMode.None
+        };
         db.Tenants.Add(t);
         var s = new Store { Id = 1, TenantId = 1, Name = "总店", IsActive = true };
         db.Stores.Add(s);
@@ -202,6 +206,41 @@ public class MemberLifecycleTests
         var referrer = await db.Members.FirstAsync(x => x.Id == 1);
         referrer.Balance.Should().Be(0);
         referrer.ReferralRewardEarned.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Recharge_NoPercentBonus_WhenModeIsFixedPerCard()
+    {
+        // 即使配了百分比，但返佣方式选了"固定推荐费"，充值时不走百分比返佣（二选一开关）。
+        var (db, ctx, tenant, _) = NewDb(referralPct: 5m);
+        tenant.CustomerReferralMode = CustomerReferralMode.FixedPerCard;
+        await db.SaveChangesAsync();
+        AddMember(db, 1, "REF");
+        AddMember(db, 2, "NEW", referredBy: 1);
+
+        var ctl = NewController(db, ctx);
+        await ctl.Recharge(new RechargeRequest(2, 1000m, 0m, "Cash", null), default);
+
+        var referrer = await db.Members.FirstAsync(x => x.Id == 1);
+        referrer.Balance.Should().Be(0m);
+        referrer.ReferralRewardEarned.Should().Be(0m);
+    }
+
+    [Fact]
+    public async Task Recharge_NoPercentBonus_WhenModeIsNone()
+    {
+        // 返佣方式关闭：即便百分比有值也不返佣。
+        var (db, ctx, tenant, _) = NewDb(referralPct: 5m);
+        tenant.CustomerReferralMode = CustomerReferralMode.None;
+        await db.SaveChangesAsync();
+        AddMember(db, 1, "REF");
+        AddMember(db, 2, "NEW", referredBy: 1);
+
+        var ctl = NewController(db, ctx);
+        await ctl.Recharge(new RechargeRequest(2, 1000m, 0m, "Cash", null), default);
+
+        var referrer = await db.Members.FirstAsync(x => x.Id == 1);
+        referrer.Balance.Should().Be(0m);
     }
 
     [Fact]

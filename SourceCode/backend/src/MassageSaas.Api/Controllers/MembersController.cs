@@ -41,6 +41,7 @@ public class MembersController : ControllerBase
         var pq = new PageQuery(page, pageSize, keyword);
         var q = _db.Members.AsNoTracking()
             .Include(m => m.ReferredByMember)
+            .Include(m => m.ReferredByStaff)
             .Include(m => m.MemberType)
                 .ThenInclude(t => t!.ServiceItem)
             .AsQueryable();
@@ -68,6 +69,7 @@ public class MembersController : ControllerBase
     {
         var m = await _db.Members.AsNoTracking()
             .Include(x => x.ReferredByMember)
+            .Include(x => x.ReferredByStaff)
             .Include(x => x.MemberType)
                 .ThenInclude(t => t!.ServiceItem)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
@@ -113,6 +115,7 @@ public class MembersController : ControllerBase
         //    keyword 仅决定"哪些手机号出现"，展开后看到这个人的全部卡）
         var cardsQ = _db.Members.AsNoTracking()
             .Include(m => m.ReferredByMember)
+            .Include(m => m.ReferredByStaff)
             .Include(m => m.MemberType)
                 .ThenInclude(t => t!.ServiceItem)
             .Where(m => pagedPhones.Contains(m.Phone));
@@ -180,6 +183,8 @@ public class MembersController : ControllerBase
             m.IsActive, m.ClosedAt, m.CloseReason,
             m.ReferredByMemberId,
             m.ReferredByMember?.Name ?? m.ReferredByMember?.CardNo,
+            m.ReferredByStaffId,
+            m.ReferredByStaff?.RealName ?? m.ReferredByStaff?.Username,
             m.ReferralRewardEarned,
             m.WechatOpenId,
             m.CreatedAt,
@@ -238,6 +243,12 @@ public class MembersController : ControllerBase
         {
             var refOk = await _db.Members.AnyAsync(x => x.Id == refId && x.IsActive, ct);
             if (!refOk) return BadRequest(new { code = "InvalidReferrer", message = "引荐人不存在或已停用" });
+        }
+        if (req.ReferredByStaffId is long staffRefId)
+        {
+            var staffOk = await _db.Users.AnyAsync(u => u.Id == staffRefId && u.StoreId == req.StoreId
+                && u.IsActive && u.Role != UserRole.PlatformAdmin, ct);
+            if (!staffOk) return BadRequest(new { code = "InvalidStaffReferrer", message = "推荐员工不存在或已停用" });
         }
 
         // 解析可选的会员类型模板
@@ -300,7 +311,8 @@ public class MembersController : ControllerBase
             TotalConsumed = 0,
             Level = MemberLevel.Regular,
             MemberTypeId = template?.Id,
-            ReferredByMemberId = req.ReferredByMemberId
+            ReferredByMemberId = req.ReferredByMemberId,
+            ReferredByStaffId = req.ReferredByStaffId
         };
         _db.Members.Add(m);
         await _db.SaveChangesAsync(ct);
@@ -354,12 +366,15 @@ public class MembersController : ControllerBase
 
         await _db.SaveChangesAsync(ct);
 
+        // 顾客引荐：① 开卡这次充值的百分比返佣；② 开卡一次性固定推荐费
         if (initialPaid > 0 && m.ReferredByMemberId.HasValue)
-        {
             await TryGrantReferralAsync(m, initialPaid, ct);
-        }
+        await TryGrantCustomerFixedRewardAsync(m, ct);
+        // 员工引荐：按租户配置记一笔推荐提成（进工资）
+        await TryGrantStaffReferralAsync(m, initialPaid, ct);
 
         await _db.Entry(m).Reference(x => x.ReferredByMember).LoadAsync(ct);
+        await _db.Entry(m).Reference(x => x.ReferredByStaff).LoadAsync(ct);
         await _db.Entry(m).Reference(x => x.MemberType).LoadAsync(ct);
         if (m.MemberType is not null)
             await _db.Entry(m.MemberType).Reference(t => t.ServiceItem).LoadAsync(ct);
@@ -799,7 +814,8 @@ public class MembersController : ControllerBase
         var tenant = tenantId.HasValue
             ? await _db.Tenants.FirstOrDefaultAsync(t => t.Id == tenantId.Value, ct)
             : null;
-        var pct = tenant?.ReferralRewardPercent ?? 0m;
+        if (tenant is null || tenant.CustomerReferralMode != CustomerReferralMode.PercentPerRecharge) return;
+        var pct = tenant.ReferralRewardPercent;
         if (pct <= 0m || pct > 100m) return;
 
         var bonus = Math.Round(rechargeAmount * pct / 100m, 2, MidpointRounding.AwayFromZero);
@@ -826,6 +842,67 @@ public class MembersController : ControllerBase
             CounterpartyMemberId = rechargedMember.Id,
             OperatorUserId = _tenantContext.UserId,
             Remark = $"引荐返佣 {pct:F1}%（来自会员 {rechargedMember.CardNo} 充值 ¥{rechargeAmount:F2}）"
+        });
+        await _db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>开卡时给顾客引荐人一次性固定推荐费（到余额）。按租户 CustomerReferralFixedReward。</summary>
+    private async Task TryGrantCustomerFixedRewardAsync(Member newMember, CancellationToken ct)
+    {
+        if (!newMember.ReferredByMemberId.HasValue) return;
+        var tenant = newMember.TenantId.HasValue
+            ? await _db.Tenants.FirstOrDefaultAsync(t => t.Id == newMember.TenantId.Value, ct) : null;
+        if (tenant is null || tenant.CustomerReferralMode != CustomerReferralMode.FixedPerCard) return;
+        var reward = tenant.CustomerReferralFixedReward;
+        if (reward <= 0m) return;
+
+        var referrer = await _db.Members.FirstOrDefaultAsync(x => x.Id == newMember.ReferredByMemberId!.Value, ct);
+        if (referrer is null || !referrer.IsActive) return;
+
+        referrer.Balance += reward;
+        referrer.ReferralRewardEarned += reward;
+        _db.MemberRechargeRecords.Add(new MemberRechargeRecord
+        {
+            MemberId = referrer.Id,
+            StoreId = referrer.StoreId,
+            Amount = reward, BonusAmount = 0,
+            BalanceAfter = referrer.Balance,
+            PayMethod = PayMethod.MemberCard,
+            Kind = MemberRechargeKind.ReferralBonus,
+            CounterpartyMemberId = newMember.Id,
+            OperatorUserId = _tenantContext.UserId,
+            Remark = $"开卡推荐固定奖励 ¥{reward:F2}（来自新卡 {newMember.CardNo}）"
+        });
+        await _db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>开卡时给员工引荐人记一笔推荐提成（固定/张 或 开卡实收百分比），工资单按月汇总。</summary>
+    private async Task TryGrantStaffReferralAsync(Member newMember, decimal openCardPaid, CancellationToken ct)
+    {
+        if (!newMember.ReferredByStaffId.HasValue) return;
+        var tenant = newMember.TenantId.HasValue
+            ? await _db.Tenants.FirstOrDefaultAsync(t => t.Id == newMember.TenantId.Value, ct) : null;
+        if (tenant is null || tenant.StaffReferralMode == StaffReferralMode.None) return;
+
+        var amount = tenant.StaffReferralMode switch
+        {
+            StaffReferralMode.FixedPerCard => tenant.StaffReferralFixedAmount,
+            StaffReferralMode.PercentOfOpenCard => Math.Round(openCardPaid * tenant.StaffReferralPercent / 100m, 2, MidpointRounding.AwayFromZero),
+            _ => 0m
+        };
+        if (amount <= 0m) return;
+
+        var staff = await _db.Users.FirstOrDefaultAsync(u => u.Id == newMember.ReferredByStaffId!.Value, ct);
+        if (staff is null || !staff.IsActive) return;
+
+        _db.StaffReferralRecords.Add(new StaffReferralRecord
+        {
+            StoreId = newMember.StoreId,
+            StaffUserId = staff.Id,
+            MemberId = newMember.Id,
+            Amount = amount,
+            EarnedAt = DateTime.UtcNow,
+            Remark = $"开卡推荐：{newMember.CardNo}"
         });
         await _db.SaveChangesAsync(ct);
     }

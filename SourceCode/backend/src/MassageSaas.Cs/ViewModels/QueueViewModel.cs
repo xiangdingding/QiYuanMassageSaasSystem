@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -31,7 +32,15 @@ public partial class QueueViewModel : ObservableObject, IDisposable
     public bool CanManage => _session.Role is "ShopOwner" or "StoreManager" or "Cashier";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(OnDutyCount))]
+    [NotifyPropertyChangedFor(nameof(RestingCount))]
+    [NotifyPropertyChangedFor(nameof(OffDutyCount))]
     private ObservableCollection<TechnicianQueueItemDto> rows = new();
+
+    // 顶栏状态人数统计（对齐 BS counts）
+    public int OnDutyCount => Rows.Count(r => r.State == "OnDuty");
+    public int RestingCount => Rows.Count(r => r.State == "Resting");
+    public int OffDutyCount => Rows.Count(r => r.State == "OffDuty");
 
     [ObservableProperty]
     private string? lastCalled;
@@ -46,7 +55,15 @@ public partial class QueueViewModel : ObservableObject, IDisposable
         try
         {
             var data = await _api.GetQueueAsync(sid);
-            Rows = new ObservableCollection<TechnicianQueueItemDto>(data);
+            // 队列里没有的技师补一行"下班"占位，便于把他们设上钟（对齐 BS）
+            var staff = await _api.GetStaffAsync(role: "Technician", pageSize: 200, storeId: sid);
+            var placeholders = staff.Items
+                .Where(t => data.All(q => q.TechnicianId != t.Id))
+                .Select(t => new TechnicianQueueItemDto(
+                    Id: 0, TechnicianId: t.Id, TechnicianName: t.RealName ?? t.Username,
+                    EmployeeNo: t.EmployeeNo, State: "OffDuty",
+                    QueuePosition: 0, TodayRoundCount: 0, EnteredAt: null, LastCalledAt: null));
+            Rows = new ObservableCollection<TechnicianQueueItemDto>(data.Concat(placeholders));
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
     }

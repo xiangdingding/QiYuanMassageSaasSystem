@@ -167,6 +167,14 @@ public class PayrollController : ControllerBase
             })
             .ToDictionaryAsync(x => x.UserId, ct);
 
+        // 当月员工推荐提成（开卡推荐，按 EarnedAt 归属业务月）
+        var referralRows = await _db.StaffReferralRecords.AsNoTracking()
+            .Where(r => staffIds.Contains(r.StaffUserId)
+                        && r.EarnedAt >= monthStart && r.EarnedAt < monthEnd)
+            .GroupBy(r => r.StaffUserId)
+            .Select(g => new { UserId = g.Key, Total = g.Sum(x => x.Amount) })
+            .ToDictionaryAsync(x => x.UserId, x => x.Total, ct);
+
         // 当月排班天数：GroupBy 里套 Distinct().Count() EF Core 翻译不了，先取明细再内存按人去重计数
         var scheduleRaw = await _db.StaffSchedules.AsNoTracking()
             .Where(s => staffIds.Contains(s.UserId) && s.WorkDate >= dateFrom && s.WorkDate <= dateTo)
@@ -203,6 +211,7 @@ public class PayrollController : ControllerBase
             var uid = entry.Id;
             profiles.TryGetValue(uid, out var profile);
             perfRows.TryGetValue(uid, out var perf);
+            referralRows.TryGetValue(uid, out var referralTotal);
             scheduleDays.TryGetValue(uid, out var scheduledDays);
             var leaveDays = leaveRows
                 .Where(l => l.UserId == uid)
@@ -215,6 +224,7 @@ public class PayrollController : ControllerBase
                 UserId = uid,
                 BaseSalary = profile?.BaseMonthly ?? 0m,
                 CommissionTotal = perf?.Commission ?? 0m,
+                ReferralCommissionTotal = referralTotal,
                 TipsTotal = perf?.Tips ?? 0m,
                 OvertimeHours = 0m,
                 OvertimeAmount = 0m,
@@ -225,6 +235,7 @@ public class PayrollController : ControllerBase
                 LeaveDays = leaveDays,
                 NetTotal = (profile?.BaseMonthly ?? 0m)
                          + (perf?.Commission ?? 0m)
+                         + referralTotal
                          + attendance
             };
             period.Items.Add(item);
@@ -395,6 +406,7 @@ public class PayrollController : ControllerBase
         item.AdjustmentTotal = adjTotal;
         item.NetTotal = item.BaseSalary
                       + item.CommissionTotal
+                      + item.ReferralCommissionTotal
                       + item.OvertimeAmount
                       + item.AttendanceBonus
                       + adjTotal;
@@ -463,7 +475,7 @@ public class PayrollController : ControllerBase
         i.Id, i.UserId,
         i.User?.RealName ?? i.User?.Username ?? string.Empty,
         i.User?.EmployeeNo,
-        i.BaseSalary, i.CommissionTotal, i.TipsTotal,
+        i.BaseSalary, i.CommissionTotal, i.ReferralCommissionTotal, i.TipsTotal,
         i.OvertimeHours, i.OvertimeAmount, i.AttendanceBonus,
         i.AdjustmentTotal, i.NetTotal,
         i.ServedRoundCount, i.ScheduledDays, i.LeaveDays,

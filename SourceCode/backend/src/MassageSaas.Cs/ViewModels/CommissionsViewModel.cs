@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MassageSaas.Cs.Services;
 using MassageSaas.Shared.Commissions;
+using MassageSaas.Shared.Settings;
 
 namespace MassageSaas.Cs.ViewModels;
 
@@ -17,6 +18,7 @@ public partial class CommissionsViewModel : ObservableObject
         _api = api;
         _context = context;
         _ = ReloadAsync();
+        _ = LoadReferralAsync();
     }
 
     [ObservableProperty]
@@ -24,6 +26,55 @@ public partial class CommissionsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool isBusy;
+
+    // ---- 推荐规则（全店统一，规则模块第二 Tab）----
+
+    /// <summary>顾客推荐返佣模式：None / PercentPerRecharge / FixedPerCard（百分比与固定二选一）。</summary>
+    [ObservableProperty] private string refCustomerMode = "None";
+    /// <summary>顾客推荐：每次充值返佣百分比（0-100）。仅模式=PercentPerRecharge 时生效。</summary>
+    [ObservableProperty] private double refCustomerPercent;
+    /// <summary>顾客推荐：开卡一次性固定推荐费/张。仅模式=FixedPerCard 时生效。</summary>
+    [ObservableProperty] private double refCustomerFixed;
+    /// <summary>员工推荐提成模式：None / FixedPerCard / PercentOfOpenCard。</summary>
+    [ObservableProperty] private string refStaffMode = "None";
+    /// <summary>员工推荐提成·固定金额/张。仅模式=FixedPerCard 时生效。</summary>
+    [ObservableProperty] private double refStaffFixed;
+    /// <summary>员工推荐提成·开卡实收百分比（0-100）。仅模式=PercentOfOpenCard 时生效。</summary>
+    [ObservableProperty] private double refStaffPercent;
+
+    private async Task LoadReferralAsync()
+    {
+        try
+        {
+            var s = await _api.GetReferralSettingsAsync();
+            RefCustomerMode = s.CustomerReferralMode;
+            RefCustomerPercent = (double)s.CustomerRewardPercent;
+            RefCustomerFixed = (double)s.CustomerFixedReward;
+            RefStaffMode = s.StaffReferralMode;
+            RefStaffFixed = (double)s.StaffReferralFixedAmount;
+            RefStaffPercent = (double)s.StaffReferralPercent;
+        }
+        catch (Exception ex) { ErrorReporter.Show(ex); }
+    }
+
+    [RelayCommand]
+    private async Task SaveReferralAsync()
+    {
+        try
+        {
+            var saved = await _api.UpdateReferralSettingsAsync(new UpdateReferralSettingRequest(
+                RefCustomerMode, (decimal)RefCustomerPercent, (decimal)RefCustomerFixed,
+                RefStaffMode, (decimal)RefStaffFixed, (decimal)RefStaffPercent));
+            RefCustomerMode = saved.CustomerReferralMode;
+            RefCustomerPercent = (double)saved.CustomerRewardPercent;
+            RefCustomerFixed = (double)saved.CustomerFixedReward;
+            RefStaffMode = saved.StaffReferralMode;
+            RefStaffFixed = (double)saved.StaffReferralFixedAmount;
+            RefStaffPercent = (double)saved.StaffReferralPercent;
+            MessageBox.Show("推荐规则已保存", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex) { ErrorReporter.Show(ex); }
+    }
 
     [RelayCommand]
     public async Task ReloadAsync()

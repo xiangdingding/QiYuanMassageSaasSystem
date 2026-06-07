@@ -87,10 +87,8 @@ public partial class VouchersViewModel : ObservableObject
         OnPropertyChanged(nameof(LastPage));
         OnPropertyChanged(nameof(PageDisplay));
         OnPropertyChanged(nameof(CanGoNext));
-        // 用户切了每页条数：回到第 1 页 + 重 reload；
-        // 构造期字段默认值不会触发该 partial，初始 PageSize=20 不会重复加载
+        // 回到第 1 页；reload 交由 PaginationBar 的 PageChangedCommand 触发，避免重复请求
         Page = 1;
-        _ = ReloadAsync();
     }
 
     [RelayCommand]

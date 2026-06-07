@@ -396,7 +396,24 @@
           </el-col>
         </el-row>
 
-        <el-form-item label="引荐人" class="full-row">
+        <el-form-item v-if="formMode === 'create'" label="员工推荐人" class="full-row">
+          <el-select
+            v-model="form.referredByStaffId"
+            clearable
+            filterable
+            placeholder="本店员工，可选（开卡给该员工记一笔推荐提成）"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="s in staffOptions"
+              :key="s.id"
+              :value="s.id"
+              :label="`${s.employeeNo ?? ''} · ${s.realName ?? s.username}`"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="顾客引荐人" class="full-row">
           <el-select
             :model-value="form.referrerPhone"
             filterable
@@ -421,6 +438,15 @@
             <span v-else>无</span>
           </div>
         </el-form-item>
+
+        <el-form-item v-if="formMode === 'create' && hasReferralPreview" label-width="0" class="full-row">
+          <div class="referral-preview" aria-label="推荐奖励预估">
+            <div class="rp-title">开卡后将产生的推荐奖励（按当前推荐规则预估）</div>
+            <div v-if="customerRewardPreview" class="rp-line">{{ customerRewardPreview }}</div>
+            <div v-if="staffRewardPreview" class="rp-line">{{ staffRewardPreview }}</div>
+          </div>
+        </el-form-item>
+
         <el-form-item label="备注" class="full-row">
           <el-input v-model="form.remark" type="textarea" :rows="2" />
         </el-form-item>
@@ -758,10 +784,10 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import dayjs from 'dayjs';
-import { memberTypesApi, membersApi, servicesApi, type MemberType, type ReferralSummaryDto } from '@/api/modules';
+import { memberTypesApi, membersApi, referralSettingsApi, servicesApi, staffApi, type MemberType, type ReferralSetting, type ReferralSummaryDto } from '@/api/modules';
 import { orderStatusLabel, payMethodLabel } from '@/utils/enumLabels';
 import { useAppStore } from '@/stores/app';
-import type { Member, MemberPhoneGroup, ServiceItem } from '@/api/types';
+import type { Member, MemberPhoneGroup, ServiceItem, Staff } from '@/api/types';
 
 const appStore = useAppStore();
 
@@ -791,12 +817,28 @@ const form = reactive({
   referrerPhone: '',
   referrerLabel: '',
   referredByMemberId: null as number | null,
+  referredByStaffId: null as number | null,
   memberTypeId: null as number | null,
   count: 0,
   payMethod: 'Wechat'
 });
 const referrerSearchResults = ref<MemberPhoneGroup[]>([]);
 const referrerSearchLoading = ref(false);
+
+// 员工推荐人候选 + 推荐规则（用于开卡时预估顾客返佣 / 员工提成）
+const staffOptions = ref<Staff[]>([]);
+const referral = ref<ReferralSetting | null>(null);
+const round2 = (n: number) => Math.round(n * 100) / 100;
+async function ensureReferralContextLoaded() {
+  // 员工列表按当前门店每次加载（切店后保持正确）；推荐规则全店统一，仅首次加载
+  try {
+    const r = await staffApi.list({ pageSize: 200, storeId: appStore.activeStoreId ?? undefined });
+    staffOptions.value = r.items.filter((s) => s.isActive);
+  } catch { /* 非致命：员工推荐人列表加载失败不影响开卡 */ }
+  if (!referral.value) {
+    try { referral.value = await referralSettingsApi.get(); } catch { /* 非致命 */ }
+  }
+}
 
 /// 算下一张卡的卡号：N=同手机号下已有卡数（含已关闭），统一两位后缀
 ///   N=0 → phone+01
@@ -908,6 +950,36 @@ const creditCount = computed(() => {
   const bonus = selectedCreateType.value?.bonusCount ?? 0;
   return form.count + bonus;
 });
+
+/// 开卡实收基数（与提交时 paidAmount 一致）：计次卡=实收金额，充值卡=充值面值
+const currentPaid = computed(() =>
+  selectedCreateType.value?.kind === 'CountBased' ? countChargeAmount.value : form.initialBalance);
+
+/// 顾客推荐返佣预估（按当前推荐规则；返佣方式二选一/关闭）
+const customerRewardPreview = computed<string | null>(() => {
+  const r = referral.value;
+  if (!form.referredByMemberId || !r) return null;
+  let amt = 0; let desc = '';
+  if (r.customerReferralMode === 'PercentPerRecharge') { amt = round2(currentPaid.value * r.customerRewardPercent / 100); desc = `充值返佣 ${r.customerRewardPercent}%`; }
+  else if (r.customerReferralMode === 'FixedPerCard') { amt = r.customerFixedReward; desc = '固定推荐费 / 张'; }
+  return amt > 0
+    ? `顾客推荐人：返佣 ¥${amt.toFixed(2)}（${desc}）→ 进推荐顾客余额`
+    : '顾客推荐人：暂无返佣（推荐规则未开启或额度为 0）';
+});
+
+/// 员工推荐提成预估（按当前推荐规则；固定/百分比二选一/关闭）
+const staffRewardPreview = computed<string | null>(() => {
+  const r = referral.value;
+  if (!form.referredByStaffId || !r) return null;
+  let amt = 0; let desc = '';
+  if (r.staffReferralMode === 'FixedPerCard') { amt = r.staffReferralFixedAmount; desc = '固定提成 / 张'; }
+  else if (r.staffReferralMode === 'PercentOfOpenCard') { amt = round2(currentPaid.value * r.staffReferralPercent / 100); desc = `开卡实收 ${r.staffReferralPercent}%`; }
+  return amt > 0
+    ? `员工推荐人：提成 ¥${amt.toFixed(2)}（${desc}）→ 计入该员工当月工资`
+    : '员工推荐人：暂无提成（推荐规则未开启或额度为 0）';
+});
+
+const hasReferralPreview = computed(() => !!(customerRewardPreview.value || staffRewardPreview.value));
 
 function onCreateTypePicked(id: number | null) {
   const t = memberTypes.value.find((x) => x.id === id);
@@ -1208,13 +1280,13 @@ async function openCreate() {
   Object.assign(form, {
     cardNo: '', phone: '', name: '', gender: '', birthday: '',
     discount: 1, initialBalance: 0, remark: '',
-    referrerPhone: '', referrerLabel: '', referredByMemberId: null,
+    referrerPhone: '', referrerLabel: '', referredByMemberId: null, referredByStaffId: null,
     memberTypeId: null, count: 0, payMethod: 'Wechat'
   });
   referrerSearchResults.value = [];
   formOpen.value = true;
-  // 异步加载会员类型不阻塞打开对话框
-  await ensureMemberTypesLoaded();
+  // 异步加载会员类型 + 推荐上下文（员工列表/推荐规则），不阻塞打开对话框
+  await Promise.all([ensureMemberTypesLoaded(), ensureReferralContextLoaded()]);
 }
 
 /// 在已有手机号下加办一张卡：预填手机号并锁定，姓名也带过来
@@ -1241,6 +1313,7 @@ function openEdit(row: Member) {
     referrerPhone: '',
     referrerLabel: '',
     referredByMemberId: row.referredByMemberId ?? null,
+    referredByStaffId: null,
     memberTypeId: null,
     count: 0,
     payMethod: 'Wechat'
@@ -1289,6 +1362,7 @@ async function saveForm() {
         initialBalance: paidAmount,
         remark: form.remark || null,
         referredByMemberId: form.referredByMemberId,
+        referredByStaffId: form.referredByStaffId,
         memberTypeId: form.memberTypeId,
         count: form.count,
         payMethod: form.payMethod
@@ -1636,4 +1710,9 @@ onMounted(async () => {
 /* 键盘焦点态强化，方便弱视用户定位 */
 .member-card:focus-within { outline: 2px solid var(--el-color-primary); outline-offset: 2px; }
 .card-row:focus-within { outline: 2px solid var(--el-color-primary); outline-offset: 1px; }
+
+/* 开卡推荐奖励预估块 */
+.referral-preview { width: 100%; background: #fff7e6; border: 1px solid #ffd591; border-radius: 6px; padding: 10px 12px; }
+.rp-title { font-size: 12px; color: #b26a00; margin-bottom: 4px; }
+.rp-line { font-size: 14px; font-weight: 600; color: #874d00; line-height: 1.7; }
 </style>

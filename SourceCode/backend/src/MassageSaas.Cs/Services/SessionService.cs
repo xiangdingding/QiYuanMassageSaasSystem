@@ -37,6 +37,15 @@ public class SessionService
         Changed?.Invoke();
     }
 
+    /// <summary>个人设置里改了真实姓名后，同步会话内的展示名并落盘。</summary>
+    public void UpdateRealName(string? realName)
+    {
+        if (_state.User is null) return;
+        _state.User = _state.User with { RealName = string.IsNullOrWhiteSpace(realName) ? null : realName.Trim() };
+        SaveToDisk();
+        Changed?.Invoke();
+    }
+
     public void SignOut()
     {
         _state = new SessionState();

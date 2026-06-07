@@ -35,8 +35,44 @@ public partial class ReviewsViewModel : ObservableObject
     [ObservableProperty]
     private bool isBusy;
 
-    partial void OnRatingFilterChanged(int value) => _ = ReloadAsync();
-    partial void OnDaysChanged(int value) => _ = ReloadAsync();
+    // ---- 分页（仅针对评分明细 Rows；技师均分汇总 Summary 不分页） ----
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageInfo))]
+    [NotifyPropertyChangedFor(nameof(CanPrev))]
+    [NotifyPropertyChangedFor(nameof(CanNext))]
+    private int page = 1;
+
+    [ObservableProperty]
+    private int pageSize = 20;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PageInfo))]
+    [NotifyPropertyChangedFor(nameof(CanNext))]
+    private int total;
+
+    public int TotalPages => Total <= 0 ? 1 : (Total + PageSize - 1) / PageSize;
+    public string PageInfo => $"第 {Page} / {TotalPages} 页 · 共 {Total} 条";
+    public bool CanPrev => Page > 1;
+    public bool CanNext => Page < TotalPages;
+
+    partial void OnRatingFilterChanged(int value) { Page = 1; _ = ReloadAsync(); }
+    partial void OnDaysChanged(int value) { Page = 1; _ = ReloadAsync(); }
+
+    [RelayCommand]
+    private async Task PrevPage()
+    {
+        if (!CanPrev) return;
+        Page--;
+        await ReloadAsync();
+    }
+
+    [RelayCommand]
+    private async Task NextPage()
+    {
+        if (!CanNext) return;
+        Page++;
+        await ReloadAsync();
+    }
 
     /// <summary>代客录入评价：弹窗自带 IApiClient，提交成功后刷新列表。</summary>
     [RelayCommand]
@@ -68,8 +104,9 @@ public partial class ReviewsViewModel : ObservableObject
                 5 => 1,
                 _ => null
             };
-            Rows = new ObservableCollection<ServiceReviewDto>(
-                (await _api.GetReviewsAsync(rating: rating, from: from, pageSize: 200)).Items);
+            var paged = await _api.GetReviewsAsync(rating: rating, from: from, page: Page, pageSize: PageSize);
+            Rows = new ObservableCollection<ServiceReviewDto>(paged.Items);
+            Total = paged.Total;
             Summary = new ObservableCollection<TechnicianReviewSummaryDto>(
                 await _api.GetReviewSummaryAsync(from: from));
         }
