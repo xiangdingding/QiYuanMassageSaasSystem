@@ -6,7 +6,7 @@
         Width="720"
         Height="890"
         ResizeMode="NoResize"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <Style x:Key="Cap" TargetType="TextBlock">
             <Setter Property="Margin" Value="0,0,0,4" />

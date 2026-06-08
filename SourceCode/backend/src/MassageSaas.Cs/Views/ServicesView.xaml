@@ -40,7 +40,14 @@
                     <DataGridTextColumn Width="90" Binding="{Binding DurationMinutes, StringFormat='{}{0} 分钟'}" Header="时长" />
                     <DataGridTextColumn Width="100" Binding="{Binding Price, StringFormat='¥{0:F2}'}" Header="原价" />
                     <DataGridTextColumn Width="100" Binding="{Binding MemberPrice, StringFormat='¥{0:F2}'}" Header="会员价" />
-                    <DataGridTextColumn Width="70" Binding="{Binding IsActive, Converter={StaticResource BoolLabel}, ConverterParameter='启用|停用'}" Header="状态" />
+                    <DataGridTextColumn Width="70" Binding="{Binding IsActive, Converter={StaticResource BoolLabel}, ConverterParameter='启用|停用'}" Header="状态">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                                <Setter Property="Foreground" Value="{Binding IsActive, Converter={StaticResource ActiveStatusBrush}}" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
                     <DataGridTemplateColumn Width="180" Header="操作">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -50,11 +57,20 @@
                                             CommandParameter="{Binding}"
                                             Content="编辑"
                                             Style="{StaticResource RowGhost}" />
-                                    <Button AutomationProperties.Name="停用或启用服务项目"
+                                    <!--  停用（仅启用中显示，红底按钮）  -->
+                                    <Button AutomationProperties.Name="停用服务项目"
                                             Command="{Binding DataContext.ToggleActiveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                             CommandParameter="{Binding}"
-                                            Content="{Binding IsActive, Converter={StaticResource BoolLabel}, ConverterParameter='停用|启用'}"
-                                            Style="{StaticResource RowGhost}" />
+                                            Content="停用"
+                                            Style="{StaticResource RowDanger}"
+                                            Visibility="{Binding IsActive, Converter={StaticResource BoolToVisible}}" />
+                                    <!--  启用（仅停用中显示，绿底 #2D6A4F）  -->
+                                    <Button AutomationProperties.Name="启用服务项目"
+                                            Command="{Binding DataContext.ToggleActiveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}"
+                                            Content="启用"
+                                            Style="{StaticResource RowPrimary}"
+                                            Visibility="{Binding IsActive, Converter={StaticResource InverseBoolToVisible}}" />
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>

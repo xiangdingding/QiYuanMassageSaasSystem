@@ -28,6 +28,10 @@
             <conv:CountToVisibleConverter x:Key="CountToVisible" />
             <conv:BoolInverseConverter x:Key="BoolInverse" />
             <conv:BoolToVisibilityConverter x:Key="BoolToVisible" />
+            <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisible" />
+            <conv:ActiveStatusBrushConverter x:Key="ActiveStatusBrush" />
+            <conv:MemberTypeKindBrushConverter x:Key="MemberTypeKindBrush" />
+            <conv:VoucherStatusBrushConverter x:Key="VoucherStatusBrush" />
             <conv:EnumLabelConverter x:Key="EnumLabel" />
             <conv:MemberTypeMetaConverter x:Key="MemberTypeMeta" />
             <conv:RechargeKindBrushConverter x:Key="RechargeKindBrush" />

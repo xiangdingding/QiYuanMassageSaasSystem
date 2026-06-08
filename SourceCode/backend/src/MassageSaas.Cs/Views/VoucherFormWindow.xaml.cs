@@ -1,7 +1,5 @@
-using System.Globalization;
 using System.Text;
 using System.Windows;
-using System.Windows.Controls;
 using MassageSaas.Shared.Vouchers;
 
 namespace MassageSaas.Cs.Views;
@@ -15,13 +13,14 @@ public partial class VoucherFormWindow : Window
     public VoucherFormWindow()
     {
         InitializeComponent();
-        KindBox.SelectedIndex = 0;
     }
+
+    private string SelectedKind() => KindGroup.IsChecked == true ? "GroupBuy" : "StoreCoupon";
 
     private void Generate_Click(object sender, RoutedEventArgs e)
     {
         var prefix = SelectedKind() == "GroupBuy" ? "GB" : "SC";
-        var sb = new StringBuilder(prefix.Length + 1 + 4 + 1 + 4);
+        var sb = new StringBuilder();
         sb.Append(prefix).Append('-');
         for (var i = 0; i < 4; i++) sb.Append(CodeAlphabet[Rng.Next(CodeAlphabet.Length)]);
         sb.Append('-');
@@ -31,60 +30,52 @@ public partial class VoucherFormWindow : Window
         CodeBox.SelectAll();
     }
 
-    private string SelectedKind() =>
-        (KindBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "GroupBuy";
-
-    private decimal ParseDec(TextBox b, decimal fallback)
-        => decimal.TryParse(b.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var v) ? v : fallback;
-
-    private decimal? ParseNullableDec(TextBox b)
-        => decimal.TryParse(b.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var v) ? v : null;
-
-    private string? Trimmed(TextBox b)
-        => string.IsNullOrWhiteSpace(b.Text) ? null : b.Text.Trim();
-
     public CreateVoucherRequest BuildRequest()
     {
-        // 互斥：radio 选满减 → 折扣率传 null；选折扣 → 面值传 0
+        // 互斥：满减 → 折扣率传 null；折扣 → 面值传 0（与 BS save 一致）
         var useFace = ModeFaceRadio.IsChecked == true;
         return new(
             Kind: SelectedKind(),
             Code: CodeBox.Text.Trim(),
             Title: TitleBox.Text.Trim(),
-            FaceValue: useFace ? ParseDec(FaceBox, 0m) : 0m,
-            MinOrderAmount: ParseDec(MinBox, 0m),
-            DiscountPercent: useFace ? null : ParseNullableDec(DiscountBox),
+            FaceValue: useFace ? (decimal)FaceBox.Value : 0m,
+            MinOrderAmount: (decimal)MinBox.Value,
+            DiscountPercent: useFace ? null : (decimal)DiscountBox.Value,
             ValidFrom: FromBox.SelectedDate?.Date,
             ExpiresAt: ExpiryBox.SelectedDate?.Date,
-            Platform: Trimmed(PlatformBox),
-            Remark: Trimmed(RemarkBox));
+            Platform: SelectedKind() == "GroupBuy" && !string.IsNullOrWhiteSpace(PlatformBox.Text)
+                ? PlatformBox.Text.Trim() : null,
+            Remark: string.IsNullOrWhiteSpace(RemarkBox.Text) ? null : RemarkBox.Text.Trim());
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(CodeBox.Text) || string.IsNullOrWhiteSpace(TitleBox.Text))
         {
-            MessageBox.Show("券码与标题必填");
+            Warn("券码与标题必填");
             return;
         }
         var useFace = ModeFaceRadio.IsChecked == true;
-        if (useFace && ParseDec(FaceBox, 0m) <= 0m)
+        if (useFace && (decimal)FaceBox.Value <= 0m)
         {
-            MessageBox.Show("满减模式下面值必须大于 0");
+            Warn("满减模式下面值必须大于 0");
             return;
         }
         if (!useFace)
         {
-            var pct = ParseNullableDec(DiscountBox);
-            if (pct is null or <= 0m or >= 1m)
+            var pct = (decimal)DiscountBox.Value;
+            if (pct is <= 0m or >= 1m)
             {
-                MessageBox.Show("折扣率需在 0-1 之间（如 0.9 表示 9 折）");
+                Warn("折扣率需在 0-1 之间（如 0.9 表示 9 折）");
                 return;
             }
         }
         DialogResult = true;
         Close();
     }
+
+    private static void Warn(string msg) =>
+        MessageBox.Show(msg, "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
 
     private void Cancel_Click(object sender, RoutedEventArgs e)
     {

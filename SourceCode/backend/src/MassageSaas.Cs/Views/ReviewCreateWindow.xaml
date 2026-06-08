@@ -4,7 +4,7 @@
         Title="代客录入评价"
         Height="640" Width="660"
         MinHeight="520" MinWidth="560"
-        WindowStartupLocation="CenterOwner"
+        WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize">
     <Grid Margin="16">
         <Grid.RowDefinitions>
@@ -19,21 +19,22 @@
         <!-- 选技师 + 日期 + 查询 -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
             <TextBlock Text="技师" VerticalAlignment="Center" Margin="0,0,6,0" />
-            <ComboBox x:Name="TechBox" Width="220" Height="30"
+            <ComboBox x:Name="TechBox" Width="220"
+                      AutomationProperties.Name="选择服务技师"
                       DisplayMemberPath="Display" SelectedValuePath="Id"
-                      AutomationProperties.Name="选择服务技师" />
+                      Style="{StaticResource FilterCombo}" />
             <TextBlock Text="日期" VerticalAlignment="Center" Margin="14,0,6,0" />
-            <DatePicker x:Name="DateBox" Width="140" Height="30"
-                        AutomationProperties.Name="服务日期" />
-            <Button Content="查询订单" Margin="14,0,0,0" Padding="12,4" Click="Query_Click"
+            <DatePicker x:Name="DateBox" Width="160" AutomationProperties.Name="服务日期" />
+            <Button Margin="14,0,0,0" Padding="16,0"
+                    AutomationProperties.HelpText="列出该技师当日已完成的服务项供选择"
                     AutomationProperties.Name="按技师和日期查询已完成服务"
-                    AutomationProperties.HelpText="列出该技师当日已完成的服务项供选择" />
+                    Click="Query_Click" Content="查询订单" Style="{StaticResource PrimaryBtn}" />
         </StackPanel>
 
         <!-- 已完成服务项：单选一行 -->
         <DataGrid Grid.Row="1" x:Name="ItemsGrid" AutoGenerateColumns="False" IsReadOnly="True"
                   CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single"
-                  HeadersVisibility="Column" GridLinesVisibility="All"
+                  HeadersVisibility="Column"
                   AlternatingRowBackground="#FAFAFA" Margin="0,0,0,10"
                   AutomationProperties.Name="已完成服务项列表，选中一行作为评价对象">
             <DataGrid.Columns>
@@ -48,8 +49,9 @@
         <!-- 满意度（底层仍存 1-5 整数） -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
             <TextBlock Text="满意度" VerticalAlignment="Center" Margin="0,0,6,0" />
-            <ComboBox x:Name="RatingBox" Width="140" Height="30"
-                      AutomationProperties.Name="满意度评价">
+            <ComboBox x:Name="RatingBox" Width="140"
+                      AutomationProperties.Name="满意度评价"
+                      Style="{StaticResource FilterCombo}">
                 <ComboBoxItem Content="非常满意" Tag="5" />
                 <ComboBoxItem Content="满意" Tag="4" />
                 <ComboBoxItem Content="一般" Tag="3" />
@@ -75,22 +77,23 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
             <TextBlock Text="其他标签（可手动填写，逗号分隔）" Margin="0,6,0,4" />
-            <TextBox x:Name="TagsBox" Padding="6" MaxLength="200"
-                     AutomationProperties.Name="其他标签" />
+            <TextBox x:Name="TagsBox" MaxLength="200"
+                     AutomationProperties.Name="其他标签" Style="{StaticResource FieldText}" />
         </StackPanel>
         <StackPanel Grid.Row="4" Margin="0,0,0,10">
             <TextBlock Text="评论（可空）" Margin="0,0,0,4" />
-            <TextBox x:Name="CommentBox" Padding="6" Height="72"
-                     AcceptsReturn="True" TextWrapping="Wrap"
-                     VerticalScrollBarVisibility="Auto" MaxLength="500"
-                     AutomationProperties.Name="评论内容" />
+            <TextBox x:Name="CommentBox" Height="72" MaxLength="500"
+                     AutomationProperties.Name="评论内容" Style="{StaticResource FieldTextMultiline}" />
         </StackPanel>
 
         <Border Grid.Row="5" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="0,12,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="取消" Padding="16,6" Margin="0,0,8,0" IsCancel="True" Click="Cancel_Click" />
-                <Button Content="提交评价" Padding="16,6" Background="#2D6A4F" Foreground="White"
-                        BorderThickness="0" Click="Save_Click" />
+                <Button Margin="0,0,8,0" Padding="20,0"
+                        AutomationProperties.Name="取消"
+                        Click="Cancel_Click" Content="取消" IsCancel="True" Style="{StaticResource GhostBtn}" />
+                <Button Padding="20,0"
+                        AutomationProperties.Name="提交评价"
+                        Click="Save_Click" Content="提交评价" Style="{StaticResource PrimaryBtn}" />
             </StackPanel>
         </Border>
     </Grid>

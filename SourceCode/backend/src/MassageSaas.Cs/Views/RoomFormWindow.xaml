@@ -4,7 +4,7 @@
         xmlns:ctrl="clr-namespace:MassageSaas.Cs.Controls"
         Title="新建房间"
         Height="500" Width="460"
-        WindowStartupLocation="CenterOwner"
+        WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize">
     <Window.Resources>
         <!--  左侧标签：右对齐、垂直居中、不换行（对齐 BS 端 el-form label-width）  -->

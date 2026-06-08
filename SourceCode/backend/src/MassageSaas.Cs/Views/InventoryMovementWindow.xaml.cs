@@ -1,40 +1,43 @@
-using System.Globalization;
+using System;
 using System.Windows;
-using System.Windows.Controls;
 using MassageSaas.Shared.Inventory;
 
 namespace MassageSaas.Cs.Views;
 
+/// <summary>
+/// 出入库登记。类型由调用方（入库/领用/盘点）固定，对齐 BS openMovement：
+/// 入库取正、领用/报损自动取负、盘点按填入的正负值。
+/// </summary>
 public partial class InventoryMovementWindow : Window
 {
-    public InventoryMovementWindow(string itemName)
+    private readonly string _kind;
+
+    public InventoryMovementWindow(string itemName, string kind)
     {
         InitializeComponent();
-        ItemLabel.Text = $"耗材：{itemName}";
-        KindBox.SelectedIndex = 0;
-    }
-
-    private string SelectedKind() =>
-        (KindBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "PurchaseIn";
-
-    private void KindBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (DeltaHint is null) return;
-        DeltaHint.Text = SelectedKind() switch
+        _kind = kind;
+        Title = kind switch
         {
-            "PurchaseIn" => "入库数量（填正数）",
-            "Consume" => "消耗数量（填正数，自动按出库扣减）",
-            "Discard" => "报损数量（填正数，自动按出库扣减）",
-            _ => "盘点后差值（填带正负号的调整量）"
+            "PurchaseIn" => "采购入库",
+            "Consume" => "领用出库",
+            "Adjust" => "盘点调整",
+            "Discard" => "报损",
+            _ => "出入库"
+        };
+        ItemNameText.Text = itemName;
+        DeltaHint.Text = kind switch
+        {
+            "Consume" or "Discard" => "填正数，系统自动取负数",
+            "Adjust" => "正数=加，负数=减",
+            _ => "正数表示新增库存"
         };
     }
 
     /// <summary>把用户填的量按类型转成带符号的 Delta：入库为正，消耗/报损为负，盘点按原值。</summary>
     private decimal SignedDelta()
     {
-        if (!decimal.TryParse(DeltaBox.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var v))
-            return 0m;
-        return SelectedKind() switch
+        var v = (decimal)DeltaBox.Value;
+        return _kind switch
         {
             "PurchaseIn" => Math.Abs(v),
             "Consume" or "Discard" => -Math.Abs(v),
@@ -44,7 +47,7 @@ public partial class InventoryMovementWindow : Window
 
     public CreateMovementRequest BuildRequest(long itemId) => new(
         ItemId: itemId,
-        Kind: SelectedKind(),
+        Kind: _kind,
         Delta: SignedDelta(),
         Remark: string.IsNullOrWhiteSpace(RemarkBox.Text) ? null : RemarkBox.Text.Trim());
 
@@ -52,7 +55,7 @@ public partial class InventoryMovementWindow : Window
     {
         if (SignedDelta() == 0m)
         {
-            MessageBox.Show("请输入有效的数量变化");
+            MessageBox.Show("请输入有效的数量变化", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
         DialogResult = true;

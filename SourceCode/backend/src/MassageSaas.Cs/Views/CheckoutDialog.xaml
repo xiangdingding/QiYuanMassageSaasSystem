@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="结账"
         Width="540" SizeToContent="Height" MaxHeight="720"
-        WindowStartupLocation="CenterOwner"
+        WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize">
     <Window.Resources>
         <!-- 分段式支付方式开关：选中绿底白字 -->

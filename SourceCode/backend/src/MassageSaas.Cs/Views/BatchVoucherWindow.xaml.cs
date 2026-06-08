@@ -1,6 +1,4 @@
-using System.Globalization;
 using System.Windows;
-using System.Windows.Controls;
 using MassageSaas.Cs.Services;
 using MassageSaas.Shared.Vouchers;
 
@@ -20,17 +18,9 @@ public partial class BatchVoucherWindow : Window
     {
         _api = api;
         InitializeComponent();
-        KindBox.SelectedIndex = 1; // 默认门店优惠券：店家自发券是更常见的批量场景
     }
 
-    private string SelectedKind() =>
-        (KindBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "GroupBuy";
-
-    private decimal ParseDec(TextBox b, decimal fallback)
-        => decimal.TryParse(b.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var v) ? v : fallback;
-
-    private string? Trimmed(TextBox b)
-        => string.IsNullOrWhiteSpace(b.Text) ? null : b.Text.Trim();
+    private string SelectedKind() => KindGroup.IsChecked == true ? "GroupBuy" : "StoreCoupon";
 
     private async void Generate_Click(object sender, RoutedEventArgs e)
     {
@@ -38,33 +28,28 @@ public partial class BatchVoucherWindow : Window
         if (ResultPanel.Visibility == Visibility.Visible)
         {
             ResultPanel.Visibility = Visibility.Collapsed;
-            FormPanel.Visibility = Visibility.Visible;
+            FormScroll.Visibility = Visibility.Visible;
             GenerateButton.Content = "生成";
             CodesBox.Clear();
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(TitleBox.Text))
-        {
-            MessageBox.Show("标题必填"); return;
-        }
-        if (!int.TryParse(CountBox.Text, out var count) || count < 1 || count > 500)
-        {
-            MessageBox.Show("数量需在 1-500 之间"); return;
-        }
+        if (string.IsNullOrWhiteSpace(TitleBox.Text)) { Warn("标题必填"); return; }
+        var count = (int)CountBox.Value;
+        if (count < 1 || count > 500) { Warn("数量需在 1-500 之间"); return; }
 
         var useFace = ModeFaceRadio.IsChecked == true;
         decimal faceValue = 0m;
         decimal? percent = null;
         if (useFace)
         {
-            faceValue = ParseDec(FaceBox, 0m);
-            if (faceValue <= 0m) { MessageBox.Show("满减面值必须大于 0"); return; }
+            faceValue = (decimal)FaceBox.Value;
+            if (faceValue <= 0m) { Warn("满减面值必须大于 0"); return; }
         }
         else
         {
-            percent = ParseDec(DiscountBox, 0m);
-            if (percent <= 0m || percent >= 1m) { MessageBox.Show("折扣率需在 0-1 之间（如 0.9）"); return; }
+            percent = (decimal)DiscountBox.Value;
+            if (percent is <= 0m or >= 1m) { Warn("折扣率需在 0-1 之间（如 0.9）"); return; }
         }
 
         var req = new BatchCreateVoucherRequest(
@@ -72,12 +57,13 @@ public partial class BatchVoucherWindow : Window
             Count: count,
             Title: TitleBox.Text.Trim(),
             FaceValue: faceValue,
-            MinOrderAmount: ParseDec(MinBox, 0m),
+            MinOrderAmount: (decimal)MinBox.Value,
             DiscountPercent: percent,
-            ValidFrom: null,
-            ExpiresAt: null,
-            Platform: Trimmed(PlatformBox),
-            Remark: null);
+            ValidFrom: FromBox.SelectedDate?.Date,
+            ExpiresAt: ExpiryBox.SelectedDate?.Date,
+            Platform: SelectedKind() == "GroupBuy" && !string.IsNullOrWhiteSpace(PlatformBox.Text)
+                ? PlatformBox.Text.Trim() : null,
+            Remark: string.IsNullOrWhiteSpace(RemarkBox.Text) ? null : RemarkBox.Text.Trim());
 
         GenerateButton.IsEnabled = false;
         try
@@ -85,7 +71,7 @@ public partial class BatchVoucherWindow : Window
             var resp = await _api.BatchCreateVouchersAsync(req);
             AnyGenerated = true;
             // 表单整体折叠 + 结果区接管 Grid.Row=0：弹窗高度由结果区自身约束，不再撑外层滚动
-            FormPanel.Visibility = Visibility.Collapsed;
+            FormScroll.Visibility = Visibility.Collapsed;
             ResultHeader.Text = $"已生成 {resp.Created} 张券码，可复制下方列表：";
             CodesBox.Text = string.Join(Environment.NewLine, resp.Codes);
             ResultPanel.Visibility = Visibility.Visible;
@@ -109,6 +95,9 @@ public partial class BatchVoucherWindow : Window
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
+
+    private static void Warn(string msg) =>
+        MessageBox.Show(msg, "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
 
     private void Close_Click(object sender, RoutedEventArgs e)
     {

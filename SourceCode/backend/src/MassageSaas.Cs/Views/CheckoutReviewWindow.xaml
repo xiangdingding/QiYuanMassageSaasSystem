@@ -4,7 +4,7 @@
         Title="结算评价"
         Height="440" Width="520"
         MinHeight="320" MinWidth="440"
-        WindowStartupLocation="CenterOwner"
+        WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize">
     <Grid Margin="16">
         <Grid.RowDefinitions>

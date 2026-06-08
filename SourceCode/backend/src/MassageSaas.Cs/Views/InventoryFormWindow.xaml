@@ -1,53 +1,184 @@
 <Window x:Class="MassageSaas.Cs.Views.InventoryFormWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="耗材"
-        Height="540" Width="420"
-        WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-
-        <TextBlock Grid.Row="0" Text="编码" Margin="0,0,0,4" />
-        <TextBox Grid.Row="1" x:Name="CodeBox" Padding="6" Margin="0,0,0,12" />
-
-        <TextBlock Grid.Row="2" Text="名称" Margin="0,0,0,4" />
-        <TextBox Grid.Row="3" x:Name="NameBox" Padding="6" Margin="0,0,0,12" />
-
-        <TextBlock Grid.Row="4" Text="单位（如 瓶 / 条 / 包）" Margin="0,0,0,4" />
-        <TextBox Grid.Row="5" x:Name="UnitBox" Padding="6" Margin="0,0,0,12" />
-
-        <TextBlock Grid.Row="6" x:Name="QtyLabel" Text="初始库存数量" Margin="0,0,0,4" />
-        <TextBox Grid.Row="7" x:Name="QtyBox" Padding="6" Margin="0,0,0,12" Text="0" />
-
-        <TextBlock Grid.Row="8" Text="低库存预警线" Margin="0,0,0,4" />
-        <TextBox Grid.Row="9" x:Name="MinBox" Padding="6" Margin="0,0,0,12" Text="0" />
-
-        <TextBlock Grid.Row="10" Text="单位成本（可空）" Margin="0,0,0,4" />
-        <TextBox Grid.Row="11" x:Name="CostBox" Padding="6" Margin="0,0,0,12" />
-
-        <CheckBox Grid.Row="12" x:Name="ActiveBox" Content="启用" IsChecked="True" VerticalAlignment="Top" />
-
-        <Border Grid.Row="13" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="取消" Padding="16,6" Margin="0,0,8,0" Click="Cancel_Click" />
-                <Button Content="保存" Padding="16,6" Background="#2D6A4F" Foreground="White" BorderThickness="0" Click="Save_Click" />
+        xmlns:ctrl="clr-namespace:MassageSaas.Cs.Controls"
+        Title="物品建档"
+        Width="460"
+        ResizeMode="NoResize"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style x:Key="Cap" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="Foreground" Value="#666" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style x:Key="Row" TargetType="Grid">
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+    </Window.Resources>
+    <DockPanel Margin="20">
+        <Border Margin="0,12,0,0"
+                Padding="0,12,0,0"
+                BorderBrush="#E5E7EB"
+                BorderThickness="0,1,0,0"
+                DockPanel.Dock="Bottom">
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button Margin="0,0,8,0"
+                        Padding="20,0"
+                        AutomationProperties.Name="取消"
+                        Click="Cancel_Click"
+                        Content="取消"
+                        Style="{StaticResource GhostBtn}" />
+                <Button Padding="20,0"
+                        AutomationProperties.Name="保存"
+                        Click="Save_Click"
+                        Content="保存"
+                        Style="{StaticResource PrimaryBtn}" />
             </StackPanel>
         </Border>
-    </Grid>
+
+        <StackPanel>
+            <Grid Style="{StaticResource Row}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Style="{StaticResource Cap}"><Run Foreground="#D9534F" Text="* " /><Run Text="编码" /></TextBlock>
+                <TextBox x:Name="CodeBox"
+                         Grid.Column="1"
+                         AutomationProperties.Name="编码"
+                         MaxLength="64"
+                         Style="{StaticResource FieldText}" />
+            </Grid>
+
+            <Grid Style="{StaticResource Row}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Style="{StaticResource Cap}"><Run Foreground="#D9534F" Text="* " /><Run Text="名称" /></TextBlock>
+                <TextBox x:Name="NameBox"
+                         Grid.Column="1"
+                         AutomationProperties.Name="名称"
+                         MaxLength="200"
+                         Style="{StaticResource FieldText}" />
+            </Grid>
+
+            <Grid Style="{StaticResource Row}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
+                           Style="{StaticResource Cap}"
+                           Text="单位" />
+                <TextBox x:Name="UnitBox"
+                         Grid.Column="1"
+                         AutomationProperties.Name="单位"
+                         MaxLength="16"
+                         Style="{StaticResource FieldText}"
+                         Tag="瓶 / 包 / 个" />
+            </Grid>
+
+            <Grid Style="{StaticResource Row}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="QtyLabel"
+                           Grid.Column="0"
+                           Style="{StaticResource Cap}"
+                           Text="初始库存" />
+                <ctrl:NumericUpDown x:Name="QtyBox"
+                                    Grid.Column="1"
+                                    Width="150"
+                                    HorizontalAlignment="Left"
+                                    AutomationProperties.Name="初始库存"
+                                    Decimals="3"
+                                    Maximum="9999999"
+                                    Minimum="0"
+                                    Step="1"
+                                    Value="0" />
+            </Grid>
+
+            <Grid Style="{StaticResource Row}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
+                           Style="{StaticResource Cap}"
+                           Text="预警阈值" />
+                <ctrl:NumericUpDown x:Name="MinBox"
+                                    Grid.Column="1"
+                                    Width="150"
+                                    HorizontalAlignment="Left"
+                                    AutomationProperties.Name="预警阈值"
+                                    Decimals="3"
+                                    Maximum="9999999"
+                                    Minimum="0"
+                                    Step="1"
+                                    Value="0" />
+            </Grid>
+
+            <Grid Style="{StaticResource Row}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
+                           Style="{StaticResource Cap}"
+                           Text="单价" />
+                <ctrl:NumericUpDown x:Name="CostBox"
+                                    Grid.Column="1"
+                                    Width="150"
+                                    HorizontalAlignment="Left"
+                                    AutomationProperties.Name="单价"
+                                    Decimals="2"
+                                    Maximum="9999999"
+                                    Minimum="0"
+                                    Step="1"
+                                    Value="0" />
+            </Grid>
+
+            <Grid Style="{StaticResource Row}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
+                           Margin="0,7,10,0"
+                           VerticalAlignment="Top"
+                           Style="{StaticResource Cap}"
+                           Text="备注" />
+                <TextBox x:Name="RemarkBox"
+                         Grid.Column="1"
+                         Height="152"
+                         AutomationProperties.Name="备注"
+                         MaxLength="200"
+                         Style="{StaticResource FieldTextMultiline}" />
+            </Grid>
+
+            <!--  启用：仅编辑态显示  -->
+            <Grid x:Name="ActiveRow"
+                  Style="{StaticResource Row}"
+                  Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0"
+                           Style="{StaticResource Cap}"
+                           Text="启用" />
+                <ToggleButton x:Name="ActiveBox"
+                              Grid.Column="1"
+                              VerticalAlignment="Center"
+                              AutomationProperties.Name="启用该耗材"
+                              IsChecked="True"
+                              Style="{StaticResource SwitchToggle}" />
+            </Grid>
+        </StackPanel>
+    </DockPanel>
 </Window>

@@ -3,142 +3,209 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:MassageSaas.Cs.ViewModels"
         Title="{Binding WindowTitle, FallbackValue=按摩店收银系统}"
-        Height="780" Width="1280"
-        MinHeight="600" MinWidth="1000"
-        WindowStartupLocation="CenterScreen"
-        WindowStyle="None"
-        StateChanged="Window_StateChanged"
+        Width="1280"
+        Height="780"
+        MinWidth="1000"
+        MinHeight="600"
+        Background="#F5F7FA"
         Closing="Window_Closing"
-        Background="#F5F7FA">
+        StateChanged="Window_StateChanged"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None">
     <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="40" ResizeBorderThickness="6"
-                      CornerRadius="0" GlassFrameThickness="0" UseAeroCaptionButtons="False" />
+        <WindowChrome CaptionHeight="40"
+                      CornerRadius="0"
+                      GlassFrameThickness="0"
+                      ResizeBorderThickness="6"
+                      UseAeroCaptionButtons="False" />
     </WindowChrome.WindowChrome>
     <Window.InputBindings>
         <KeyBinding Key="F2" Command="{Binding FocusMembersCommand}" />
         <KeyBinding Key="F5" Command="{Binding RefreshCurrentCommand}" />
-        <KeyBinding Key="N" Modifiers="Control" Command="{Binding NewSaleCommand}" />
-        <KeyBinding Key="S" Modifiers="Control" Command="{Binding QuickCheckoutCommand}" />
-        <KeyBinding Key="Enter" Modifiers="Control" Command="{Binding QuickCheckoutCommand}" />
-        <KeyBinding Key="D1" Modifiers="Alt" Command="{Binding NavByIndexCommand}" CommandParameter="0" />
-        <KeyBinding Key="D2" Modifiers="Alt" Command="{Binding NavByIndexCommand}" CommandParameter="1" />
-        <KeyBinding Key="D3" Modifiers="Alt" Command="{Binding NavByIndexCommand}" CommandParameter="2" />
-        <KeyBinding Key="D4" Modifiers="Alt" Command="{Binding NavByIndexCommand}" CommandParameter="3" />
-        <KeyBinding Key="D5" Modifiers="Alt" Command="{Binding NavByIndexCommand}" CommandParameter="4" />
-        <KeyBinding Key="D6" Modifiers="Alt" Command="{Binding NavByIndexCommand}" CommandParameter="5" />
-        <KeyBinding Key="D7" Modifiers="Alt" Command="{Binding NavByIndexCommand}" CommandParameter="6" />
-        <KeyBinding Key="D8" Modifiers="Alt" Command="{Binding NavByIndexCommand}" CommandParameter="7" />
-        <KeyBinding Key="D9" Modifiers="Alt" Command="{Binding NavByIndexCommand}" CommandParameter="8" />
+        <KeyBinding Key="N"
+                    Command="{Binding NewSaleCommand}"
+                    Modifiers="Control" />
+        <KeyBinding Key="S"
+                    Command="{Binding QuickCheckoutCommand}"
+                    Modifiers="Control" />
+        <KeyBinding Key="Enter"
+                    Command="{Binding QuickCheckoutCommand}"
+                    Modifiers="Control" />
+        <KeyBinding Key="D1"
+                    Command="{Binding NavByIndexCommand}"
+                    CommandParameter="0"
+                    Modifiers="Alt" />
+        <KeyBinding Key="D2"
+                    Command="{Binding NavByIndexCommand}"
+                    CommandParameter="1"
+                    Modifiers="Alt" />
+        <KeyBinding Key="D3"
+                    Command="{Binding NavByIndexCommand}"
+                    CommandParameter="2"
+                    Modifiers="Alt" />
+        <KeyBinding Key="D4"
+                    Command="{Binding NavByIndexCommand}"
+                    CommandParameter="3"
+                    Modifiers="Alt" />
+        <KeyBinding Key="D5"
+                    Command="{Binding NavByIndexCommand}"
+                    CommandParameter="4"
+                    Modifiers="Alt" />
+        <KeyBinding Key="D6"
+                    Command="{Binding NavByIndexCommand}"
+                    CommandParameter="5"
+                    Modifiers="Alt" />
+        <KeyBinding Key="D7"
+                    Command="{Binding NavByIndexCommand}"
+                    CommandParameter="6"
+                    Modifiers="Alt" />
+        <KeyBinding Key="D8"
+                    Command="{Binding NavByIndexCommand}"
+                    CommandParameter="7"
+                    Modifiers="Alt" />
+        <KeyBinding Key="D9"
+                    Command="{Binding NavByIndexCommand}"
+                    CommandParameter="8"
+                    Modifiers="Alt" />
     </Window.InputBindings>
     <Window.Resources>
         <ResourceDictionary>
-        <ResourceDictionary.MergedDictionaries>
-            <ResourceDictionary Source="/Themes/AuthStyles.xaml" />
-        </ResourceDictionary.MergedDictionaries>
-        <!-- 深色标题栏窗口按钮（最小化 / 最大化）：白图标，悬停深蓝灰 -->
-        <Style x:Key="TitleBarButton" TargetType="Button">
-            <Setter Property="Width" Value="46" />
-            <Setter Property="Height" Value="40" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="#D6DEE8" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#2C3E50" />
-                                <Setter Property="Foreground" Value="White" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Themes/AuthStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <!--  深色标题栏窗口按钮（最小化 / 最大化）：白图标，悬停深蓝灰  -->
+            <Style x:Key="TitleBarButton" TargetType="Button">
+                <Setter Property="Width" Value="46" />
+                <Setter Property="Height" Value="40" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Foreground" Value="#D6DEE8" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="bd" Background="{TemplateBinding Background}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="#2C3E50" />
+                                    <Setter Property="Foreground" Value="White" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
 
-        <!-- 标题栏关闭按钮：悬停变红 -->
-        <Style x:Key="TitleBarCloseButton" TargetType="Button" BasedOn="{StaticResource TitleBarButton}">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#E5484D" />
-                                <Setter Property="Foreground" Value="White" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+            <!--  标题栏关闭按钮：悬停变红  -->
+            <Style x:Key="TitleBarCloseButton"
+                   BasedOn="{StaticResource TitleBarButton}"
+                   TargetType="Button">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="bd" Background="{TemplateBinding Background}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="#E5484D" />
+                                    <Setter Property="Foreground" Value="White" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
 
-        <Style x:Key="NavButton" TargetType="Button">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Foreground" Value="#C7D0D9" />
-            <Setter Property="HorizontalContentAlignment" Value="Left" />
-            <Setter Property="Height" Value="44" />
-            <Setter Property="Margin" Value="10,2" />
-            <Setter Property="Padding" Value="14,0" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" Background="{TemplateBinding Background}"
-                                Padding="{TemplateBinding Padding}" CornerRadius="6">
-                            <ContentPresenter VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#16FFFFFF" />
-                                <Setter Property="Foreground" Value="White" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                    <Setter Property="Background" Value="#2D6A4F" />
-                    <Setter Property="Foreground" Value="White" />
-                    <Setter Property="FontWeight" Value="Medium" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
+            <Style x:Key="NavButton" TargetType="Button">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Foreground" Value="#C7D0D9" />
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                <Setter Property="Height" Value="44" />
+                <Setter Property="Margin" Value="10,2" />
+                <Setter Property="Padding" Value="14,0" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="bd"
+                                    Padding="{TemplateBinding Padding}"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="6">
+                                <ContentPresenter VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="#16FFFFFF" />
+                                    <Setter Property="Foreground" Value="White" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                        <Setter Property="Background" Value="#2D6A4F" />
+                        <Setter Property="Foreground" Value="White" />
+                        <Setter Property="FontWeight" Value="Medium" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
         </ResourceDictionary>
     </Window.Resources>
 
     <DockPanel x:Name="RootContainer">
-        <!-- 自定义标题栏（与 BS 侧栏同色深蓝灰，可拖动；右侧最小化 / 最大化 / 关闭到托盘） -->
-        <Border DockPanel.Dock="Top" Height="40" Background="#1D2B3A">
+        <!--  自定义标题栏（与 BS 侧栏同色深蓝灰，可拖动；右侧最小化 / 最大化 / 关闭到托盘）  -->
+        <Border Height="40"
+                Background="#1D2B3A"
+                DockPanel.Dock="Top">
             <Grid>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                    <Border Width="24" Height="24" CornerRadius="12" Background="#2D6A4F" Margin="0,0,10,0">
-                        <TextBlock Text="齐" FontSize="13" FontWeight="Bold" Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <StackPanel Margin="16,0,0,0"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                    <Border Width="24"
+                            Height="24"
+                            Margin="0,0,10,0"
+                            Background="#2D6A4F"
+                            CornerRadius="12">
+                        <TextBlock HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="13"
+                                   FontWeight="Bold"
+                                   Foreground="White"
+                                   Text="齐" />
                     </Border>
-                    <TextBlock Text="{Binding WindowTitle, FallbackValue=齐源按摩店收银系统}"
-                               Foreground="#D6DEE8" FontSize="13" VerticalAlignment="Center" />
+                    <TextBlock VerticalAlignment="Center"
+                               FontSize="13"
+                               Foreground="#D6DEE8"
+                               Text="{Binding WindowTitle, FallbackValue=齐源按摩店收银系统}" />
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
-                    <Button Style="{StaticResource TitleBarButton}" Content="&#x2014;"
-                            Click="Minimize_Click" ToolTip="最小化" AutomationProperties.Name="最小化窗口" />
-                    <Button x:Name="MaxRestoreButton" Style="{StaticResource TitleBarButton}" Content="&#x25A1;"
-                            Click="MaxRestore_Click" ToolTip="最大化" AutomationProperties.Name="最大化或还原窗口" />
-                    <Button Style="{StaticResource TitleBarCloseButton}" Content="&#x2715;"
-                            Click="CloseToTray_Click" ToolTip="关闭到托盘"
+                <StackPanel HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Orientation="Horizontal">
+                    <Button AutomationProperties.Name="最小化窗口"
+                            Click="Minimize_Click"
+                            Content="&#x2014;"
+                            Style="{StaticResource TitleBarButton}"
+                            ToolTip="最小化" />
+                    <Button x:Name="MaxRestoreButton"
+                            AutomationProperties.Name="最大化或还原窗口"
+                            Click="MaxRestore_Click"
+                            Content="&#x25A1;"
+                            Style="{StaticResource TitleBarButton}"
+                            ToolTip="最大化" />
+                    <Button AutomationProperties.HelpText="点击后最小化到系统托盘，不退出程序"
                             AutomationProperties.Name="关闭窗口"
-                            AutomationProperties.HelpText="点击后最小化到系统托盘，不退出程序" />
+                            Click="CloseToTray_Click"
+                            Content="&#x2715;"
+                            Style="{StaticResource TitleBarCloseButton}"
+                            ToolTip="关闭到托盘" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -149,147 +216,195 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-        <!-- Sidebar -->
-        <Grid Grid.Column="0" Background="#1D2B3A">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+            <!--  Sidebar  -->
+            <Grid Grid.Column="0" Background="#1D2B3A">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-            <Border Grid.Row="0" Background="#1D2B3A" Padding="16,16"
-                    BorderBrush="#14FFFFFF" BorderThickness="0,0,0,1">
-                <StackPanel>
-                    <TextBlock Text="{Binding Context.ActiveStore.Name, FallbackValue=按摩店}"
-                               FontSize="15" FontWeight="Bold" Foreground="White"
-                               TextWrapping="Wrap" />
-                    <TextBlock Text="{Binding CurrentUserDisplay}"
-                               FontSize="11" Foreground="#9AA8BC" Margin="0,4,0,0" />
-                </StackPanel>
-            </Border>
-
-            <ItemsControl Grid.Row="1" ItemsSource="{Binding NavItems}" Margin="0,8,0,0">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Style="{StaticResource NavButton}"
-                                Content="{Binding Title}"
-                                AutomationProperties.Name="{Binding Title}"
-                                Command="{Binding DataContext.SelectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                CommandParameter="{Binding}" />
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Grid>
-
-        <!-- Main -->
-        <Grid Grid.Column="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-
-            <!-- Top bar -->
-            <Border Grid.Row="0" Background="White" Padding="20,12"
-                    BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
-                <DockPanel LastChildFill="False">
-                    <TextBlock DockPanel.Dock="Left"
-                               Text="{Binding SelectedNavItem.Title, FallbackValue=主页}"
-                               FontSize="16" FontWeight="SemiBold" Foreground="#1F2937"
-                               VerticalAlignment="Center" />
-
-                    <!-- 左侧：订阅警告 + 无障碍开关 -->
-                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center"
-                                Margin="16,0,0,0">
-                        <!-- 订阅警告 -->
-                        <Border Background="#FEF3C7" CornerRadius="3" Padding="8,4" Margin="0,0,12,0"
-                                VerticalAlignment="Center"
-                                Visibility="{Binding SubscriptionWarning, Converter={StaticResource NullToCollapsed}, FallbackValue=Collapsed}">
-                            <TextBlock Text="{Binding SubscriptionWarning}" Foreground="#92400E" FontSize="12" />
-                        </Border>
-
-                        <!-- 无障碍纽扣开关 -->
-                        <CheckBox x:Name="HeaderA11yToggle"
-                                  Style="{StaticResource ToggleSwitch}"
-                                  Content="无障碍"
-                                  VerticalAlignment="Center"
-                                  Checked="HeaderA11yToggle_Changed"
-                                  Unchecked="HeaderA11yToggle_Changed"
-                                  AutomationProperties.Name="无障碍模式开关"
-                                  AutomationProperties.HelpText="开启后切换到放大字号、加粗焦点的无障碍显示" />
+                <Border Grid.Row="0"
+                        Padding="16,16"
+                        Background="#1D2B3A"
+                        BorderBrush="#14FFFFFF"
+                        BorderThickness="0,0,0,1">
+                    <StackPanel>
+                        <TextBlock FontSize="15"
+                                   FontWeight="Bold"
+                                   Foreground="White"
+                                   Text="{Binding Context.ActiveStore.Name, FallbackValue=按摩店}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Margin="0,4,0,0"
+                                   FontSize="11"
+                                   Foreground="#9AA8BC"
+                                   Text="{Binding CurrentUserDisplay}" />
                     </StackPanel>
+                </Border>
 
-                    <!-- 右侧：门店下拉 + 登录人菜单 -->
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                        <!-- 门店下拉 -->
-                        <ComboBox Style="{StaticResource StoreComboBox}"
-                                  ItemsSource="{Binding Context.Stores}"
-                                  SelectedItem="{Binding Context.ActiveStore, Mode=TwoWay}"
-                                  Width="180" VerticalAlignment="Center"
-                                  SelectionChanged="StoreCombo_SelectionChanged"
-                                  AutomationProperties.Name="切换门店"
-                                  Visibility="{Binding Context.Stores.Count, Converter={StaticResource CountToVisible}, FallbackValue=Collapsed}">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
+                <ItemsControl Grid.Row="1"
+                              Margin="0,8,0,0"
+                              ItemsSource="{Binding NavItems}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button AutomationProperties.Name="{Binding Title}"
+                                    Command="{Binding DataContext.SelectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}"
+                                    Content="{Binding Title}"
+                                    Style="{StaticResource NavButton}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
 
-                        <!-- 登录人 + 角色标签，点击展开菜单（个人设置 / 退出登录） -->
-                        <Button x:Name="UserMenuButton" Margin="14,0,0,0" Padding="8,4"
-                                Background="Transparent" BorderThickness="0" Cursor="Hand"
-                                Click="UserMenu_Click"
-                                AutomationProperties.Name="用户菜单"
-                                AutomationProperties.HelpText="点击展开个人设置与退出登录">
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="bd" Background="{TemplateBinding Background}"
-                                            CornerRadius="6" Padding="{TemplateBinding Padding}">
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Viewbox Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0">
-                                                <Canvas Width="24" Height="24">
-                                                    <Path Fill="#2D6A4F"
-                                                          Data="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                                                </Canvas>
-                                            </Viewbox>
-                                            <TextBlock Text="{Binding UserName}" FontSize="14" Foreground="#374151"
-                                                       VerticalAlignment="Center" />
-                                            <Border Background="#EAF3EE" CornerRadius="3" Padding="6,1" Margin="8,0,0,0"
-                                                    VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding UserRoleLabel}" FontSize="11" Foreground="#2D6A4F" />
-                                            </Border>
-                                            <TextBlock Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="10"
-                                                       Foreground="#9AA8BC" VerticalAlignment="Center" Margin="6,0,0,0" />
-                                        </StackPanel>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="bd" Property="Background" Value="#F0F2F5" />
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Button.Template>
-                            <Button.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="个人设置" Click="ProfileSettings_Click"
-                                              AutomationProperties.Name="个人设置" />
-                                    <Separator />
-                                    <MenuItem Header="退出登录" Click="LogoutMenu_Click"
-                                              AutomationProperties.Name="退出登录" />
-                                </ContextMenu>
-                            </Button.ContextMenu>
-                        </Button>
-                    </StackPanel>
-                </DockPanel>
-            </Border>
+            <!--  Main  -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
-            <!-- Content：拉伸填满内容区，否则承载的 View 会按内容自适应高度、列表行多时撑出窗口，
-                 底部分页条被挤到可视区以下看不全 -->
-            <ContentControl Grid.Row="1" Content="{Binding Navigation.CurrentViewModel}"
-                            Margin="16"
-                            HorizontalContentAlignment="Stretch"
-                            VerticalContentAlignment="Stretch" />
-        </Grid>
+                <!--  Top bar  -->
+                <Border Grid.Row="0"
+                        Padding="20,12"
+                        Background="White"
+                        BorderBrush="#E5E7EB"
+                        BorderThickness="0,0,0,1">
+                    <DockPanel LastChildFill="False">
+                        <TextBlock VerticalAlignment="Center"
+                                   DockPanel.Dock="Left"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="#1F2937"
+                                   Text="{Binding SelectedNavItem.Title, FallbackValue=主页}" />
+
+                        <!--  左侧：订阅警告 + 无障碍开关  -->
+                        <StackPanel Margin="16,0,0,0"
+                                    VerticalAlignment="Center"
+                                    DockPanel.Dock="Left"
+                                    Orientation="Horizontal">
+                            <!--  订阅警告  -->
+                            <Border Margin="0,0,12,0"
+                                    Padding="8,4"
+                                    VerticalAlignment="Center"
+                                    Background="#FEF3C7"
+                                    CornerRadius="3"
+                                    Visibility="{Binding SubscriptionWarning, Converter={StaticResource NullToCollapsed}, FallbackValue=Collapsed}">
+                                <TextBlock FontSize="12"
+                                           Foreground="#92400E"
+                                           Text="{Binding SubscriptionWarning}" />
+                            </Border>
+
+                            <!--  无障碍纽扣开关  -->
+                            <CheckBox x:Name="HeaderA11yToggle"
+                                      VerticalAlignment="Center"
+                                      AutomationProperties.HelpText="开启后切换到放大字号、加粗焦点的无障碍显示"
+                                      AutomationProperties.Name="无障碍模式开关"
+                                      Checked="HeaderA11yToggle_Changed"
+                                      Content="无障碍"
+                                      Style="{StaticResource ToggleSwitch}"
+                                      Unchecked="HeaderA11yToggle_Changed" />
+                        </StackPanel>
+
+                        <!--  右侧：门店下拉 + 登录人菜单  -->
+                        <StackPanel VerticalAlignment="Center"
+                                    DockPanel.Dock="Right"
+                                    Orientation="Horizontal">
+                            <!--  门店下拉  -->
+                            <ComboBox Width="180"
+                                      VerticalAlignment="Center"
+                                      AutomationProperties.Name="切换门店"
+                                      ItemsSource="{Binding Context.Stores}"
+                                      SelectedItem="{Binding Context.ActiveStore, Mode=TwoWay}"
+                                      SelectionChanged="StoreCombo_SelectionChanged"
+                                      Style="{StaticResource StoreComboBox}"
+                                      Visibility="{Binding Context.Stores.Count, Converter={StaticResource CountToVisible}, FallbackValue=Collapsed}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <!--  登录人 + 角色标签，点击展开菜单（个人设置 / 退出登录）  -->
+                            <Button x:Name="UserMenuButton"
+                                    Margin="14,0,0,0"
+                                    Padding="8,4"
+                                    AutomationProperties.HelpText="点击展开个人设置与退出登录"
+                                    AutomationProperties.Name="用户菜单"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Click="UserMenu_Click"
+                                    Cursor="Hand">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd"
+                                                Padding="{TemplateBinding Padding}"
+                                                Background="{TemplateBinding Background}"
+                                                CornerRadius="6">
+                                            <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                                                <Viewbox Width="18"
+                                                         Height="18"
+                                                         Margin="0,0,8,0"
+                                                         VerticalAlignment="Center">
+                                                    <Canvas Width="24" Height="24">
+                                                        <Path Data="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" Fill="#2D6A4F" />
+                                                    </Canvas>
+                                                </Viewbox>
+                                                <TextBlock VerticalAlignment="Center"
+                                                           FontSize="14"
+                                                           Foreground="#374151"
+                                                           Text="{Binding UserName}" />
+                                                <Border Margin="8,0,0,0"
+                                                        Padding="6,1"
+                                                        VerticalAlignment="Center"
+                                                        Background="#EAF3EE"
+                                                        CornerRadius="3">
+                                                    <TextBlock FontSize="11"
+                                                               Foreground="#2D6A4F"
+                                                               Text="{Binding UserRoleLabel}" />
+                                                </Border>
+                                                <TextBlock Margin="6,0,0,0"
+                                                           VerticalAlignment="Center"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="10"
+                                                           Foreground="#9AA8BC"
+                                                           Text="&#xE70D;" />
+                                            </StackPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="bd" Property="Background" Value="#F0F2F5" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem AutomationProperties.Name="个人设置"
+                                                  Click="ProfileSettings_Click"
+                                                  Header="个人设置" />
+                                        <Separator />
+                                        <MenuItem AutomationProperties.Name="退出登录"
+                                                  Click="LogoutMenu_Click"
+                                                  Header="退出登录" />
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                            </Button>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!--
+                    Content：拉伸填满内容区，否则承载的 View 会按内容自适应高度、列表行多时撑出窗口，
+                    底部分页条被挤到可视区以下看不全
+                -->
+                <ContentControl Grid.Row="1"
+                                Margin="16"
+                                HorizontalContentAlignment="Stretch"
+                                VerticalContentAlignment="Stretch"
+                                Content="{Binding Navigation.CurrentViewModel}" />
+            </Grid>
         </Grid>
     </DockPanel>
 </Window>

@@ -2,6 +2,30 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ctrl="clr-namespace:MassageSaas.Cs.Controls">
+    <UserControl.Resources>
+        <!--  危险操作按钮（批量删除）：红底，与主按钮等高  -->
+        <Style x:Key="DangerBtn" TargetType="Button">
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Background" Value="#D9534F" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#C9302C" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
     <Border Background="White" CornerRadius="4" Padding="16">
         <Grid>
             <Grid.RowDefinitions>
@@ -10,91 +34,143 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <TextBox Width="170" Height="30" Margin="0,0,8,0"
-                             Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged}"
-                             AutomationProperties.Name="按券码、标题或平台搜索">
-                        <TextBox.InputBindings>
-                            <KeyBinding Key="Enter" Command="{Binding SearchCommand}" />
-                        </TextBox.InputBindings>
-                    </TextBox>
-                    <Button Content="查询" Padding="12,6" Height="30" Margin="0,0,8,0"
-                            Command="{Binding SearchCommand}"
-                            AutomationProperties.Name="按当前关键字查询" />
-                    <TextBlock Text="类型" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <ComboBox SelectedIndex="{Binding KindFilter, Mode=TwoWay}" Width="100" Height="30" Margin="0,0,8,0"
-                              AutomationProperties.Name="按类型筛选">
-                        <ComboBoxItem Content="全部类型" />
-                        <ComboBoxItem Content="店内券" />
-                        <ComboBoxItem Content="团购券" />
-                    </ComboBox>
-                    <TextBlock Text="状态" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <ComboBox SelectedIndex="{Binding StatusFilter, Mode=TwoWay}" Width="110" Height="30"
-                              AutomationProperties.Name="按状态筛选">
-                        <ComboBoxItem Content="全部" />
-                        <ComboBoxItem Content="未核销" />
-                        <ComboBoxItem Content="已核销" />
-                        <ComboBoxItem Content="已过期" />
-                        <ComboBoxItem Content="已作废" />
-                    </ComboBox>
-                    <Button Content="录入券" Padding="12,6" Margin="12,0,0,0" Background="#2D6A4F" Foreground="White" BorderThickness="0" Command="{Binding CreateCommand}" />
-                    <Button Content="批量生成" Padding="12,6" Margin="8,0,0,0" Command="{Binding BatchCreateCommand}"
-                            AutomationProperties.Name="批量生成同规格优惠券"
-                            AutomationProperties.HelpText="一次生成多张同规格券，服务端自动出码" />
-                    <Button Content="批量作废" Padding="12,6" Margin="8,0,0,0" Command="{Binding BulkCancelCommand}"
-                            AutomationProperties.Name="批量作废勾选的券"
-                            AutomationProperties.HelpText="只作废勾选中状态为生效中的券" />
-                    <Button Content="批量删除" Padding="12,6" Margin="8,0,0,0"
-                            Background="#D9534F" Foreground="White" BorderThickness="0"
-                            Command="{Binding BulkDeleteCommand}"
-                            AutomationProperties.Name="批量删除勾选的已作废券"
-                            AutomationProperties.HelpText="物理删除，仅对已作废券生效，不可恢复" />
-                    <Button Content="刷新" Padding="12,6" Margin="8,0,0,0" Command="{Binding ReloadCommand}" />
-                </StackPanel>
+            <!--  工具条：左筛选 / 右操作（对齐 BS）  -->
+            <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="False">
+                <ComboBox DockPanel.Dock="Left" Width="120" Margin="0,0,8,0"
+                          AutomationProperties.Name="按类型筛选"
+                          SelectedIndex="{Binding KindFilter, Mode=TwoWay}"
+                          Style="{StaticResource FilterCombo}">
+                    <ComboBoxItem Content="全部类型" />
+                    <ComboBoxItem Content="店内券" />
+                    <ComboBoxItem Content="团购券" />
+                </ComboBox>
+                <ComboBox DockPanel.Dock="Left" Width="120" Margin="0,0,8,0"
+                          AutomationProperties.Name="按状态筛选"
+                          SelectedIndex="{Binding StatusFilter, Mode=TwoWay}"
+                          Style="{StaticResource FilterCombo}">
+                    <ComboBoxItem Content="全部状态" />
+                    <ComboBoxItem Content="生效中" />
+                    <ComboBoxItem Content="已核销" />
+                    <ComboBoxItem Content="已过期" />
+                    <ComboBoxItem Content="已作废" />
+                </ComboBox>
+                <TextBox DockPanel.Dock="Left" Width="220" Margin="0,0,8,0"
+                         AutomationProperties.Name="搜索券码、标题或平台"
+                         Style="{StaticResource SearchBox}"
+                         Tag="券码 / 标题 / 平台"
+                         Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged}">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Enter" Command="{Binding SearchCommand}" />
+                    </TextBox.InputBindings>
+                </TextBox>
+                <Button DockPanel.Dock="Left"
+                        Padding="16,0"
+                        AutomationProperties.Name="查询"
+                        Command="{Binding SearchCommand}"
+                        Content="查询"
+                        Style="{StaticResource PrimaryBtn}" />
+
+                <!--  右侧操作  -->
+                <Button DockPanel.Dock="Right"
+                        Padding="16,0"
+                        AutomationProperties.Name="刷新"
+                        Command="{Binding ReloadCommand}"
+                        Content="刷新"
+                        Style="{StaticResource GhostBtn}" />
+                <Button DockPanel.Dock="Right"
+                        Margin="8,0,0,0"
+                        Padding="16,0"
+                        AutomationProperties.HelpText="物理删除，仅对已作废券生效，不可恢复"
+                        AutomationProperties.Name="批量删除勾选的已作废券"
+                        Command="{Binding BulkDeleteCommand}"
+                        Content="批量删除"
+                        Style="{StaticResource DangerBtn}" />
+                <Button DockPanel.Dock="Right"
+                        Margin="8,0,0,0"
+                        Padding="16,0"
+                        AutomationProperties.HelpText="只作废勾选中状态为生效中的券"
+                        AutomationProperties.Name="批量作废勾选的券"
+                        Command="{Binding BulkCancelCommand}"
+                        Content="批量作废"
+                        Style="{StaticResource GhostBtn}" />
+                <Button DockPanel.Dock="Right"
+                        Margin="8,0,0,0"
+                        Padding="16,0"
+                        AutomationProperties.HelpText="一次生成多张同规格券，服务端自动出码"
+                        AutomationProperties.Name="批量生成同规格优惠券"
+                        Command="{Binding BatchCreateCommand}"
+                        Content="批量生成"
+                        Style="{StaticResource GhostBtn}" />
+                <Button DockPanel.Dock="Right"
+                        Padding="16,0"
+                        AutomationProperties.Name="新建券"
+                        Command="{Binding CreateCommand}"
+                        Content="新建券"
+                        Style="{StaticResource PrimaryBtn}" />
             </DockPanel>
 
-            <DataGrid Grid.Row="1" Margin="0,0,0,8" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
-                      CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
-                      HeadersVisibility="Column" GridLinesVisibility="All"
-                      AlternatingRowBackground="#FAFAFA">
+            <DataGrid Grid.Row="1" Margin="0,0,0,8"
+                      AlternatingRowBackground="#FAFAFA"
+                      AutoGenerateColumns="False"
+                      AutomationProperties.Name="优惠券列表"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      HeadersVisibility="Column"
+                      IsReadOnly="True"
+                      ItemsSource="{Binding Rows}">
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="选择" Width="50" CanUserResize="False" CanUserReorder="False">
+                    <DataGridTemplateColumn Width="44" CanUserReorder="False" CanUserResize="False">
+                        <DataGridTemplateColumn.Header>
+                            <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      AutomationProperties.Name="全选本页"
+                                      IsChecked="{Binding DataContext.SelectAll, RelativeSource={RelativeSource AncestorType=DataGrid}, Mode=TwoWay}" />
+                        </DataGridTemplateColumn.Header>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox HorizontalAlignment="Center" VerticalAlignment="Center"
-                                          IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
-                                          AutomationProperties.Name="勾选此券参与批量操作" />
+                                          AutomationProperties.Name="勾选此券参与批量操作"
+                                          IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="券码" Binding="{Binding Code}" Width="140" />
-                    <DataGridTextColumn Header="标题" Binding="{Binding Title}" Width="160" />
-                    <DataGridTextColumn Header="类型" Binding="{Binding Kind}" Width="90" />
-                    <DataGridTextColumn Header="平台" Binding="{Binding Platform}" Width="90" />
-                    <DataGridTextColumn Header="面值" Binding="{Binding FaceValue, StringFormat='¥{0:F2}'}" Width="90" />
-                    <DataGridTextColumn Header="最低消费" Binding="{Binding MinOrderAmount, StringFormat='¥{0:F2}'}" Width="100" />
-                    <DataGridTextColumn Header="折扣%" Binding="{Binding DiscountPercent}" Width="70" />
-                    <DataGridTextColumn Header="有效期至" Binding="{Binding ExpiresAt, StringFormat='{}{0:yyyy-MM-dd}'}" Width="110" />
-                    <DataGridTextColumn Header="状态" Binding="{Binding Status}" Width="80" />
-                    <DataGridTemplateColumn Header="操作" Width="*">
+                    <DataGridTextColumn Width="80" Binding="{Binding KindLabel}" Header="类型" />
+                    <DataGridTextColumn Width="160" Binding="{Binding Code}" Header="券码" />
+                    <DataGridTextColumn Width="*" MinWidth="180" Binding="{Binding Title}" Header="标题" />
+                    <DataGridTextColumn Width="90" Binding="{Binding FaceValue, StringFormat='¥{0:F2}'}" Header="面值" />
+                    <DataGridTextColumn Width="100" Binding="{Binding MinOrderAmount, StringFormat='¥{0:F2}'}" Header="最低额" />
+                    <DataGridTextColumn Width="80" Binding="{Binding DiscountText}" Header="折扣" />
+                    <DataGridTextColumn Width="100" Binding="{Binding PlatformText}" Header="平台" />
+                    <DataGridTextColumn Width="90" Binding="{Binding StatusLabel}" Header="状态">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                                <Setter Property="Foreground" Value="{Binding Status, Converter={StaticResource VoucherStatusBrush}}" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Width="160" Binding="{Binding ExpiryText}" Header="到期" />
+                    <DataGridTemplateColumn Width="90" Header="操作">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Button Margin="2" Padding="6,2" Content="作废" Background="#D9534F" Foreground="White" BorderThickness="0"
+                                <Button AutomationProperties.Name="作废此券"
                                         Command="{Binding DataContext.CancelCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                        CommandParameter="{Binding}" />
+                                        CommandParameter="{Binding}"
+                                        Content="作废"
+                                        IsEnabled="{Binding CanCancel}"
+                                        Style="{StaticResource RowDanger}" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
 
-            <!-- 分页（BS 端订单流水同款样式） -->
-            <ctrl:PaginationBar Grid.Row="2" Margin="0,4,0,0" PageSizeOptions="20,50,100,200"
-                                Total="{Binding Total}"
+            <!--  分页（BS 端订单流水同款样式）  -->
+            <ctrl:PaginationBar Grid.Row="2" Margin="0,4,0,0"
                                 Page="{Binding Page, Mode=TwoWay}"
+                                PageChangedCommand="{Binding ReloadCommand}"
                                 PageSize="{Binding PageSize, Mode=TwoWay}"
-                                PageChangedCommand="{Binding ReloadCommand}" />
+                                PageSizeOptions="20,50,100,200"
+                                Total="{Binding Total}" />
         </Grid>
     </Border>
 </UserControl>

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="结账成功"
         Width="560" SizeToContent="Height" MaxHeight="860" MinWidth="480"
-        WindowStartupLocation="CenterOwner"
+        WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize">
     <Window.Resources>
         <Style x:Key="PrimaryButton" TargetType="Button">

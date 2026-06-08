@@ -91,7 +91,14 @@
                                         Header="名称" />
                     <DataGridTextColumn Width="80"
                                         Binding="{Binding KindLabel}"
-                                        Header="类型" />
+                                        Header="类型">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                                <Setter Property="Foreground" Value="{Binding IsCountBased, Converter={StaticResource MemberTypeKindBrush}}" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
                     <DataGridTextColumn Width="200"
                                         Binding="{Binding BindingOrThreshold}"
                                         Header="绑定服务 / 最低门槛" />

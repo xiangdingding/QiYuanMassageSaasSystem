@@ -68,7 +68,7 @@ public partial class InventoryViewModel : ObservableObject
     private async Task CreateAsync()
     {
         if (_context.ActiveStoreId is not long sid) { MessageBox.Show("未选择门店"); return; }
-        var dlg = new Views.InventoryFormWindow(null, sid);
+        var dlg = new Views.InventoryFormWindow(null, sid) { Owner = Application.Current?.MainWindow };
         if (dlg.ShowDialog() != true) return;
         try
         {
@@ -78,25 +78,23 @@ public partial class InventoryViewModel : ObservableObject
         catch (Exception ex) { ErrorReporter.Show(ex); }
     }
 
+    // ---- 行内操作（对齐 BS：入库 / 领用 / 盘点 / 流水）----
+    [RelayCommand] private Task PurchaseInAsync(InventoryItemDto? item) => MoveAsync(item, "PurchaseIn");
+    [RelayCommand] private Task ConsumeAsync(InventoryItemDto? item) => MoveAsync(item, "Consume");
+    [RelayCommand] private Task AdjustAsync(InventoryItemDto? item) => MoveAsync(item, "Adjust");
+
+    /// <summary>"流水"：选中该耗材，右侧出入库流水面板随选中刷新。</summary>
     [RelayCommand]
-    private async Task EditAsync(InventoryItemDto? item)
+    private void ShowMovements(InventoryItemDto? item)
     {
-        if (item is null) return;
-        var dlg = new Views.InventoryFormWindow(item, item.StoreId);
-        if (dlg.ShowDialog() != true) return;
-        try
-        {
-            await _api.UpdateInventoryItemAsync(item.Id, dlg.BuildUpdateRequest());
-            await ReloadAsync();
-        }
-        catch (Exception ex) { ErrorReporter.Show(ex); }
+        if (item is not null) Selected = item;
     }
 
-    [RelayCommand]
-    private async Task MoveAsync(InventoryItemDto? item)
+    /// <summary>按指定类型打开出入库登记弹窗（类型由按钮固定，对齐 BS openMovement）。</summary>
+    private async Task MoveAsync(InventoryItemDto? item, string kind)
     {
-        if (item is null) { MessageBox.Show("请先选择一项耗材"); return; }
-        var dlg = new Views.InventoryMovementWindow(item.Name);
+        if (item is null) return;
+        var dlg = new Views.InventoryMovementWindow(item.Name, kind) { Owner = Application.Current?.MainWindow };
         if (dlg.ShowDialog() != true) return;
         try
         {

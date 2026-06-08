@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="会员流水"
         Height="560" Width="820"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterScreen">
     <DockPanel Margin="16">
         <TextBlock x:Name="HeaderText" DockPanel.Dock="Top" FontWeight="Bold" FontSize="15" Margin="0,0,0,10" />
         <TabControl>

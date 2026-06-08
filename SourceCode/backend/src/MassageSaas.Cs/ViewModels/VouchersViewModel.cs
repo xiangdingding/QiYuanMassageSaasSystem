@@ -21,9 +21,9 @@ public partial class VouchersViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<SelectableVoucher> rows = new();
 
-    /// <summary>状态筛选：0 全部，1 未核销，2 已核销，3 已过期，4 已作废。</summary>
+    /// <summary>状态筛选：0 全部，1 生效中，2 已核销，3 已过期，4 已作废。默认全部（对齐 BS）。</summary>
     [ObservableProperty]
-    private int statusFilter = 1;
+    private int statusFilter = 0;
 
     /// <summary>类型筛选：0 全部类型，1 店内券，2 团购券。</summary>
     [ObservableProperty]
@@ -31,6 +31,15 @@ public partial class VouchersViewModel : ObservableObject
 
     [ObservableProperty]
     private string keyword = string.Empty;
+
+    /// <summary>表头全选：勾选则把当前页所有行设为选中，取消则全清。</summary>
+    [ObservableProperty]
+    private bool selectAll;
+
+    partial void OnSelectAllChanged(bool value)
+    {
+        foreach (var r in Rows) r.IsSelected = value;
+    }
 
     [ObservableProperty]
     private bool isBusy;
@@ -117,6 +126,7 @@ public partial class VouchersViewModel : ObservableObject
                 string.IsNullOrWhiteSpace(Keyword) ? null : Keyword.Trim(),
                 Page, PageSize);
             Rows = new ObservableCollection<SelectableVoucher>(resp.Items.Select(d => new SelectableVoucher(d)));
+            SelectAll = false; // 新一页默认全不选，表头全选复位
             Total = resp.Total;
             // 服务端 SafePage 可能修正过当前页，回填以便分页显示一致
             if (resp.Page != Page) Page = resp.Page;

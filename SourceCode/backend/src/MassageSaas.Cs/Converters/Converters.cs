@@ -102,6 +102,64 @@ public class BoolToVisibilityConverter : IValueConverter
         => value is Visibility v && v == Visibility.Visible;
 }
 
+/// <summary>BoolToVisibility 反向：true→折叠、false→可见（用于"停用时才显示启用按钮"）。</summary>
+public class InverseBoolToVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => (value is bool b && b) ? Visibility.Collapsed : Visibility.Visible;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+/// <summary>启用/停用状态着色：启用=BS 成功绿 #67C23A，停用=红 #D9534F。</summary>
+public class ActiveStatusBrushConverter : IValueConverter
+{
+    private static readonly SolidColorBrush Active = new((Color)ColorConverter.ConvertFromString("#67C23A")!);
+    private static readonly SolidColorBrush Inactive = new((Color)ColorConverter.ConvertFromString("#D9534F")!);
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is true ? Active : Inactive;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+/// <summary>会员类型卡种着色：计次卡(IsCountBased=true)=绿 #67C23A，充值卡(false)=橙 #E6A23C。</summary>
+public class MemberTypeKindBrushConverter : IValueConverter
+{
+    private static readonly SolidColorBrush Count = new((Color)ColorConverter.ConvertFromString("#67C23A")!);
+    private static readonly SolidColorBrush Stored = new((Color)ColorConverter.ConvertFromString("#E6A23C")!);
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is true ? Count : Stored;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
+/// <summary>优惠券状态着色（对齐 BS statusTag）：生效中=绿、已核销=灰、已过期=橙、已作废=红。</summary>
+public class VoucherStatusBrushConverter : IValueConverter
+{
+    private static readonly SolidColorBrush Active = new((Color)ColorConverter.ConvertFromString("#67C23A")!);
+    private static readonly SolidColorBrush Redeemed = new((Color)ColorConverter.ConvertFromString("#909399")!);
+    private static readonly SolidColorBrush Expired = new((Color)ColorConverter.ConvertFromString("#E6A23C")!);
+    private static readonly SolidColorBrush Cancelled = new((Color)ColorConverter.ConvertFromString("#D9534F")!);
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => (value as string) switch
+        {
+            "Active" => Active,
+            "Redeemed" => Redeemed,
+            "Expired" => Expired,
+            "Cancelled" => Cancelled,
+            _ => Redeemed
+        };
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
 public class StringEqualsConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

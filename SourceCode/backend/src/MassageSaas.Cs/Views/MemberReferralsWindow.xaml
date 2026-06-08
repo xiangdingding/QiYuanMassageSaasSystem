@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="引荐情况"
         Height="480" Width="640"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterScreen">
     <DockPanel Margin="16">
         <TextBlock x:Name="HeaderText" DockPanel.Dock="Top" FontWeight="Bold" FontSize="15" Margin="0,0,0,10" />
 

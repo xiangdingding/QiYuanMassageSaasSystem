@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="电话预约"
         Width="520" SizeToContent="Height" MaxHeight="760"
-        WindowStartupLocation="CenterOwner"
+        WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize">
     <Window.Resources>
         <!-- 圆角输入框 + 占位提示（Tag），聚焦绿边 -->
