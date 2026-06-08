@@ -25,8 +25,8 @@ public partial class MemberOpenCardWindow : Window
     private long? _referrerStaffId;
     private ReferralSettingDto? _referral;
 
-    /// <summary>员工推荐人下拉项。</summary>
-    private sealed record StaffOption(long? Id, string Name);
+    /// <summary>员工推荐人下拉项。Display = "编号 姓名"（无编号时只姓名）。</summary>
+    private sealed record StaffOption(long? Id, string Display);
 
     public MemberOpenCardWindow(IApiClient api, long storeId, string? presetPhone)
     {
@@ -97,7 +97,8 @@ public partial class MemberOpenCardWindow : Window
             var staff = await _api.GetStaffAsync(pageSize: 200, storeId: _storeId);
             var opts = new List<StaffOption> { new(null, "不指定") };
             opts.AddRange(staff.Items.Where(s => s.IsActive)
-                .Select(s => new StaffOption(s.Id, s.RealName ?? s.Username)));
+                .Select(s => new StaffOption(s.Id,
+                    s.EmployeeNo is int no ? $"{no} {s.RealName ?? s.Username}" : (s.RealName ?? s.Username))));
             StaffReferrerBox.ItemsSource = opts;
             StaffReferrerBox.SelectedIndex = 0;
 

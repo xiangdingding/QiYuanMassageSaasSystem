@@ -396,12 +396,14 @@
           </el-col>
         </el-row>
 
-        <el-form-item v-if="formMode === 'create'" label="员工推荐人" class="full-row">
+        <el-form-item label="员工推荐人" class="full-row">
           <el-select
             v-model="form.referredByStaffId"
             clearable
             filterable
-            placeholder="本店员工，可选（开卡给该员工记一笔推荐提成）"
+            :placeholder="formMode === 'create'
+              ? '本店员工，可选（开卡给该员工记一笔推荐提成）'
+              : '本店员工，可选（改派/清除会同步调整推荐提成）'"
             style="width: 100%"
           >
             <el-option
@@ -425,6 +427,12 @@
             style="width: 100%"
             @update:model-value="onReferrerSelected"
           >
+            <!-- 编辑时带出的当前引荐人占位项（未重新搜索前显示其姓名） -->
+            <el-option
+              v-if="form.referrerPhone === editReferrerSentinel"
+              :value="editReferrerSentinel"
+              :label="form.referrerLabel || '当前引荐人'"
+            />
             <el-option
               v-for="g in referrerSearchResults"
               :key="g.phone"
@@ -436,6 +444,14 @@
             按手机号聚合显示，一个会员只出一行（含名下所有卡）。已选：
             <strong v-if="form.referrerLabel">{{ form.referrerLabel }}</strong>
             <span v-else>无</span>
+            <el-button
+              v-if="form.referredByMemberId"
+              link
+              type="danger"
+              size="small"
+              style="margin-left:6px"
+              @click="clearReferrer"
+            >清除</el-button>
           </div>
         </el-form-item>
 
@@ -824,6 +840,8 @@ const form = reactive({
 });
 const referrerSearchResults = ref<MemberPhoneGroup[]>([]);
 const referrerSearchLoading = ref(false);
+// 编辑时把已有引荐人作为"当前项"塞进下拉的占位 value（手机号未知，用哨兵值占位，让控件能显示并可清除）
+const editReferrerSentinel = '__current_referrer__';
 
 // 员工推荐人候选 + 推荐规则（用于开卡时预估顾客返佣 / 员工提成）
 const staffOptions = ref<Staff[]>([]);
@@ -1104,6 +1122,13 @@ function onReferrerSelected(phone: string | null) {
   form.referrerLabel = referrerOptionLabel(group);
   form.referredByMemberId = activeCard?.id ?? null;
 }
+
+/// 清除已选顾客引荐人（含编辑时带出的原引荐人）：编辑保存时配合 updateReferredByMember=true 落库为 null
+function clearReferrer() {
+  form.referrerPhone = '';
+  form.referrerLabel = '';
+  form.referredByMemberId = null;
+}
 const rules: FormRules = {
   cardNo: [{ required: true, message: '请输入卡号', trigger: 'blur' }],
   phone: [{ required: true, message: '请输入手机号', trigger: 'blur' }],
@@ -1298,7 +1323,7 @@ async function openCreateForPhone(phone: string) {
   phoneLocked.value = true;
 }
 
-function openEdit(row: Member) {
+async function openEdit(row: Member) {
   formMode.value = 'edit';
   editingId.value = row.id;
   Object.assign(form, {
@@ -1310,16 +1335,19 @@ function openEdit(row: Member) {
     discount: row.discount,
     initialBalance: 0,
     remark: row.remark ?? '',
-    referrerPhone: '',
-    referrerLabel: '',
+    // 已有引荐人时在下拉里带出当前项（哨兵 value + 姓名 label）；可重新搜索改人，或清除
+    referrerPhone: row.referredByMemberId ? editReferrerSentinel : '',
+    referrerLabel: row.referredByMemberName ?? '',
     referredByMemberId: row.referredByMemberId ?? null,
-    referredByStaffId: null,
+    referredByStaffId: row.referredByStaffId ?? null,
     memberTypeId: null,
     count: 0,
     payMethod: 'Wechat'
   });
   referrerSearchResults.value = [];
   formOpen.value = true;
+  // 加载本店员工列表，供员工推荐人下拉预选/改派
+  await ensureReferralContextLoaded();
 }
 
 async function saveForm() {
@@ -1375,7 +1403,10 @@ async function saveForm() {
         birthday: form.birthday || null,
         discount: form.discount,
         remark: form.remark || null,
-        referredByMemberId: form.referredByMemberId
+        referredByMemberId: form.referredByMemberId,
+        updateReferredByMember: true,
+        referredByStaffId: form.referredByStaffId,
+        updateStaffReferral: true
       });
     }
     ElMessage.success('已保存');

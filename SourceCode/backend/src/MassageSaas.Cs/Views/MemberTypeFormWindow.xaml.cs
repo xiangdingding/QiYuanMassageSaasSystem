@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Windows;
 using MassageSaas.Shared.Members;
 using MassageSaas.Shared.Services;
@@ -12,17 +12,15 @@ namespace MassageSaas.Cs.Views;
 /// </summary>
 public partial class MemberTypeFormWindow : Window
 {
-    private readonly bool _isEdit;
-
     public MemberTypeFormWindow(MemberTypeDto? editing, List<ServiceItemDto> services, int defaultSort)
     {
         InitializeComponent();
         ServiceBox.ItemsSource = services;
-        _isEdit = editing is not null;
 
         if (editing is null)
         {
-            SortBox.Text = defaultSort.ToString(CultureInfo.InvariantCulture);
+            // 新建默认值（与 BS openCreate 一致）：排序 = 当前最大 + 1
+            SortBox.Value = defaultSort;
             UpdatePanels();
             return;
         }
@@ -36,15 +34,14 @@ public partial class MemberTypeFormWindow : Window
 
         CodeBox.Text = editing.Code;
         NameBox.Text = editing.Name;
-        SortBox.Text = editing.Sort.ToString(CultureInfo.InvariantCulture);
+        SortBox.Value = editing.Sort;
         ServiceBox.SelectedValue = editing.ServiceItemId;
-        MinPurchaseBox.Text = editing.MinPurchaseCount?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
-        BonusCountBox.Text = (editing.BonusCount ?? 0).ToString(CultureInfo.InvariantCulture);
-        MinRechargeBox.Text = editing.MinRechargeAmount?.ToString("0.##", CultureInfo.InvariantCulture) ?? string.Empty;
-        BonusAmountBox.Text = editing.BonusAmount is { } ba && ba > 0
-            ? ba.ToString("0.##", CultureInfo.InvariantCulture) : string.Empty;
-        DiscountBox.Text = editing.Discount.ToString("0.##", CultureInfo.InvariantCulture);
-        ValidDaysBox.Text = (editing.ValidDays ?? 0).ToString(CultureInfo.InvariantCulture);
+        if (editing.MinPurchaseCount is { } mpc) MinPurchaseBox.Value = mpc;
+        BonusCountBox.Value = editing.BonusCount ?? 0;
+        if (editing.MinRechargeAmount is { } mra) MinRechargeBox.Value = (double)mra;
+        BonusAmountBox.Value = editing.BonusAmount is { } ba && ba > 0 ? (double)ba : 0;
+        DiscountBox.Value = (double)editing.Discount;
+        ValidDaysBox.Value = editing.ValidDays ?? 0;
         ActiveBox.IsChecked = editing.IsActive;
         RemarkBox.Text = editing.Remark ?? string.Empty;
         UpdatePanels();
@@ -61,26 +58,20 @@ public partial class MemberTypeFormWindow : Window
         StoredPanel.Visibility = IsCountBased ? Visibility.Collapsed : Visibility.Visible;
     }
 
-    // ---- 解析助手 ----
-    private static int ParseInt(string? s) =>
-        int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : 0;
-
-    private static decimal ParseDecimal(string? s) =>
-        decimal.TryParse(s, NumberStyles.Number, CultureInfo.InvariantCulture, out var v) ? v : 0m;
-
+    // ---- 取值（按卡种归零无关字段，与 BS payload 一致）----
     private string Kind => IsCountBased ? "CountBased" : "StoredValue";
     private long? ServiceItemId => ServiceBox.SelectedValue as long?;
-    private int? MinPurchaseCount => IsCountBased ? ParseInt(MinPurchaseBox.Text) : null;
-    private decimal? MinRechargeAmount => IsCountBased ? null : ParseDecimal(MinRechargeBox.Text);
-    private decimal Discount => ParseDecimal(DiscountBox.Text);
-    private decimal? BonusAmount => IsCountBased ? null : ParseDecimal(BonusAmountBox.Text); // 空→0
-    private int? BonusCount => IsCountBased ? ParseInt(BonusCountBox.Text) : null;
-    private int? ValidDays => ParseInt(ValidDaysBox.Text) is var d && d > 0 ? d : null;
+    private int? MinPurchaseCount => IsCountBased ? (int)MinPurchaseBox.Value : null;
+    private decimal? MinRechargeAmount => IsCountBased ? null : (decimal)MinRechargeBox.Value;
+    private decimal Discount => (decimal)DiscountBox.Value;
+    private decimal? BonusAmount => IsCountBased ? null : (decimal)BonusAmountBox.Value;
+    private int? BonusCount => IsCountBased ? (int)BonusCountBox.Value : null;
+    private int? ValidDays => (int)ValidDaysBox.Value is var d && d > 0 ? d : null;
 
     public CreateMemberTypeRequest BuildCreateRequest() => new(
         Code: CodeBox.Text.Trim(),
         Name: NameBox.Text.Trim(),
-        Sort: ParseInt(SortBox.Text),
+        Sort: (int)SortBox.Value,
         Kind: Kind,
         ServiceItemId: IsCountBased ? ServiceItemId : null,
         MinRechargeAmount: MinRechargeAmount,
@@ -95,7 +86,7 @@ public partial class MemberTypeFormWindow : Window
     public UpdateMemberTypeRequest BuildUpdateRequest() => new(
         Code: CodeBox.Text.Trim(),
         Name: NameBox.Text.Trim(),
-        Sort: ParseInt(SortBox.Text),
+        Sort: (int)SortBox.Value,
         ServiceItemId: IsCountBased ? ServiceItemId : null,
         MinRechargeAmount: MinRechargeAmount,
         MinPurchaseCount: MinPurchaseCount,

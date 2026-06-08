@@ -562,8 +562,58 @@
         </Setter>
     </Style>
 
-    <!--  ============ 隐式默认：未显式设样式的下拉框/日期框自动统一 ============  -->
+    <!--  ============ 选项卡（对齐 BS el-tabs：底部细线 + 选中绿色下划线指示）============  -->
+    <Style x:Key="CleanTabItem" TargetType="TabItem">
+        <Setter Property="Foreground" Value="#606266" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="bd" Background="Transparent" Padding="18,10" Margin="0,0,4,0"
+                            TextElement.Foreground="{TemplateBinding Foreground}">
+                        <Grid>
+                            <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Border x:Name="ind" Height="2" CornerRadius="1" Margin="0,0,0,-1"
+                                    VerticalAlignment="Bottom" Background="Transparent" />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="bd" Property="TextElement.Foreground" Value="#2D6A4F" />
+                            <Setter TargetName="ind" Property="Background" Value="#2D6A4F" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="TextElement.Foreground" Value="#2D6A4F" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="CleanTabControl" TargetType="TabControl">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
+                            <TabPanel IsItemsHost="True" Margin="0" Background="Transparent" />
+                        </Border>
+                        <ContentPresenter ContentSource="SelectedContent" />
+                    </DockPanel>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--  ============ 隐式默认：未显式设样式的下拉框/日期框/选项卡自动统一 ============  -->
     <Style BasedOn="{StaticResource FilterCombo}" TargetType="ComboBox" />
     <Style BasedOn="{StaticResource FilterDatePicker}" TargetType="DatePicker" />
+    <Style BasedOn="{StaticResource CleanTabControl}" TargetType="TabControl" />
+    <Style BasedOn="{StaticResource CleanTabItem}" TargetType="TabItem" />
 
 </ResourceDictionary>

@@ -8,37 +8,53 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
+            <!--  工具条：显示已停用 + 新建项目（对齐 BS）  -->
             <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                <TextBlock DockPanel.Dock="Left" Text="服务项目" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <CheckBox Content="含已停用" IsChecked="{Binding IncludeInactive}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                    <Button Content="新建" Padding="12,6" Background="#2D6A4F" Foreground="White" BorderThickness="0" Command="{Binding CreateCommand}" />
-                    <Button Content="刷新" Padding="12,6" Margin="8,0,0,0" Command="{Binding ReloadCommand}" />
-                </StackPanel>
+                <CheckBox DockPanel.Dock="Left"
+                          VerticalAlignment="Center"
+                          AutomationProperties.Name="显示已停用"
+                          Content="显示已停用"
+                          IsChecked="{Binding IncludeInactive}" />
+                <Button DockPanel.Dock="Right"
+                        HorizontalAlignment="Right"
+                        Padding="16,0"
+                        AutomationProperties.Name="新建项目"
+                        Command="{Binding CreateCommand}"
+                        Content="新建项目"
+                        Style="{StaticResource PrimaryBtn}" />
             </DockPanel>
 
-            <DataGrid Grid.Row="1" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
-                      CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
-                      HeadersVisibility="Column" GridLinesVisibility="All"
-                      AlternatingRowBackground="#FAFAFA">
+            <DataGrid Grid.Row="1"
+                      AlternatingRowBackground="#FAFAFA"
+                      AutoGenerateColumns="False"
+                      AutomationProperties.Name="服务项目列表"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      HeadersVisibility="Column"
+                      IsReadOnly="True"
+                      ItemsSource="{Binding Rows}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="排序" Binding="{Binding Sort}" Width="60" />
-                    <DataGridTextColumn Header="编码" Binding="{Binding Code}" Width="100" />
-                    <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="*" MinWidth="220" />
-                    <DataGridTextColumn Header="时长" Binding="{Binding DurationMinutes, StringFormat='{}{0} 分钟'}" Width="80" />
-                    <DataGridTextColumn Header="原价" Binding="{Binding Price, StringFormat='¥{0:F2}'}" Width="100" />
-                    <DataGridTextColumn Header="会员价" Binding="{Binding MemberPrice, StringFormat='¥{0:F2}'}" Width="100" />
-                    <DataGridTextColumn Header="状态" Binding="{Binding IsActive, Converter={StaticResource BoolLabel}, ConverterParameter='启用|停用'}" Width="70" />
-                    <DataGridTemplateColumn Header="操作" Width="180">
+                    <DataGridTextColumn Width="60" Binding="{Binding Sort}" Header="排序" />
+                    <DataGridTextColumn Width="100" Binding="{Binding Code}" Header="编码" />
+                    <DataGridTextColumn Width="*" MinWidth="220" Binding="{Binding Name}" Header="名称" />
+                    <DataGridTextColumn Width="90" Binding="{Binding DurationMinutes, StringFormat='{}{0} 分钟'}" Header="时长" />
+                    <DataGridTextColumn Width="100" Binding="{Binding Price, StringFormat='¥{0:F2}'}" Header="原价" />
+                    <DataGridTextColumn Width="100" Binding="{Binding MemberPrice, StringFormat='¥{0:F2}'}" Header="会员价" />
+                    <DataGridTextColumn Width="70" Binding="{Binding IsActive, Converter={StaticResource BoolLabel}, ConverterParameter='启用|停用'}" Header="状态" />
+                    <DataGridTemplateColumn Width="180" Header="操作">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Margin="2" Padding="6,2" Content="编辑"
+                                    <Button AutomationProperties.Name="编辑服务项目"
                                             Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}" />
-                                    <Button Margin="2" Padding="6,2" Content="删除" Background="#D9534F" Foreground="White" BorderThickness="0"
-                                            Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}" />
+                                            CommandParameter="{Binding}"
+                                            Content="编辑"
+                                            Style="{StaticResource RowGhost}" />
+                                    <Button AutomationProperties.Name="停用或启用服务项目"
+                                            Command="{Binding DataContext.ToggleActiveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}"
+                                            Content="{Binding IsActive, Converter={StaticResource BoolLabel}, ConverterParameter='停用|启用'}"
+                                            Style="{StaticResource RowGhost}" />
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>

@@ -10,6 +10,9 @@ namespace MassageSaas.Cs.ViewModels;
 /// <summary>服务热度趋势在表格里的一行：服务名 + 总钟数 + 逐月文字。</summary>
 public record ServiceTrendRow(string ServiceName, int TotalRounds, string MonthsText);
 
+/// <summary>日报「按支付方式」表格的一行：支付方式 + 金额 + 占当日营业额比例（对齐 BS payMethodRows）。</summary>
+public record DailyPayRow(string Label, decimal Amount, string PercentText);
+
 /// <summary>报表中心：日报/技师业绩/月报/年报/服务热度/客流/会员分析/服务趋势/技师质量。</summary>
 public partial class ReportsViewModel : ObservableObject
 {
@@ -29,6 +32,30 @@ public partial class ReportsViewModel : ObservableObject
     [ObservableProperty] private DateTime toDate = DateTime.Today.AddDays(1);
     [ObservableProperty] private DailyReportDto? daily;
     [ObservableProperty] private ObservableCollection<TechnicianPerformanceDto> performance = new();
+
+    /// <summary>日报「按支付方式」行（现金/会员卡/微信/支付宝/银行卡，含占比），随 Daily 重建。</summary>
+    [ObservableProperty] private ObservableCollection<DailyPayRow> dailyPayRows = new();
+
+    /// <summary>净收入 = 营业额 − 退款（对齐 BS 净收入卡片）。</summary>
+    public decimal DailyNetIncome => Daily is null ? 0m : Daily.Revenue - Daily.RefundAmount;
+
+    /// <summary>Daily 一变就重建支付方式明细 + 刷新净收入显示。</summary>
+    partial void OnDailyChanged(DailyReportDto? value)
+    {
+        var rows = new ObservableCollection<DailyPayRow>();
+        if (value is not null)
+        {
+            string Pct(decimal amt) => value.Revenue > 0
+                ? $"{amt / value.Revenue * 100m:F1}%" : "0%";
+            rows.Add(new("现金", value.CashAmount, Pct(value.CashAmount)));
+            rows.Add(new("会员卡", value.MemberCardAmount, Pct(value.MemberCardAmount)));
+            rows.Add(new("微信", value.WechatAmount, Pct(value.WechatAmount)));
+            rows.Add(new("支付宝", value.AlipayAmount, Pct(value.AlipayAmount)));
+            rows.Add(new("银行卡", value.BankCardAmount, Pct(value.BankCardAmount)));
+        }
+        DailyPayRows = rows;
+        OnPropertyChanged(nameof(DailyNetIncome));
+    }
 
     // 月报 / 年报（DatePicker 取该月/该年任意一天）
     [ObservableProperty] private DateTime monthlyMonth = DateTime.Today;

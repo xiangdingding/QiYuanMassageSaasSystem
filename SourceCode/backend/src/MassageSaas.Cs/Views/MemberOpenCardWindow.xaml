@@ -120,6 +120,7 @@
                 <StackPanel Grid.Column="2">
                     <TextBlock Style="{StaticResource Cap}"><Run Foreground="#D9534F" Text="* " /><Run Text="会员类型（开卡必选）" /></TextBlock>
                     <ComboBox x:Name="TypeBox"
+                              Style="{StaticResource FilterCombo}"
                               AutomationProperties.Name="会员类型"
                               SelectionChanged="Type_Changed">
                         <ComboBox.ItemTemplate>
@@ -131,8 +132,7 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0"
                                                VerticalAlignment="Center"
-                                               Foreground="#1F2937"
-                                               Text="{Binding Name}" />
+                                               Foreground="#1F2937"><Run Foreground="#9CA3AF" Text="{Binding Code, Mode=OneWay}" /><Run Text=" " /><Run Text="{Binding Name, Mode=OneWay}" /></TextBlock>
                                     <!--  副标题仅在下拉项里显示；收起后的选择框只显示类型名（对齐 BS）  -->
                                     <TextBlock Grid.Column="1"
                                                Margin="16,0,0,0"
@@ -262,9 +262,15 @@
             <!--  员工推荐人（店内员工，可与顾客推荐人并存，各拿各的奖励）  -->
             <TextBlock Style="{StaticResource Cap}" Text="员工推荐人（可选）" />
             <ComboBox x:Name="StaffReferrerBox" Margin="0,0,0,10"
-                      DisplayMemberPath="Name"
+                      Style="{StaticResource FilterCombo}"
                       SelectionChanged="StaffReferrer_Picked"
-                      AutomationProperties.Name="员工推荐人，店内员工" />
+                      AutomationProperties.Name="员工推荐人，店内员工">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Display}" VerticalAlignment="Center" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
 
             <!--  顾客推荐人：输入卡号/手机号即时搜索、按人聚合、选中即用、可清空（对齐 BS filterable remote clearable）  -->
             <TextBlock Style="{StaticResource Cap}" Text="顾客推荐人（可选）" />

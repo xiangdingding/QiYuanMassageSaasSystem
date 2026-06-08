@@ -104,7 +104,10 @@ public partial class DayCloseViewModel : ObservableObject
         if (row is null) return;
         if (!CanRevoke) { MessageBox.Show("仅店主/店长可撤销日结"); return; }
 
-        var dlg = new RevokeReasonDialog($"{row.BusinessDate:yyyy-MM-dd}");
+        var dlg = new Views.RevokeReasonWindow($"{row.BusinessDate:yyyy-MM-dd}")
+        {
+            Owner = Application.Current?.MainWindow
+        };
         if (dlg.ShowDialog() != true) return;
         var reason = dlg.Reason;
         if (string.IsNullOrWhiteSpace(reason)) { MessageBox.Show("请填写撤销原因"); return; }
@@ -118,43 +121,5 @@ public partial class DayCloseViewModel : ObservableObject
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
         finally { IsBusy = false; }
-    }
-}
-
-/// <summary>简易撤销原因输入弹窗（仅 WPF DayClose 用，避免引入额外的对话框框架）。</summary>
-internal class RevokeReasonDialog : Window
-{
-    private readonly System.Windows.Controls.TextBox _input;
-    public string Reason => _input.Text?.Trim() ?? string.Empty;
-
-    public RevokeReasonDialog(string dateLabel)
-    {
-        Title = $"撤销 {dateLabel} 日结";
-        Width = 380; Height = 200;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        ResizeMode = ResizeMode.NoResize;
-
-        var panel = new System.Windows.Controls.StackPanel { Margin = new Thickness(16) };
-        panel.Children.Add(new System.Windows.Controls.TextBlock
-        {
-            Text = $"请填写撤销 {dateLabel} 日结的原因（会写入审计日志）：",
-            Margin = new Thickness(0, 0, 0, 8),
-            TextWrapping = TextWrapping.Wrap
-        });
-        _input = new System.Windows.Controls.TextBox { Height = 48, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
-        panel.Children.Add(_input);
-        var buttons = new System.Windows.Controls.StackPanel
-        {
-            Orientation = System.Windows.Controls.Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Margin = new Thickness(0, 12, 0, 0)
-        };
-        var ok = new System.Windows.Controls.Button { Content = "确认撤销", Width = 100, IsDefault = true };
-        ok.Click += (_, _) => { DialogResult = true; Close(); };
-        var cancel = new System.Windows.Controls.Button { Content = "取消", Width = 80, Margin = new Thickness(8, 0, 0, 0), IsCancel = true };
-        buttons.Children.Add(ok);
-        buttons.Children.Add(cancel);
-        panel.Children.Add(buttons);
-        Content = panel;
     }
 }

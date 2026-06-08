@@ -403,17 +403,35 @@ public class MembersController : ControllerBase
         if (req.WechatOpenId is not null)
             m.WechatOpenId = string.IsNullOrWhiteSpace(req.WechatOpenId) ? null : req.WechatOpenId.Trim();
 
-        if (req.ReferredByMemberId.HasValue && req.ReferredByMemberId.Value != m.ReferredByMemberId)
+        // 顾客引荐人调整：仅 UpdateReferredByMember=true 时处理（支持改人 / 置空）。
+        if (req.UpdateReferredByMember && req.ReferredByMemberId != m.ReferredByMemberId)
         {
-            if (req.ReferredByMemberId.Value == m.Id)
-                return BadRequest(new { code = "SelfReferral", message = "引荐人不能是本人" });
-            var refOk = await _db.Members.AnyAsync(x => x.Id == req.ReferredByMemberId.Value && x.IsActive, ct);
-            if (!refOk) return BadRequest(new { code = "InvalidReferrer", message = "引荐人不存在或已停用" });
-            m.ReferredByMemberId = req.ReferredByMemberId;
+            if (req.ReferredByMemberId is long refId)
+            {
+                if (refId == m.Id)
+                    return BadRequest(new { code = "SelfReferral", message = "引荐人不能是本人" });
+                var refOk = await _db.Members.AnyAsync(x => x.Id == refId && x.IsActive, ct);
+                if (!refOk) return BadRequest(new { code = "InvalidReferrer", message = "引荐人不存在或已停用" });
+            }
+            m.ReferredByMemberId = req.ReferredByMemberId; // null = 清除
         }
+
+        // 员工推荐人调整：仅 UpdateStaffReferral=true 时处理（支持改派他人 / 置空），并对账推荐提成记录。
+        if (req.UpdateStaffReferral && req.ReferredByStaffId != m.ReferredByStaffId)
+        {
+            if (req.ReferredByStaffId is long sid)
+            {
+                var staffOk = await _db.Users.AnyAsync(u => u.Id == sid && u.StoreId == m.StoreId
+                    && u.IsActive && u.Role != UserRole.PlatformAdmin, ct);
+                if (!staffOk) return BadRequest(new { code = "InvalidStaffReferrer", message = "推荐员工不存在或已停用" });
+            }
+            await ReassignStaffReferralAsync(m, req.ReferredByStaffId, ct);
+        }
+
         await _db.SaveChangesAsync(ct);
 
         await _db.Entry(m).Reference(x => x.ReferredByMember).LoadAsync(ct);
+        await _db.Entry(m).Reference(x => x.ReferredByStaff).LoadAsync(ct);
         await _db.Entry(m).Reference(x => x.MemberType).LoadAsync(ct);
         if (m.MemberType is not null)
             await _db.Entry(m.MemberType).Reference(t => t.ServiceItem).LoadAsync(ct);
@@ -905,5 +923,60 @@ public class MembersController : ControllerBase
             Remark = $"开卡推荐：{newMember.CardNo}"
         });
         await _db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// 编辑会员时改派/清除员工推荐人，并对账开卡推荐提成（Remark 以「开卡推荐」开头的记录）：
+    /// ① 置空 → 删除开卡推荐提成（推荐人不应再得这笔钱）；
+    /// ② 改派他人且已有记录 → 把记录改记到新员工名下，金额沿用开卡时按规则算出的额度，避免重算误差；
+    /// ③ 改派他人但无记录（开卡时规则关闭 / 额度为 0）→ 按当前租户规则 + 开卡实收重算补记。
+    /// 不在此处 SaveChanges，交由调用方统一提交。
+    /// </summary>
+    private async Task ReassignStaffReferralAsync(Member m, long? newStaffId, CancellationToken ct)
+    {
+        var openRecords = await _db.StaffReferralRecords
+            .Where(r => r.MemberId == m.Id && r.Remark != null && r.Remark.StartsWith("开卡推荐"))
+            .ToListAsync(ct);
+
+        if (newStaffId is null)
+        {
+            if (openRecords.Count > 0) _db.StaffReferralRecords.RemoveRange(openRecords);
+            m.ReferredByStaffId = null;
+            return;
+        }
+
+        if (openRecords.Count > 0)
+        {
+            foreach (var r in openRecords)
+            {
+                r.StaffUserId = newStaffId.Value;
+                r.Remark = $"开卡推荐：{m.CardNo}（编辑改派）";
+            }
+            m.ReferredByStaffId = newStaffId;
+        }
+        else
+        {
+            // 开卡时未产生提成记录：按当前规则重算补记（TryGrant 读取 m.ReferredByStaffId）
+            m.ReferredByStaffId = newStaffId;
+            await TryGrantStaffReferralAsync(m, await GetOpenCardPaidAsync(m, ct), ct);
+        }
+    }
+
+    /// <summary>会员开卡实收金额：计次卡取开卡套餐实收，充值卡取首笔充值实收；用于重算员工推荐提成。</summary>
+    private async Task<decimal> GetOpenCardPaidAsync(Member m, CancellationToken ct)
+    {
+        var pkgPaid = await _db.MemberPackages
+            .Where(p => p.MemberId == m.Id)
+            .OrderBy(p => p.Id)
+            .Select(p => (decimal?)p.PaidAmount)
+            .FirstOrDefaultAsync(ct);
+        if (pkgPaid is decimal pp && pp > 0) return pp;
+
+        var firstRecharge = await _db.MemberRechargeRecords
+            .Where(r => r.MemberId == m.Id && r.Kind == MemberRechargeKind.Recharge)
+            .OrderBy(r => r.Id)
+            .Select(r => (decimal?)r.Amount)
+            .FirstOrDefaultAsync(ct);
+        return firstRecharge ?? 0m;
     }
 }

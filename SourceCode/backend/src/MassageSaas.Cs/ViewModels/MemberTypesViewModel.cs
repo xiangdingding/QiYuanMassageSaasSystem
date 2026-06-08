@@ -89,7 +89,7 @@ public partial class MemberTypesViewModel : ObservableObject
     {
         if (r is null) return;
         if (MessageBox.Show(
-                $"确认删除会员类型「{r.Name}」？已开出的会员卡不受影响，但此后不能再用该类型开卡。",
+                $"确认删除会员类型「{r.Name}」？已开出的会员卡不会受影响，但此后不能再用该类型开卡。",
                 "删除会员类型", MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK) return;
         try
         {

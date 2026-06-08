@@ -1,106 +1,228 @@
 <UserControl x:Class="MassageSaas.Cs.Views.DayCloseView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Border Background="White" CornerRadius="4" Padding="16">
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctrl="clr-namespace:MassageSaas.Cs.Controls">
+    <UserControl.Resources>
+        <!--  统计块（对齐 BS el-statistic）：小灰标题 + 大数字  -->
+        <Style x:Key="StatTitle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#909399" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+        <Style x:Key="StatValue" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#303133" />
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+        <!--  分隔线带居中标题（对齐 BS el-divider）  -->
+        <Style x:Key="SectionCap" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#909399" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="CountLabel" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="#606266" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+    </UserControl.Resources>
 
-            <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                <TextBlock DockPanel.Dock="Left" Text="日结 / 交接班" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <TextBlock Text="{Binding CutoffText}" VerticalAlignment="Center" Foreground="#909399" FontSize="12"
-                               Margin="0,0,12,0" Visibility="{Binding CutoffText, Converter={StaticResource NullToCollapsed}}" />
-                    <TextBlock Text="营业日：" VerticalAlignment="Center" />
-                    <DatePicker Width="140" SelectedDate="{Binding BusinessDate}"
-                                AutomationProperties.Name="营业日" />
-                    <Button Content="刷新" Padding="12,6" Margin="8,0,0,0" Command="{Binding LoadCommand}"
-                            AutomationProperties.Name="刷新" />
-                </StackPanel>
-            </DockPanel>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
 
-            <Border Grid.Row="1" Background="#F8FAFC" CornerRadius="4" Padding="12" Margin="0,0,0,12"
-                    DataContext="{Binding Preview}">
+            <!--  卡片一：日结预览 + 清点提交  -->
+            <Border Background="White" CornerRadius="4" Padding="16">
                 <StackPanel>
-                    <TextBlock FontSize="14" FontWeight="SemiBold">
-                        <Run Text="完成订单：" /><Run Text="{Binding OrderCount, Mode=OneWay}" />
-                        <Run Text="    营业总额：¥" /><Run Text="{Binding RevenueTotal, StringFormat='F2', Mode=OneWay}" />
-                        <Run Text="    预期现金：¥" /><Run Text="{Binding ExpectedCash, StringFormat='F2', Mode=OneWay}" />
-                    </TextBlock>
-                    <UniformGrid Columns="5" Margin="0,8,0,0">
-                        <TextBlock><Run Text="现金 ¥" /><Run Text="{Binding CashAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
-                        <TextBlock><Run Text="会员 ¥" /><Run Text="{Binding MemberCardAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
-                        <TextBlock><Run Text="微信 ¥" /><Run Text="{Binding WechatAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
-                        <TextBlock><Run Text="支付宝 ¥" /><Run Text="{Binding AlipayAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
-                        <TextBlock><Run Text="银行卡 ¥" /><Run Text="{Binding BankCardAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
-                    </UniformGrid>
-                    <TextBlock Margin="0,4,0,0">
-                        <Run Text="充值 ¥" /><Run Text="{Binding RechargeAmount, StringFormat='F2', Mode=OneWay}" />
-                    </TextBlock>
-                    <TextBlock FontWeight="SemiBold" Foreground="#D9534F" Margin="0,4,0,0"
-                               Visibility="{Binding AlreadyClosed, Converter={StaticResource BoolToVisible}}"
-                               Text="该日已日结，仅供查看" />
+                    <!--  工具条  -->
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock VerticalAlignment="Center" FontSize="16" FontWeight="SemiBold" Text="日结 / 交接班" />
+                        <DatePicker Width="160" Margin="16,0,0,0"
+                                    AutomationProperties.Name="营业日"
+                                    SelectedDate="{Binding BusinessDate}" />
+                        <Button Margin="8,0,0,0"
+                                Padding="16,0"
+                                AutomationProperties.Name="刷新"
+                                Command="{Binding LoadCommand}"
+                                Content="刷新"
+                                Style="{StaticResource GhostBtn}" />
+                        <TextBlock Margin="12,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="#909399"
+                                   Text="{Binding CutoffText}"
+                                   Visibility="{Binding CutoffText, Converter={StaticResource NullToCollapsed}}" />
+                    </StackPanel>
+
+                    <StackPanel Margin="0,16,0,0" Visibility="{Binding Preview, Converter={StaticResource NullToCollapsed}}">
+                        <!--  已日结提示  -->
+                        <Border Margin="0,0,0,12"
+                                Padding="12,8"
+                                Background="#FDF6EC"
+                                BorderBrush="#F5DAB1"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Visibility="{Binding Preview.AlreadyClosed, Converter={StaticResource BoolToVisible}}">
+                            <TextBlock FontSize="13" Foreground="#B88230" Text="该日已日结，仅供查看。" />
+                        </Border>
+
+                        <!--  概览：完成订单数 / 营业总额 / 预期现金 / 充值入账  -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Style="{StaticResource StatTitle}" Text="完成订单数" />
+                                <TextBlock Style="{StaticResource StatValue}" Text="{Binding Preview.OrderCount, Mode=OneWay}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Style="{StaticResource StatTitle}" Text="营业总额" />
+                                <TextBlock Style="{StaticResource StatValue}"><Run Text="¥" /><Run Text="{Binding Preview.RevenueTotal, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Style="{StaticResource StatTitle}" Text="预期现金" />
+                                <TextBlock Style="{StaticResource StatValue}"><Run Text="¥" /><Run Text="{Binding Preview.ExpectedCash, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                            </StackPanel>
+                            <StackPanel Grid.Column="3">
+                                <TextBlock Style="{StaticResource StatTitle}" Text="充值入账" />
+                                <TextBlock Style="{StaticResource StatValue}"><Run Text="¥" /><Run Text="{Binding Preview.RechargeAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                            </StackPanel>
+                        </Grid>
+
+                        <!--  分隔：支付方式分布  -->
+                        <Grid Margin="0,20,0,12">
+                            <Border Height="1" VerticalAlignment="Center" Background="#EBEEF5" />
+                            <TextBlock Style="{StaticResource SectionCap}" Text="支付方式分布" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Style="{StaticResource StatTitle}" Text="现金" />
+                                <TextBlock Style="{StaticResource StatValue}"><Run Text="¥" /><Run Text="{Binding Preview.CashAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Style="{StaticResource StatTitle}" Text="会员卡" />
+                                <TextBlock Style="{StaticResource StatValue}"><Run Text="¥" /><Run Text="{Binding Preview.MemberCardAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Style="{StaticResource StatTitle}" Text="微信" />
+                                <TextBlock Style="{StaticResource StatValue}"><Run Text="¥" /><Run Text="{Binding Preview.WechatAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                            </StackPanel>
+                            <StackPanel Grid.Column="3">
+                                <TextBlock Style="{StaticResource StatTitle}" Text="支付宝" />
+                                <TextBlock Style="{StaticResource StatValue}"><Run Text="¥" /><Run Text="{Binding Preview.AlipayAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Style="{StaticResource StatTitle}" Text="银行卡" />
+                                <TextBlock Style="{StaticResource StatValue}"><Run Text="¥" /><Run Text="{Binding Preview.BankCardAmount, StringFormat='F2', Mode=OneWay}" /></TextBlock>
+                            </StackPanel>
+                        </Grid>
+
+                        <!--  分隔：实收清点  -->
+                        <Grid Margin="0,20,0,12">
+                            <Border Height="1" VerticalAlignment="Center" Background="#EBEEF5" />
+                            <TextBlock Style="{StaticResource SectionCap}" Text="实收清点" />
+                        </Grid>
+                        <Grid HorizontalAlignment="Left" Width="480">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="90" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,0,10" Style="{StaticResource CountLabel}" Text="实际现金" />
+                            <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" Orientation="Horizontal">
+                                <ctrl:NumericUpDown Width="200"
+                                                    AutomationProperties.Name="实际现金"
+                                                    Decimals="2" Minimum="0" Maximum="9999999" Step="10"
+                                                    IsEnabled="{Binding CanEditCount}"
+                                                    Value="{Binding ActualCash, Mode=TwoWay}" />
+                                <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold"
+                                           Foreground="{Binding Variance, Converter={StaticResource VarianceToBrush}}"
+                                           Visibility="{Binding CanEditCount, Converter={StaticResource BoolToVisible}}">
+                                    <Run Text="差额 ¥" /><Run Text="{Binding Variance, StringFormat='F2', Mode=OneWay}" />
+                                </TextBlock>
+                            </StackPanel>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,7,0,10" VerticalAlignment="Top" Style="{StaticResource CountLabel}" Text="备注" />
+                            <TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,0,10"
+                                     Height="52"
+                                     AutomationProperties.Name="备注"
+                                     IsEnabled="{Binding CanEditCount}"
+                                     MaxLength="500"
+                                     Style="{StaticResource FieldTextMultiline}"
+                                     Text="{Binding Remark}" />
+
+                            <Button Grid.Row="2" Grid.Column="1"
+                                    Padding="20,0"
+                                    HorizontalAlignment="Left"
+                                    AutomationProperties.Name="提交日结"
+                                    Command="{Binding SubmitCommand}"
+                                    Content="提交日结"
+                                    Style="{StaticResource PrimaryBtn}"
+                                    Visibility="{Binding CanEditCount, Converter={StaticResource BoolToVisible}}" />
+                        </Grid>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 
-            <Grid Grid.Row="2" Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" /><ColumnDefinition Width="200" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="实际现金：" VerticalAlignment="Center" />
-                <TextBox Grid.Column="1" Padding="6" Text="{Binding ActualCash}"
-                         IsEnabled="{Binding CanEditCount}" AutomationProperties.Name="实际现金" />
-                <TextBlock Grid.Column="2" Margin="12,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold"
-                           Foreground="{Binding Variance, Converter={StaticResource VarianceToBrush}}">
-                    <Run Text="差额 ¥" /><Run Text="{Binding Variance, StringFormat='F2', Mode=OneWay}" />
-                </TextBlock>
-                <TextBox Grid.Column="3" Margin="12,0,0,0" Padding="6" Text="{Binding Remark}"
-                         IsEnabled="{Binding CanEditCount}" AutomationProperties.Name="备注" />
-                <Button Grid.Column="4" Content="提交日结" Padding="16,6" Margin="12,0,0,0"
-                        Background="#2D6A4F" Foreground="White" BorderThickness="0"
-                        Command="{Binding SubmitCommand}"
-                        Visibility="{Binding CanEditCount, Converter={StaticResource BoolToVisible}}"
-                        AutomationProperties.Name="提交日结" />
-            </Grid>
-
-            <DataGrid Grid.Row="3" ItemsSource="{Binding History}" AutoGenerateColumns="False"
-                      CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
-                      HeadersVisibility="Column" AlternatingRowBackground="#FAFAFA">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="日期" Binding="{Binding BusinessDate, StringFormat='yyyy-MM-dd'}" Width="120" />
-                    <DataGridTextColumn Header="订单数" Binding="{Binding OrderCount}" Width="80" />
-                    <DataGridTextColumn Header="营业额" Binding="{Binding RevenueTotal, StringFormat='¥{0:F2}'}" Width="120" />
-                    <DataGridTextColumn Header="预期现金" Binding="{Binding ExpectedCash, StringFormat='¥{0:F2}'}" Width="120" />
-                    <DataGridTextColumn Header="实收" Binding="{Binding ActualCash, StringFormat='¥{0:F2}'}" Width="120" />
-                    <DataGridTextColumn Header="差额" Binding="{Binding Variance, StringFormat='¥{0:F2}'}" Width="100">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="FontWeight" Value="SemiBold" />
-                                <Setter Property="Foreground" Value="{Binding Variance, Converter={StaticResource VarianceToBrush}}" />
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn Header="操作员" Binding="{Binding OperatorName}" Width="120" />
-                    <DataGridTextColumn Header="备注" Binding="{Binding Remark}" Width="*" MinWidth="200" />
-                    <DataGridTemplateColumn Header="操作" Width="80"
-                                            Visibility="{Binding DataContext.CanRevoke, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisible}}">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <Button Content="撤销" Padding="6,2" Foreground="#D9534F" Background="Transparent" BorderThickness="0"
-                                        Command="{Binding DataContext.RevokeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
-        </Grid>
-    </Border>
+            <!--  卡片二：历史日结  -->
+            <Border Margin="0,16,0,0" Background="White" CornerRadius="4" Padding="16">
+                <StackPanel>
+                    <TextBlock Margin="0,0,0,12" FontSize="16" FontWeight="SemiBold" Text="历史日结" />
+                    <DataGrid AlternatingRowBackground="#FAFAFA"
+                              AutoGenerateColumns="False"
+                              AutomationProperties.Name="历史日结列表"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              ItemsSource="{Binding History}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Width="120" Binding="{Binding BusinessDate, StringFormat='yyyy-MM-dd'}" Header="日期" />
+                            <DataGridTextColumn Width="80" Binding="{Binding OrderCount}" Header="订单数" />
+                            <DataGridTextColumn Width="120" Binding="{Binding RevenueTotal, StringFormat='¥{0:F2}'}" Header="营业额" />
+                            <DataGridTextColumn Width="120" Binding="{Binding ExpectedCash, StringFormat='¥{0:F2}'}" Header="预期现金" />
+                            <DataGridTextColumn Width="120" Binding="{Binding ActualCash, StringFormat='¥{0:F2}'}" Header="实收现金" />
+                            <DataGridTextColumn Width="100" Binding="{Binding Variance, StringFormat='¥{0:F2}'}" Header="差额">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                        <Setter Property="Foreground" Value="{Binding Variance, Converter={StaticResource VarianceToBrush}}" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Width="120" Binding="{Binding OperatorName}" Header="操作员" />
+                            <DataGridTextColumn Width="*" MinWidth="200" Binding="{Binding Remark}" Header="备注" />
+                            <DataGridTemplateColumn Width="90" Header="操作"
+                                                    Visibility="{Binding DataContext.CanRevoke, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisible}}">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button AutomationProperties.Name="撤销日结"
+                                                Command="{Binding DataContext.RevokeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Content="撤销"
+                                                Style="{StaticResource RowDanger}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

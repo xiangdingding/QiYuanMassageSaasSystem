@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,6 +18,10 @@ public partial class MemberFormWindow : Window
     private readonly IApiClient _api;
     private readonly MemberDto _editing;
     private long? _referrerMemberId;
+    private long? _referrerStaffId;
+
+    /// <summary>员工推荐人下拉项。Display = "编号 姓名"（无编号时只姓名）。</summary>
+    private sealed record StaffOption(long? Id, string Display);
 
     public MemberFormWindow(IApiClient api, MemberDto editing)
     {
@@ -30,10 +35,41 @@ public partial class MemberFormWindow : Window
         BirthdayBox.SelectedDate = editing.Birthday;
         RemarkBox.Text = editing.Remark ?? string.Empty;
         SelectGender(editing.Gender);
-        // 引荐人：沿用原值，已选标签显示原引荐人姓名（与 BS openEdit 一致：不预填搜索框，但保留 id）
+        // 顾客引荐人：沿用原值并直接在下拉控件里带出当前引荐人（可重新搜索改人、清空即清除）
         _referrerMemberId = editing.ReferredByMemberId;
         ReferrerSelLabel.Text = string.IsNullOrWhiteSpace(editing.ReferredByMemberName) ? "无" : editing.ReferredByMemberName!;
+        if (_referrerMemberId.HasValue)
+        {
+            var label = string.IsNullOrWhiteSpace(editing.ReferredByMemberName)
+                ? $"会员 #{_referrerMemberId}" : editing.ReferredByMemberName!;
+            var seed = new ReferrerOption(label, _referrerMemberId);
+            ReferrerBox.ItemsSource = new List<ReferrerOption> { seed };
+            ReferrerBox.SelectedItem = seed;
+        }
+        // 员工推荐人：沿用原值，加载本店在职员工后预选当前推荐人
+        _referrerStaffId = editing.ReferredByStaffId;
+        _ = LoadStaffAsync();
     }
+
+    /// <summary>加载本店在职员工填充员工推荐下拉，并预选会员当前的员工推荐人。</summary>
+    private async System.Threading.Tasks.Task LoadStaffAsync()
+    {
+        try
+        {
+            var staff = await _api.GetStaffAsync(pageSize: 200, storeId: _editing.StoreId);
+            var opts = new List<StaffOption> { new(null, "不指定") };
+            opts.AddRange(staff.Items.Where(s => s.IsActive)
+                .Select(s => new StaffOption(s.Id,
+                    s.EmployeeNo is int no ? $"{no} {s.RealName ?? s.Username}" : (s.RealName ?? s.Username))));
+            StaffReferrerBox.ItemsSource = opts;
+            var current = opts.FirstOrDefault(o => o.Id == _referrerStaffId) ?? opts[0];
+            StaffReferrerBox.SelectedItem = current;
+        }
+        catch (Exception ex) { ErrorReporter.Show(ex); }
+    }
+
+    private void StaffReferrer_Picked(object sender, SelectionChangedEventArgs e) =>
+        _referrerStaffId = (StaffReferrerBox.SelectedItem as StaffOption)?.Id;
 
     private void SelectGender(string? gender)
     {
@@ -114,7 +150,10 @@ public partial class MemberFormWindow : Window
         PreferenceNotes: _editing.PreferenceNotes,
         HealthNotes: _editing.HealthNotes,
         ReferredByMemberId: _referrerMemberId,
-        WechatOpenId: _editing.WechatOpenId);
+        WechatOpenId: _editing.WechatOpenId,
+        ReferredByStaffId: _referrerStaffId,
+        UpdateStaffReferral: true,
+        UpdateReferredByMember: true);
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {

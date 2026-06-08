@@ -1,64 +1,64 @@
-using System.Globalization;
 using System.Windows;
 using MassageSaas.Shared.Services;
 
 namespace MassageSaas.Cs.Views;
 
+/// <summary>
+/// 新建/编辑服务项目。字段：编码/名称/时长/原价/会员价/说明/启用/排序。
+/// 逻辑与 BS 端 ServicesView 的 save 一致（编码可改，排序新建默认 = 最大 + 1）。
+/// </summary>
 public partial class ServiceFormWindow : Window
 {
-    public ServiceFormWindow(ServiceItemDto? editing)
+    public ServiceFormWindow(ServiceItemDto? editing, int defaultSort)
     {
         InitializeComponent();
-        if (editing is not null)
+        if (editing is null)
         {
-            Title = $"编辑 - {editing.Name}";
-            CodeBox.Text = editing.Code;
-            CodeBox.IsEnabled = false;
-            NameBox.Text = editing.Name;
-            DurationBox.Text = editing.DurationMinutes.ToString();
-            PriceBox.Text = editing.Price.ToString("F2", CultureInfo.InvariantCulture);
-            MemberPriceBox.Text = editing.MemberPrice.ToString("F2", CultureInfo.InvariantCulture);
-            DescBox.Text = editing.Description ?? string.Empty;
-            ActiveBox.IsChecked = editing.IsActive;
+            SortBox.Value = defaultSort;
+            return;
         }
-    }
 
-    private int ParseInt(System.Windows.Controls.TextBox b, int fallback)
-        => int.TryParse(b.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : fallback;
-    private decimal ParseDec(System.Windows.Controls.TextBox b, decimal fallback)
-        => decimal.TryParse(b.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var v) ? v : fallback;
+        Title = $"编辑 - {editing.Name}";
+        CodeBox.Text = editing.Code;
+        NameBox.Text = editing.Name;
+        DurationBox.Value = editing.DurationMinutes;
+        PriceBox.Value = (double)editing.Price;
+        MemberPriceBox.Value = (double)editing.MemberPrice;
+        DescBox.Text = editing.Description ?? string.Empty;
+        ActiveBox.IsChecked = editing.IsActive;
+        SortBox.Value = editing.Sort;
+    }
 
     public CreateServiceItemRequest BuildCreateRequest() => new(
         Code: CodeBox.Text.Trim(),
         Name: NameBox.Text.Trim(),
-        DurationMinutes: ParseInt(DurationBox, 60),
-        Price: ParseDec(PriceBox, 0m),
-        MemberPrice: ParseDec(MemberPriceBox, 0m),
+        DurationMinutes: (int)DurationBox.Value,
+        Price: (decimal)PriceBox.Value,
+        MemberPrice: (decimal)MemberPriceBox.Value,
         Description: string.IsNullOrWhiteSpace(DescBox.Text) ? null : DescBox.Text.Trim(),
-        IsActive: ActiveBox.IsChecked == true);
+        IsActive: ActiveBox.IsChecked == true,
+        Sort: (int)SortBox.Value);
 
     public UpdateServiceItemRequest BuildUpdateRequest() => new(
         Name: NameBox.Text.Trim(),
-        DurationMinutes: ParseInt(DurationBox, 60),
-        Price: ParseDec(PriceBox, 0m),
-        MemberPrice: ParseDec(MemberPriceBox, 0m),
+        DurationMinutes: (int)DurationBox.Value,
+        Price: (decimal)PriceBox.Value,
+        MemberPrice: (decimal)MemberPriceBox.Value,
         Description: string.IsNullOrWhiteSpace(DescBox.Text) ? null : DescBox.Text.Trim(),
-        IsActive: ActiveBox.IsChecked == true);
+        IsActive: ActiveBox.IsChecked == true,
+        Code: CodeBox.Text.Trim(),
+        Sort: (int)SortBox.Value);
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(CodeBox.Text) || string.IsNullOrWhiteSpace(NameBox.Text))
         {
-            MessageBox.Show("编码与名称必填");
+            MessageBox.Show("编码与名称必填", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
         DialogResult = true;
         Close();
     }
 
-    private void Cancel_Click(object sender, RoutedEventArgs e)
-    {
-        DialogResult = false;
-        Close();
-    }
+    private void Cancel_Click(object sender, RoutedEventArgs e) { DialogResult = false; Close(); }
 }

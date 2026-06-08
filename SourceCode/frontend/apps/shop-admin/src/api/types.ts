@@ -75,6 +75,8 @@ export interface Member {
   closeReason?: string | null;
   referredByMemberId?: number | null;
   referredByMemberName?: string | null;
+  referredByStaffId?: number | null;
+  referredByStaffName?: string | null;
   referralRewardEarned: number;
   createdAt: string;
   memberTypeId?: number | null;

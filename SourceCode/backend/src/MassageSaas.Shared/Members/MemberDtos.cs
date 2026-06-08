@@ -84,7 +84,15 @@ public record UpdateMemberRequest(
     string? PreferenceNotes = null,
     string? HealthNotes = null,
     long? ReferredByMemberId = null,
-    string? WechatOpenId = null);
+    string? WechatOpenId = null,
+    /// <summary>店内员工推荐人。仅当 <see cref="UpdateStaffReferral"/>=true 时生效：可改派他人或置空（null=清除）。</summary>
+    long? ReferredByStaffId = null,
+    /// <summary>true 时才按 <see cref="ReferredByStaffId"/> 调整员工推荐（含改派/置空并对账推荐提成）；
+    /// false（默认）保持原值不动，兼容不改推荐人的调用方（如旧 BS 编辑）。</summary>
+    bool UpdateStaffReferral = false,
+    /// <summary>true 时才按 <see cref="ReferredByMemberId"/> 调整顾客引荐人（含改人/置空，null=清除）；
+    /// false（默认）保持原值不动，兼容不改引荐人的调用方。</summary>
+    bool UpdateReferredByMember = false);
 
 public record RechargeRequest(
     long MemberId,

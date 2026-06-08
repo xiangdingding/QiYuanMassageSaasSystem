@@ -47,8 +47,9 @@ public partial class MemberRefundWindow : Window
 
     private string CheckedMethod()
     {
+        // SegRadio 的 Tag 用于圆角，支付方式值取自 CommandParameter（与开卡窗一致）
         foreach (var child in MethodPanel.Children)
-            if (child is RadioButton { IsChecked: true } rb && rb.Tag is string tag)
+            if (child is RadioButton { IsChecked: true } rb && rb.CommandParameter is string tag)
                 return tag;
         return "Wechat";
     }

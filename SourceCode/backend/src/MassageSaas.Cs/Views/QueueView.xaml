@@ -9,7 +9,7 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <DockPanel Grid.Row="0" Margin="0,0,0,12">
+            <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="False">
                 <TextBlock DockPanel.Dock="Left" Text="技师排队看板" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
                     <Border Background="#E6F4EA" CornerRadius="3" Padding="8,3" Margin="0,0,6,0">
@@ -23,15 +23,23 @@
                     </Border>
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <Button Padding="12,6" Margin="0,0,8,0" Background="#2D6A4F" Foreground="White" BorderThickness="0"
-                            Content="叫号"
-                            Visibility="{Binding CanManage, Converter={StaticResource BoolToVisible}}"
+                    <Button Padding="16,0" Margin="0,0,8,0"
+                            AutomationProperties.Name="叫下一个技师"
                             Command="{Binding CallNextCommand}"
-                            AutomationProperties.Name="叫下一个技师" />
-                    <Button Padding="12,6" Margin="0,0,8,0" Content="刷新" Command="{Binding ReloadCommand}" />
-                    <Button Padding="12,6" Content="重置今日"
-                            Visibility="{Binding CanManage, Converter={StaticResource BoolToVisible}}"
-                            Command="{Binding ResetDayCommand}" />
+                            Content="叫号"
+                            Style="{StaticResource PrimaryBtn}"
+                            Visibility="{Binding CanManage, Converter={StaticResource BoolToVisible}}" />
+                    <Button Padding="16,0" Margin="0,0,8,0"
+                            AutomationProperties.Name="刷新"
+                            Command="{Binding ReloadCommand}"
+                            Content="刷新"
+                            Style="{StaticResource GhostBtn}" />
+                    <Button Padding="16,0"
+                            AutomationProperties.Name="重置今日排队"
+                            Command="{Binding ResetDayCommand}"
+                            Content="重置今日"
+                            Style="{StaticResource GhostBtn}"
+                            Visibility="{Binding CanManage, Converter={StaticResource BoolToVisible}}" />
                 </StackPanel>
             </DockPanel>
 
@@ -72,14 +80,17 @@
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Margin="2" Padding="6,2" Content="上钟"
-                                            Click="OnDuty_Click" Tag="{Binding}"
+                                    <Button AutomationProperties.Name="上钟"
+                                            Click="OnDuty_Click" Content="上钟" Tag="{Binding}"
+                                            Style="{StaticResource RowPrimary}"
                                             Visibility="{Binding DataContext.CanManage, RelativeSource={RelativeSource AncestorType=DataGrid}, Converter={StaticResource BoolToVisible}}" />
-                                    <Button Margin="2" Padding="6,2" Content="休息"
-                                            Click="Resting_Click" Tag="{Binding}"
+                                    <Button AutomationProperties.Name="休息"
+                                            Click="Resting_Click" Content="休息" Tag="{Binding}"
+                                            Style="{StaticResource RowGhost}"
                                             Visibility="{Binding DataContext.CanManage, RelativeSource={RelativeSource AncestorType=DataGrid}, Converter={StaticResource BoolToVisible}}" />
-                                    <Button Margin="2" Padding="6,2" Content="下班"
-                                            Click="OffDuty_Click" Tag="{Binding}"
+                                    <Button AutomationProperties.Name="下班"
+                                            Click="OffDuty_Click" Content="下班" Tag="{Binding}"
+                                            Style="{StaticResource RowDanger}"
                                             Visibility="{Binding DataContext.CanManage, RelativeSource={RelativeSource AncestorType=DataGrid}, Converter={StaticResource BoolToVisible}}" />
                                 </StackPanel>
                             </DataTemplate>

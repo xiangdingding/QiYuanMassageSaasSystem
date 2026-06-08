@@ -1,7 +1,9 @@
 <UserControl x:Class="MassageSaas.Cs.Views.MemberTypesView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Border Background="White" CornerRadius="4" Padding="16">
+    <Border Padding="16"
+            Background="White"
+            CornerRadius="4">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -11,30 +13,59 @@
 
             <DockPanel Grid.Row="0" Margin="0,0,0,4">
                 <StackPanel DockPanel.Dock="Left">
-                    <TextBlock Text="会员类型" FontSize="16" FontWeight="SemiBold" />
-                    <TextBlock Text="定义可售卡种：充值卡（充钱进余额）/ 计次卡（绑定服务、按次扣减）"
-                               Foreground="#999" FontSize="12" Margin="0,2,0,0" />
+                    <TextBlock Margin="0,2,0,0"
+                               FontSize="14"
+                               Foreground="#2D6A4F"
+                               Text="定义可售卡种：充值卡（充钱进余额）/ 计次卡（绑定服务、按次扣减）" />
                 </StackPanel>
-                <Button DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Top"
-                        Padding="12,6" Background="#2D6A4F" Foreground="White" BorderThickness="0"
-                        Content="新增会员类型" Command="{Binding CreateCommand}" />
+                <Button Padding="16,0"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="新增会员类型"
+                        Command="{Binding CreateCommand}"
+                        Content="新增会员类型"
+                        DockPanel.Dock="Right"
+                        Style="{StaticResource PrimaryBtn}" />
             </DockPanel>
 
-            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,0,12">
-                <TextBlock Text="卡种" VerticalAlignment="Center" Foreground="#666" Margin="0,0,8,0" />
-                <ComboBox Width="140" Height="32" VerticalContentAlignment="Center"
-                          SelectedValuePath="Tag" SelectedValue="{Binding FilterKind, Mode=TwoWay}"
-                          AutomationProperties.Name="按卡种筛选">
-                    <ComboBoxItem Content="全部" Tag="" IsSelected="True" />
-                    <ComboBoxItem Content="充值卡" Tag="StoredValue" />
-                    <ComboBoxItem Content="计次卡" Tag="CountBased" />
-                </ComboBox>
+            <!--  卡种筛选：拆分成 全部 / 充值卡 / 计次卡（对齐 BS el-tabs）  -->
+            <StackPanel Grid.Row="1"
+                        Margin="0,8,0,12"
+                        Orientation="Horizontal">
+                <RadioButton AutomationProperties.Name="全部卡种"
+                             BorderThickness="1,1,1,1"
+                             Checked="KindFilter_Checked"
+                             CommandParameter=""
+                             Content="全部"
+                             GroupName="KindFilter"
+                             IsChecked="True"
+                             Style="{StaticResource SegRadio}"
+                             Tag="6,0,0,6" />
+                <RadioButton AutomationProperties.Name="只看充值卡"
+                             Checked="KindFilter_Checked"
+                             CommandParameter="StoredValue"
+                             Content="充值卡"
+                             GroupName="KindFilter"
+                             Style="{StaticResource SegRadio}"
+                             Tag="0" />
+                <RadioButton AutomationProperties.Name="只看计次卡"
+                             Checked="KindFilter_Checked"
+                             CommandParameter="CountBased"
+                             Content="计次卡"
+                             GroupName="KindFilter"
+                             Style="{StaticResource SegRadio}"
+                             Tag="0,6,6,0" />
             </StackPanel>
 
-            <DataGrid Grid.Row="2" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
-                      CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
-                      HeadersVisibility="Column" AlternatingRowBackground="#FAFAFA"
-                      AutomationProperties.Name="会员类型列表">
+            <DataGrid Grid.Row="2"
+                      AlternatingRowBackground="#FAFAFA"
+                      AutoGenerateColumns="False"
+                      AutomationProperties.Name="会员类型列表"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      HeadersVisibility="Column"
+                      IsReadOnly="True"
+                      ItemsSource="{Binding Rows}">
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow">
                         <Setter Property="AutomationProperties.Name">
@@ -49,25 +80,47 @@
                     </Style>
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="排序" Binding="{Binding Sort}" Width="60" />
-                    <DataGridTextColumn Header="编码" Binding="{Binding Code}" Width="110" />
-                    <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="*" />
-                    <DataGridTextColumn Header="类型" Binding="{Binding KindLabel}" Width="80" />
-                    <DataGridTextColumn Header="绑定服务 / 最低门槛" Binding="{Binding BindingOrThreshold}" Width="200" />
-                    <DataGridTextColumn Header="折扣" Binding="{Binding DiscountLabel}" Width="70" />
-                    <DataGridTextColumn Header="赠送" Binding="{Binding BonusLabel}" Width="90" />
-                    <DataGridTextColumn Header="有效期" Binding="{Binding ValidDaysLabel}" Width="80" />
-                    <DataGridTextColumn Header="状态" Binding="{Binding StatusLabel}" Width="70" />
-                    <DataGridTemplateColumn Header="操作" Width="140">
+                    <DataGridTextColumn Width="60"
+                                        Binding="{Binding Sort}"
+                                        Header="排序" />
+                    <DataGridTextColumn Width="110"
+                                        Binding="{Binding Code}"
+                                        Header="编码" />
+                    <DataGridTextColumn Width="*"
+                                        Binding="{Binding Name}"
+                                        Header="名称" />
+                    <DataGridTextColumn Width="80"
+                                        Binding="{Binding KindLabel}"
+                                        Header="类型" />
+                    <DataGridTextColumn Width="200"
+                                        Binding="{Binding BindingOrThreshold}"
+                                        Header="绑定服务 / 最低门槛" />
+                    <DataGridTextColumn Width="70"
+                                        Binding="{Binding DiscountLabel}"
+                                        Header="折扣" />
+                    <DataGridTextColumn Width="90"
+                                        Binding="{Binding BonusLabel}"
+                                        Header="赠送" />
+                    <DataGridTextColumn Width="80"
+                                        Binding="{Binding ValidDaysLabel}"
+                                        Header="有效期" />
+                    <DataGridTextColumn Width="70"
+                                        Binding="{Binding StatusLabel}"
+                                        Header="状态" />
+                    <DataGridTemplateColumn Width="180" Header="操作">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Margin="2" Padding="8,2" Content="编辑"
+                                    <Button AutomationProperties.Name="编辑会员类型"
                                             Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}" />
-                                    <Button Margin="2" Padding="8,2" Content="删除" Background="#D9534F" Foreground="White" BorderThickness="0"
+                                            CommandParameter="{Binding}"
+                                            Content="编辑"
+                                            Style="{StaticResource RowGhost}" />
+                                    <Button AutomationProperties.Name="删除会员类型"
                                             Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}" />
+                                            CommandParameter="{Binding}"
+                                            Content="删除"
+                                            Style="{StaticResource RowDanger}" />
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>

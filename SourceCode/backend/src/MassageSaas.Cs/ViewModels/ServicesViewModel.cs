@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -46,7 +47,9 @@ public partial class ServicesViewModel : ObservableObject
     [RelayCommand]
     private async Task CreateAsync()
     {
-        var dlg = new Views.ServiceFormWindow(null);
+        // 默认排序号 = 当前最大 + 1（与 BS openCreate 一致，新建排到最后）
+        var maxSort = Rows.Select(r => r.Sort).DefaultIfEmpty(0).Max();
+        var dlg = new Views.ServiceFormWindow(null, maxSort + 1) { Owner = Application.Current?.MainWindow };
         if (dlg.ShowDialog() != true) return;
         try
         {
@@ -60,7 +63,7 @@ public partial class ServicesViewModel : ObservableObject
     private async Task EditAsync(ServiceItemDto? s)
     {
         if (s is null) return;
-        var dlg = new Views.ServiceFormWindow(s);
+        var dlg = new Views.ServiceFormWindow(s, s.Sort) { Owner = Application.Current?.MainWindow };
         if (dlg.ShowDialog() != true) return;
         try
         {
@@ -70,15 +73,24 @@ public partial class ServicesViewModel : ObservableObject
         catch (Exception ex) { ErrorReporter.Show(ex); }
     }
 
+    /// <summary>停用 / 启用切换（对齐 BS toggle：以原行字段为底，仅翻转 IsActive 后 update）。</summary>
     [RelayCommand]
-    private async Task RemoveAsync(ServiceItemDto? s)
+    private async Task ToggleActiveAsync(ServiceItemDto? s)
     {
         if (s is null) return;
-        if (MessageBox.Show($"确认删除 {s.Name}？", "提示", MessageBoxButton.OKCancel, MessageBoxImage.Warning)
-            != MessageBoxResult.OK) return;
         try
         {
-            await _api.DeleteServiceAsync(s.Id);
+            await _api.UpdateServiceAsync(s.Id, new UpdateServiceItemRequest(
+                Name: s.Name,
+                DurationMinutes: s.DurationMinutes,
+                Price: s.Price,
+                MemberPrice: s.MemberPrice,
+                Description: s.Description,
+                IsActive: !s.IsActive,
+                PriceJunior: s.PriceJunior,
+                PriceMaster: s.PriceMaster,
+                Code: s.Code,
+                Sort: s.Sort));
             await ReloadAsync();
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }

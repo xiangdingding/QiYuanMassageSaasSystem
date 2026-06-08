@@ -90,12 +90,15 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Expander Margin="0,0,0,8"
+                                          HorizontalContentAlignment="Stretch"
                                           AutomationProperties.Name="{Binding Phone}"
                                           Background="#FAFBFC"
                                           BorderBrush="#E5E7EB"
                                           BorderThickness="1">
                                     <Expander.Header>
-                                        <DockPanel Margin="4,4,8,4" LastChildFill="True">
+                                        <!--  Width 绑到 Expander 内容区实际宽度，确保表头撑满整行，按钮稳定靠最右（不随各行文字宽度浮动）  -->
+                                        <DockPanel Margin="4,4,8,4" LastChildFill="True"
+                                                   Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ContentPresenter}}">
                                             <Button VerticalAlignment="Center"
                                                     AutomationProperties.Name="加办一张卡"
                                                     Command="{Binding DataContext.CreateForPhoneCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
