@@ -19,6 +19,12 @@ public partial class ComplaintCreateWindow : Window
     private readonly IApiClient _api;
     private readonly long _storeId;
 
+    /// <summary>常用投诉标签：勾选多选，不够再手动补充。</summary>
+    private static readonly string[] TagPresets =
+        { "态度差", "力度不合适", "技术生疏", "迟到/超时", "卫生不佳", "环境嘈杂", "乱收费", "中途离岗" };
+    private readonly List<TagOption> _tagOptions =
+        TagPresets.Select(t => new TagOption { Label = t }).ToList();
+
     public ComplaintCreateWindow(IApiClient api, long storeId, List<StaffDto> technicians)
     {
         InitializeComponent();
@@ -26,6 +32,7 @@ public partial class ComplaintCreateWindow : Window
         _storeId = storeId;
         TechBox.ItemsSource = technicians;
         DateBox.SelectedDate = DateTime.Now.Date;
+        TagOptionsControl.ItemsSource = _tagOptions;
     }
 
     private bool IsAnonymous => AnonymousBox.IsChecked == true;
@@ -64,7 +71,13 @@ public partial class ComplaintCreateWindow : Window
     private async void Submit_Click(object sender, RoutedEventArgs e)
     {
         var tech = TechBox.SelectedItem as StaffDto;
-        var tags = string.IsNullOrWhiteSpace(TagsBox.Text) ? null : TagsBox.Text.Trim();
+        // 勾选标签 + 手动补充，合并为逗号分隔
+        var picked = _tagOptions.Where(o => o.IsSelected).Select(o => o.Label);
+        var manual = (TagsBox.Text ?? string.Empty)
+            .Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.Trim()).Where(s => s.Length > 0);
+        var allTags = picked.Concat(manual).ToList();
+        var tags = allTags.Count > 0 ? string.Join(",", allTags) : null;
         var comment = string.IsNullOrWhiteSpace(CommentBox.Text) ? null : CommentBox.Text.Trim();
 
         CreateComplaintRequest req;
@@ -107,6 +120,13 @@ public partial class ComplaintCreateWindow : Window
         MessageBox.Show(msg, "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
 
     private void Cancel_Click(object sender, RoutedEventArgs e) { DialogResult = false; Close(); }
+
+    /// <summary>常用标签勾选项：ToggleButton 双向绑定 IsSelected，提交时读取。</summary>
+    private sealed class TagOption
+    {
+        public string Label { get; set; } = string.Empty;
+        public bool IsSelected { get; set; }
+    }
 }
 
 /// <summary>已完成服务项行：会员展示带散客兜底、是否已存在待处理投诉。</summary>

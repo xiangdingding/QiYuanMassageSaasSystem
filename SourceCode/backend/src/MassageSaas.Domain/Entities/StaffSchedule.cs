@@ -30,6 +30,10 @@ public class LeaveRequest : BaseEntity, ITenantScoped
     public LeaveType Type { get; set; } = LeaveType.Personal;
     public DateOnly FromDate { get; set; }
     public DateOnly ToDate { get; set; }
+    /// <summary>开始日的起始半天：上午=整天起，下午=当天只请下午（首日扣 0.5 天）。</summary>
+    public DayHalf StartHalf { get; set; } = DayHalf.Morning;
+    /// <summary>结束日的结束半天：下午=整天止，上午=当天只请上午（末日扣 0.5 天）。</summary>
+    public DayHalf EndHalf { get; set; } = DayHalf.Afternoon;
     public string? Reason { get; set; }
     public LeaveStatus Status { get; set; } = LeaveStatus.Pending;
     public long? ApproverUserId { get; set; }

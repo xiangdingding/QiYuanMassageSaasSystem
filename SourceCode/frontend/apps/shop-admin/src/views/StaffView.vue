@@ -43,7 +43,7 @@
         </el-table-column>
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
-            <el-tag :type="row.isActive ? 'success' : 'info'">{{ row.isActive ? '在职' : '停用' }}</el-tag>
+            <el-tag :type="row.isActive ? 'success' : 'danger'">{{ row.isActive ? '在职' : '停职' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" :width="$actCol(300)" fixed="right">
@@ -152,7 +152,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="状态">
-              <el-switch v-model="form.isActive" active-text="在职" inactive-text="停用" />
+              <el-switch v-model="form.isActive" active-text="在职" inactive-text="停职" />
             </el-form-item>
           </el-col>
 
@@ -392,12 +392,24 @@ function resetQuery() {
   reload();
 }
 
-function openCreate() {
+/// 取「现有最大工号 + 1」作为新建默认工号；无任何工号时从 1 开始
+async function nextEmployeeNo(): Promise<number> {
+  try {
+    const data = await staffApi.list({ page: 1, pageSize: 1000 });
+    const max = data.items.reduce((m: number, s: Staff) => (s.employeeNo && s.employeeNo > m ? s.employeeNo : m), 0);
+    return max + 1;
+  } catch {
+    return 1;
+  }
+}
+
+async function openCreate() {
   formMode.value = 'create';
   editingId.value = null;
+  const next = await nextEmployeeNo();
   Object.assign(form, {
     password: '', realName: '', phone: '',
-    employeeNo: null, role: 'Technician',
+    employeeNo: next, role: 'Technician',
     storeId: appStore.activeStoreId,
     isBlind: false, isActive: true,
     idCardNo: '', birthDate: '',
@@ -551,9 +563,10 @@ async function doTransfer() {
 }
 
 async function returnTransfer(row: StaffTransferDto) {
-  await ElMessageBox.confirm(
+  const ok = await ElMessageBox.confirm(
     `确认归还借调？该员工将调回 ${row.fromStoreName}。`, '提示', { type: 'warning' }
-  ).catch(() => null);
+  ).then(() => true).catch(() => false);
+  if (!ok) return;
   await staffApi.returnTransfer(row.id);
   ElMessage.success('已归还');
   transferOpen.value = false;

@@ -131,9 +131,25 @@ public class PayrollController : ControllerBase
         if (req.Year < 2000 || req.Year > 2100 || req.Month < 1 || req.Month > 12)
             return BadRequest(new { code = "InvalidPeriod", message = "年月不合法" });
 
+        // 只能生成当前月或更早：未来月份没有完整的业绩/考勤数据，禁止预生成。业务月按北京时间归属。
+        var nowCn = DateTime.UtcNow.AddHours(8);
+        if (req.Year > nowCn.Year || (req.Year == nowCn.Year && req.Month > nowCn.Month))
+            return BadRequest(new { code = "FuturePeriod", message = "只能生成当前月或之前的工资单" });
+
         var dup = await _db.PayrollPeriods.AnyAsync(p =>
             p.StoreId == req.StoreId && p.Year == req.Year && p.Month == req.Month, ct);
         if (dup) return Conflict(new { code = "DuplicatePeriod", message = "该月工资单已生成，请删除草稿后重新生成或直接修改" });
+
+        // 清理历史软删除残留：旧逻辑删除草稿用的是软删除，物理行仍占用 UNIQUE(StoreId, Year, Month)，
+        // 上面的 dup 校验经全局过滤器看不到它们，但下方 INSERT 会撞唯一键。这些行已 IsDeleted=1、无业务意义，直接物理删除。
+        var orphans = await _db.PayrollPeriods.IgnoreQueryFilters()
+            .Where(p => p.StoreId == req.StoreId && p.Year == req.Year && p.Month == req.Month && p.IsDeleted)
+            .ToListAsync(ct);
+        if (orphans.Count > 0)
+        {
+            _db.PayrollPeriods.RemoveRange(orphans);
+            await _db.SaveChangesAsync(ct);
+        }
 
         var store = await _db.Stores.FirstOrDefaultAsync(s => s.Id == req.StoreId, ct);
         if (store is null) return BadRequest(new { code = "StoreNotFound", message = "门店不存在" });
@@ -215,7 +231,7 @@ public class PayrollController : ControllerBase
             scheduleDays.TryGetValue(uid, out var scheduledDays);
             var leaveDays = leaveRows
                 .Where(l => l.UserId == uid)
-                .Sum(l => OverlapDays(l.FromDate, l.ToDate, dateFrom, dateTo));
+                .Sum(l => LeaveDayMath.ComputeInWindow(l.FromDate, l.ToDate, l.StartHalf, l.EndHalf, dateFrom, dateTo));
 
             var attendance = ComputeAttendanceBonus(profile, scheduledDays, leaveDays, DateTime.DaysInMonth(req.Year, req.Month));
 
@@ -292,7 +308,10 @@ public class PayrollController : ControllerBase
         if (p is null) return NotFound();
         if (p.Status != PayrollStatus.Draft)
             return Conflict(new { code = "InvalidState", message = "仅草稿可删除" });
-        p.IsDeleted = true;
+        // 硬删除：UNIQUE(StoreId, Year, Month) 不含 IsDeleted，软删除会残留物理行，
+        // 导致同月重新生成时撞唯一键报错。草稿无需留痕，直接物理删除；
+        // FK ON DELETE CASCADE 会一并清理 payroll_items / payroll_adjustments。
+        _db.PayrollPeriods.Remove(p);
         await _db.SaveChangesAsync(ct);
         return NoContent();
     }
@@ -418,7 +437,7 @@ public class PayrollController : ControllerBase
         period.TotalAmount = period.Items.Sum(i => i.NetTotal);
     }
 
-    private static decimal ComputeAttendanceBonus(SalaryProfile? profile, int scheduledDays, int leaveDays, int naturalDays)
+    private static decimal ComputeAttendanceBonus(SalaryProfile? profile, int scheduledDays, decimal leaveDays, int naturalDays)
     {
         if (profile is null) return 0m;
         if (profile.AttendanceBonusAmount <= 0) return 0m;
@@ -426,14 +445,6 @@ public class PayrollController : ControllerBase
         var required = profile.RequiredAttendanceDays > 0 ? profile.RequiredAttendanceDays : naturalDays;
         var actual = scheduledDays - leaveDays;
         return actual >= required ? profile.AttendanceBonusAmount : 0m;
-    }
-
-    private static int OverlapDays(DateOnly fromA, DateOnly toA, DateOnly fromB, DateOnly toB)
-    {
-        var from = fromA > fromB ? fromA : fromB;
-        var to = toA < toB ? toA : toB;
-        if (to < from) return 0;
-        return to.DayNumber - from.DayNumber + 1;
     }
 
     private async Task<PayrollPeriodDetailDto?> LoadPeriodAsync(long id, CancellationToken ct)

@@ -8,19 +8,43 @@
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                <TextBlock VerticalAlignment="Center"
-                           DockPanel.Dock="Left"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Text="服务评价" />
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <!--  操作按钮固定在最右侧  -->
+                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Orientation="Horizontal">
+                    <Button Margin="12,0,0,0"
+                            Padding="16,0"
+                            AutomationProperties.HelpText="选技师和日期，挑出已完成的服务项打分"
+                            AutomationProperties.Name="代客录入服务评价"
+                            Command="{Binding CreateCommand}"
+                            Content="代客录入"
+                            Style="{StaticResource PrimaryBtn}" />
+                    <Button Margin="8,0,0,0"
+                            Padding="16,0"
+                            AutomationProperties.Name="刷新"
+                            Command="{Binding ReloadCommand}"
+                            Content="刷新"
+                            Style="{StaticResource GhostBtn}" />
+                </StackPanel>
+
+                <!--  筛选条件靠左排列  -->
+                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
                     <TextBlock Margin="0,0,6,0"
+                               VerticalAlignment="Center"
+                               Text="技师" />
+                    <ComboBox Width="200"
+                              AutomationProperties.Name="按技师筛选"
+                              ItemsSource="{Binding TechOptions}"
+                              SelectedValue="{Binding TechnicianFilter, Mode=TwoWay}"
+                              SelectedValuePath="Id"
+                              Style="{StaticResource FilterCombo}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Display}" /></DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Margin="12,0,6,0"
                                VerticalAlignment="Center"
                                Text="评价" />
                     <ComboBox Width="120"
@@ -36,100 +60,106 @@
                     </ComboBox>
                     <TextBlock Margin="12,0,6,0"
                                VerticalAlignment="Center"
-                               Text="天数" />
-                    <ctrl:NumericUpDown Width="110"
-                                        AutomationProperties.Name="统计天数"
-                                        Decimals="0"
-                                        Maximum="365"
-                                        Minimum="1"
-                                        Step="1"
-                                        Value="{Binding Days, Mode=TwoWay}" />
-                    <Button Margin="12,0,0,0"
-                            Padding="16,0"
-                            AutomationProperties.HelpText="选技师和日期，挑出已完成的服务项打分"
-                            AutomationProperties.Name="代客录入服务评价"
-                            Command="{Binding CreateCommand}"
-                            Content="代客录入"
-                            Style="{StaticResource PrimaryBtn}" />
-                    <Button Margin="8,0,0,0"
-                            Padding="16,0"
-                            AutomationProperties.Name="刷新"
-                            Command="{Binding ReloadCommand}"
-                            Content="刷新"
-                            Style="{StaticResource GhostBtn}" />
+                               Text="开始日期" />
+                    <DatePicker Width="150"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="开始日期"
+                                PreviewMouseLeftButtonUp="DatePicker_PreviewMouseUp"
+                                SelectedDate="{Binding FromDate, Mode=TwoWay}"
+                                SelectedDateFormat="Short"
+                                Style="{StaticResource FilterDatePicker}" />
+                    <TextBlock Margin="8,0,6,0"
+                               VerticalAlignment="Center"
+                               Text="至" />
+                    <DatePicker Width="150"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="结束日期"
+                                PreviewMouseLeftButtonUp="DatePicker_PreviewMouseUp"
+                                SelectedDate="{Binding ToDate, Mode=TwoWay}"
+                                SelectedDateFormat="Short"
+                                Style="{StaticResource FilterDatePicker}" />
                 </StackPanel>
             </DockPanel>
 
-            <!--  技师均分汇总  -->
-            <Border Grid.Row="1"
-                    Margin="0,0,0,12"
-                    Padding="10"
-                    Background="#F0F7F4"
-                    CornerRadius="4">
-                <DataGrid MaxHeight="360"
-                          AutoGenerateColumns="False"
-                          AutomationProperties.Name="技师评价均分汇总"
-                          Background="Transparent"
-                          CanUserAddRows="False"
-                          HeadersVisibility="Column"
-                          IsReadOnly="True"
-                          ItemsSource="{Binding Summary}">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Width="*"
-                                            MinWidth="200"
-                                            Binding="{Binding TechnicianName}"
-                                            Header="技师" />
-                        <DataGridTextColumn Width="100"
-                                            Binding="{Binding ReviewCount}"
-                                            Header="评价数" />
-                        <DataGridTextColumn Width="120"
-                                            Binding="{Binding AverageRating, StringFormat='{}{0:F2}'}"
-                                            Header="平均分" />
-                    </DataGrid.Columns>
-                </DataGrid>
-            </Border>
+            <!--  与 BS 端一致：全部评价 / 技师汇总 两个 Tab 切换  -->
+            <TabControl Grid.Row="1">
+                <!--  Tab 1：全部评价（评分明细 + 分页）  -->
+                <TabItem Header="全部评价">
+                    <Grid Margin="0,12,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
 
-            <DataGrid Grid.Row="2"
-                      AlternatingRowBackground="#FAFAFA"
-                      AutoGenerateColumns="False"
-                      AutomationProperties.Name="服务评价明细"
-                      CanUserAddRows="False"
-                      CanUserDeleteRows="False"
-                      HeadersVisibility="Column"
-                      IsReadOnly="True"
-                      ItemsSource="{Binding Rows}">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Width="150"
-                                        Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
-                                        Header="时间" />
-                    <DataGridTextColumn Width="140"
-                                        Binding="{Binding TechnicianName}"
-                                        Header="技师" />
-                    <DataGridTextColumn Width="80"
-                                        Binding="{Binding Rating, StringFormat='{}{0} 星'}"
-                                        Header="评分" />
-                    <DataGridTextColumn Width="100"
-                                        Binding="{Binding Rating, Converter={StaticResource RatingToText}}"
-                                        Header="服务评价" />
-                    <DataGridTextColumn Width="120"
-                                        Binding="{Binding MemberName}"
-                                        Header="会员" />
-                    <DataGridTextColumn Width="160"
-                                        Binding="{Binding Tags}"
-                                        Header="标签" />
-                    <DataGridTextColumn Width="*"
-                                        Binding="{Binding Comment}"
-                                        Header="评价内容" />
-                </DataGrid.Columns>
-            </DataGrid>
+                        <DataGrid Grid.Row="0"
+                                  AlternatingRowBackground="#FAFAFA"
+                                  AutoGenerateColumns="False"
+                                  AutomationProperties.Name="服务评价明细"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  HeadersVisibility="Column"
+                                  IsReadOnly="True"
+                                  ItemsSource="{Binding Rows}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Width="140"
+                                                    Binding="{Binding TechnicianName}"
+                                                    Header="技师" />
+                                <DataGridTextColumn Width="120"
+                                                    Binding="{Binding MemberName}"
+                                                    Header="顾客" />
+                                <DataGridTextColumn Width="80"
+                                                    Binding="{Binding Rating, StringFormat='{}{0} 星'}"
+                                                    Header="评分" />
+                                <DataGridTextColumn Width="100"
+                                                    Binding="{Binding Rating, Converter={StaticResource RatingToText}}"
+                                                    Header="服务评价" />
+                                <DataGridTextColumn Width="160"
+                                                    Binding="{Binding Tags}"
+                                                    Header="标签" />
+                                <DataGridTextColumn Width="*"
+                                                    Binding="{Binding Comment}"
+                                                    Header="评论" />
+                                <DataGridTextColumn Width="150"
+                                                    Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
+                                                    Header="时间" />
+                            </DataGrid.Columns>
+                        </DataGrid>
 
-            <!--  分页（评分明细，BS 端订单流水同款样式）  -->
-            <ctrl:PaginationBar Grid.Row="3"
-                                Margin="0,8,0,0"
-                                Page="{Binding Page, Mode=TwoWay}"
-                                PageChangedCommand="{Binding ReloadCommand}"
-                                PageSize="{Binding PageSize, Mode=TwoWay}"
-                                Total="{Binding Total}" />
+                        <!--  分页（评分明细，BS 端订单流水同款样式）  -->
+                        <ctrl:PaginationBar Grid.Row="1"
+                                            Margin="0,8,0,0"
+                                            Page="{Binding Page, Mode=TwoWay}"
+                                            PageChangedCommand="{Binding ReloadCommand}"
+                                            PageSize="{Binding PageSize, Mode=TwoWay}"
+                                            Total="{Binding Total}" />
+                    </Grid>
+                </TabItem>
+
+                <!--  Tab 2：技师汇总（均分）  -->
+                <TabItem Header="技师汇总">
+                    <DataGrid Margin="0,12,0,0"
+                              AutoGenerateColumns="False"
+                              AutomationProperties.Name="技师评价均分汇总"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              HeadersVisibility="Column"
+                              IsReadOnly="True"
+                              ItemsSource="{Binding Summary}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Width="*"
+                                                MinWidth="200"
+                                                Binding="{Binding TechnicianName}"
+                                                Header="技师" />
+                            <DataGridTextColumn Width="120"
+                                                Binding="{Binding ReviewCount}"
+                                                Header="评价数" />
+                            <DataGridTextColumn Width="120"
+                                                Binding="{Binding AverageRating, StringFormat='{}{0:F2}'}"
+                                                Header="平均分" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </TabItem>
+            </TabControl>
         </Grid>
     </Border>
 </UserControl>

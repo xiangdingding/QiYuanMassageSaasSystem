@@ -51,11 +51,20 @@
             <span v-else class="muted">—</span>
           </template>
         </el-table-column>
-        <el-table-column label="登记/处理" min-width="160">
+        <el-table-column label="登记/处理" min-width="250">
           <template #default="{ row }">
-            <div>{{ row.recordedByName || '—' }}</div>
-            <div class="muted">{{ formatTime(row.createdAt) }}</div>
-            <div class="muted" v-if="row.resolvedByName">{{ row.resolvedByName }} · {{ formatTime(row.resolvedAt) }}</div>
+            <!-- 处理 / 取消（最新排最上） -->
+            <div v-if="row.resolvedByName" class="rec-line">
+              <span>{{ row.resolvedByName }}</span>
+              <span class="muted">{{ formatTime(row.resolvedAt) }}</span>
+              <el-tag v-if="resultTagText(row)" :type="resultTagType(row)" size="small">{{ resultTagText(row) }}</el-tag>
+            </div>
+            <!-- 登记（最早排最下） -->
+            <div class="rec-line">
+              <span>{{ row.recordedByName || '—' }}</span>
+              <span class="muted">{{ formatTime(row.createdAt) }}</span>
+              <el-tag type="primary" size="small">登记</el-tag>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="操作" :width="$actCol(110)" fixed="right">
@@ -136,8 +145,13 @@
             </el-table-column>
           </el-table>
         </el-form-item>
-        <el-form-item label="标签">
-          <el-input v-model="createForm.tags" placeholder="逗号分隔，如：态度差,力度不合适" />
+        <el-form-item label="常用标签">
+          <el-checkbox-group v-model="createForm.selectedTags">
+            <el-checkbox-button v-for="t in tagOptions" :key="t" :value="t">{{ t }}</el-checkbox-button>
+          </el-checkbox-group>
+        </el-form-item>
+        <el-form-item label="其他标签">
+          <el-input v-model="createForm.tags" placeholder="点选之外可手动补充，逗号分隔" />
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="createForm.comment" type="textarea" :rows="3" placeholder="客户原话/补充" maxlength="500" show-word-limit />
@@ -218,11 +232,14 @@ const filter = reactive<{ status: string; range: string[] | null; page: number; 
 );
 
 const createOpen = ref(false);
+/** 常用投诉标签：勾选多选，不够再手动补充（与 CS 端一致） */
+const tagOptions = ['态度差', '力度不合适', '技术生疏', '迟到/超时', '卫生不佳', '环境嘈杂', '乱收费', '中途离岗'];
 const createForm = reactive({
   anonymous: false,
   technicianId: null as number | null,
   date: dayjs().format('YYYY-MM-DD'),
   orderItemId: 0,
+  selectedTags: [] as string[],
   tags: '',
   comment: ''
 });
@@ -242,6 +259,7 @@ function openCreate() {
   createForm.technicianId = null;
   createForm.date = dayjs().format('YYYY-MM-DD');
   createForm.orderItemId = 0;
+  createForm.selectedTags = [];
   createForm.tags = '';
   createForm.comment = '';
   itemCandidates.value = [];
@@ -286,6 +304,17 @@ function statusTag(s: string): 'warning' | 'success' | 'info' {
 function resolutionLabel(r: string) {
   return ({ Reassigned: '改派', Refunded: '退款', Apologized: '道歉/补偿', NoAction: '不予处理' } as Record<string, string>)[r] ?? r;
 }
+/// 登记/处理列里处理结果小标签文案：已取消优先，其次处理方式
+function resultTagText(row: ComplaintDto): string {
+  if (row.status === 'Cancelled') return '已取消';
+  return row.resolution ? resolutionLabel(row.resolution) : '';
+}
+/// 小标签颜色：已取消红、改派蓝、退款橙、道歉/补偿绿、不予处理灰
+function resultTagType(row: ComplaintDto): 'primary' | 'success' | 'warning' | 'danger' | 'info' {
+  if (row.status === 'Cancelled') return 'danger';
+  return ({ Reassigned: 'primary', Refunded: 'warning', Apologized: 'success', NoAction: 'info' } as
+    Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'>)[row.resolution ?? ''] ?? 'info';
+}
 function formatTime(t: string | null) {
   return t ? dayjs(t).format('YYYY-MM-DD HH:mm:ss') : '';
 }
@@ -323,6 +352,10 @@ async function submitCreate() {
     ElMessage.warning('未选择门店');
     return;
   }
+  // 勾选标签 + 手动补充，合并为逗号分隔
+  const manual = createForm.tags.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+  const allTags = [...createForm.selectedTags, ...manual];
+  const tags = allTags.length > 0 ? allTags.join(',') : null;
   creating.value = true;
   try {
     await complaintsApi.create(createForm.anonymous
@@ -330,12 +363,12 @@ async function submitCreate() {
           orderItemId: null,
           storeId: appStore.activeStoreId,
           technicianId: createForm.technicianId,
-          tags: createForm.tags.trim() || null,
+          tags,
           comment: createForm.comment.trim() || null
         }
       : {
           orderItemId: createForm.orderItemId,
-          tags: createForm.tags.trim() || null,
+          tags,
           comment: createForm.comment.trim() || null
         });
     ElMessage.success('已登记投诉');
@@ -377,7 +410,8 @@ async function submitResolve() {
 }
 
 async function cancelOne(row: ComplaintDto) {
-  await ElMessageBox.confirm(`确认取消订单 ${row.orderNo} 上的这条投诉记录？`, '提示', { type: 'warning' }).catch(() => null);
+  const ok = await ElMessageBox.confirm(`确认取消订单 ${row.orderNo} 上的这条投诉记录？`, '提示', { type: 'warning' }).then(() => true).catch(() => false);
+  if (!ok) return;
   await complaintsApi.cancel(row.id);
   ElMessage.success('已取消');
   reload();
@@ -399,6 +433,7 @@ onMounted(async () => {
 .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .spacer { flex: 1; }
 .muted { color: var(--el-text-color-secondary); font-size: 12px; }
+.rec-line { display: flex; align-items: center; gap: 6px; line-height: 1.8; }
 .ck-header { display: flex; justify-content: space-between; align-items: baseline; }
 .resolve-detail { background: #f5f7fa; padding: 12px; border-radius: 6px; margin-bottom: 12px; }
 .resolve-detail p { margin: 4px 0; }

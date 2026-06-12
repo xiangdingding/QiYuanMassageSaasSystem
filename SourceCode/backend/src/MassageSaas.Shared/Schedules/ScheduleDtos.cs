@@ -25,6 +25,9 @@ public record LeaveRequestDto(
     string Type,
     DateTime FromDate,
     DateTime ToDate,
+    string StartHalf,   // Morning / Afternoon
+    string EndHalf,     // Morning / Afternoon
+    decimal Days,       // 折算天数（支持 0.5）
     string? Reason,
     string Status,
     long? ApproverUserId,
@@ -37,6 +40,8 @@ public record CreateLeaveRequest(
     string Type,
     DateTime FromDate,
     DateTime ToDate,
-    string? Reason);
+    string? Reason,
+    string StartHalf = "Morning",
+    string EndHalf = "Afternoon");
 
 public record ApproveLeaveRequest(bool Approve, string? Reason);

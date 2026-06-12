@@ -20,7 +20,8 @@ export const payMethodLabel = label({
   Wechat: '微信',
   Alipay: '支付宝',
   BankCard: '银行卡',
-  Unpaid: '未支付'
+  Unpaid: '未支付',
+  Other: '其他'
 });
 
 /// 订单状态

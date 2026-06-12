@@ -53,7 +53,8 @@ public class PayrollItem : BaseEntity, ITenantScoped
 
     public int ServedRoundCount { get; set; }
     public int ScheduledDays { get; set; }
-    public int LeaveDays { get; set; }
+    /// <summary>本月已批准请假天数（支持半天，故为小数）。</summary>
+    public decimal LeaveDays { get; set; }
 
     public string? Remark { get; set; }
 

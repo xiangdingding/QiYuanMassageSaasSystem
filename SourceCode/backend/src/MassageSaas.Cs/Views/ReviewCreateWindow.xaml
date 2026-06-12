@@ -21,8 +21,12 @@
             <TextBlock Text="技师" VerticalAlignment="Center" Margin="0,0,6,0" />
             <ComboBox x:Name="TechBox" Width="220"
                       AutomationProperties.Name="选择服务技师"
-                      DisplayMemberPath="Display" SelectedValuePath="Id"
-                      Style="{StaticResource FilterCombo}" />
+                      SelectedValuePath="Id"
+                      Style="{StaticResource FilterCombo}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate><TextBlock Text="{Binding Display}" /></DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
             <TextBlock Text="日期" VerticalAlignment="Center" Margin="14,0,6,0" />
             <DatePicker x:Name="DateBox" Width="160" AutomationProperties.Name="服务日期" />
             <Button Margin="14,0,0,0" Padding="16,0"
@@ -61,7 +65,7 @@
         </StackPanel>
 
         <StackPanel Grid.Row="3" Margin="0,0,0,10">
-            <TextBlock Text="常用标签（勾选，可多选）" Margin="0,0,0,4" />
+            <TextBlock Text="常用标签" Margin="0,0,0,6" />
             <ItemsControl x:Name="TagOptionsControl">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -70,9 +74,9 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                  Margin="0,0,16,6" VerticalContentAlignment="Center"
-                                  AutomationProperties.Name="{Binding Label}" />
+                        <ToggleButton Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                      Style="{StaticResource TagToggle}"
+                                      AutomationProperties.Name="{Binding Label}" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

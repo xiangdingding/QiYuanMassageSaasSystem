@@ -291,6 +291,33 @@
         </Setter>
     </Style>
 
+    <!--  ============ 密码输入框：与 FieldText 同观感（圆角描边、聚焦绿边） ============  -->
+    <Style x:Key="FieldPassword" TargetType="PasswordBox">
+        <Setter Property="Height" Value="34" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="BorderBrush" Value="#D1D5DB" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="PasswordBox">
+                    <Border x:Name="bd" Background="White" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1" CornerRadius="6">
+                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="bd" Property="BorderBrush" Value="#2D6A4F" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="bd" Property="Background" Value="#F3F4F6" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!--  ============ 可编辑下拉框：圆角描边 + 可输入（与 FilterCombo 同观感） ============  -->
     <Style x:Key="FieldComboEditable" TargetType="ComboBox">
         <Setter Property="Height" Value="34" />
@@ -421,6 +448,34 @@
         </Setter>
     </Style>
 
+    <!--  警示操作（批量设置）：对齐 BS el-button type="warning" 橙底白字  -->
+    <Style x:Key="WarningBtn" TargetType="Button">
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Background" Value="#E6A23C" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="6"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="#EBB563" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="bd" Property="Background" Value="#F3D19E" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!--  次操作（刷新 / 重置）：白底描边圆角，悬停绿边  -->
     <Style x:Key="GhostBtn" TargetType="Button">
         <Setter Property="Height" Value="34" />
@@ -524,6 +579,30 @@
         </Setter>
     </Style>
 
+    <!--  行内警示操作（对齐 BS el-button type="warning"，橙底白字）  -->
+    <Style x:Key="RowWarning" TargetType="Button">
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Padding" Value="14,0" />
+        <Setter Property="Margin" Value="3,0" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Background" Value="#E6A23C" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#EBB563" /></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter TargetName="bd" Property="Background" Value="#F3D19E" /></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!--  ============ 分段单选按钮（对齐 BS el-radio-button）：拼接成一排，选中绿底白字 ============
           用法：每个 RadioButton 设 GroupName 相同，CommandParameter 存取值，Tag 存圆角（首/尾圆角、中间 0），
           首项 BorderThickness="1,1,1,1"，其余用默认 "0,1,1,1"（共享左边框，避免双线）。  -->
@@ -555,6 +634,41 @@
                             <Setter TargetName="bd" Property="BorderBrush" Value="#2D6A4F" />
                             <Setter Property="Foreground" Value="White" />
                             <Setter Property="Panel.ZIndex" Value="1" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--  ============ 标签开关（对齐 BS el-checkbox-button：多选小圆角块，选中绿底白字）============  -->
+    <Style x:Key="TagToggle" TargetType="ToggleButton">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Padding" Value="14,0" />
+        <Setter Property="Margin" Value="0,0,8,8" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="#374151" />
+        <Setter Property="Background" Value="White" />
+        <Setter Property="BorderBrush" Value="#D1D5DB" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                            CornerRadius="4" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="BorderBrush" Value="#2D6A4F" />
+                            <Setter Property="Foreground" Value="#2D6A4F" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="#2D6A4F" />
+                            <Setter TargetName="bd" Property="BorderBrush" Value="#2D6A4F" />
+                            <Setter Property="Foreground" Value="White" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

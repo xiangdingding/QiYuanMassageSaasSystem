@@ -771,11 +771,14 @@
                                                       VerticalContentAlignment="Center"
                                                       AutomationProperties.HelpText="选择轮钟或点钟"
                                                       AutomationProperties.Name="上钟方式"
-                                                      DisplayMemberPath="Label"
                                                       ItemsSource="{Binding Source={x:Static vmpos:CartItemViewModel.AssignmentOptions}}"
                                                       SelectedValue="{Binding AssignmentSource, Mode=TwoWay}"
                                                       SelectedValuePath="Value"
-                                                      Visibility="{Binding IsService, Converter={StaticResource BoolToVisible}}" />
+                                                      Visibility="{Binding IsService, Converter={StaticResource BoolToVisible}}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
                                             <TextBlock Grid.Column="2"
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"
@@ -789,10 +792,13 @@
                                                       Margin="6,0,0,0"
                                                       VerticalContentAlignment="Center"
                                                       AutomationProperties.Name="选择房间"
-                                                      DisplayMemberPath="RoomNo"
                                                       ItemsSource="{Binding DataContext.RoomOptions, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                       SelectedItem="{Binding Room, Mode=TwoWay}"
-                                                      Visibility="{Binding IsService, Converter={StaticResource BoolToVisible}}" />
+                                                      Visibility="{Binding IsService, Converter={StaticResource BoolToVisible}}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate><TextBlock Text="{Binding RoomNo}" /></DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
                                             <TextBlock Grid.Column="3"
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"

@@ -93,7 +93,7 @@
                          Height="152"
                          AutomationProperties.Name="备注"
                          MaxLength="200"
-                         Style="{StaticResource FieldText}" />
+                         Style="{StaticResource FieldTextMultiline}" />
             </Grid>
         </StackPanel>
     </DockPanel>

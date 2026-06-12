@@ -11,48 +11,225 @@
             </Grid.RowDefinitions>
 
             <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                <TextBlock DockPanel.Dock="Left" Text="投诉处理" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <TextBlock Text="状态" VerticalAlignment="Center" Margin="0,0,6,0" />
-                    <ComboBox SelectedIndex="{Binding StatusFilter, Mode=TwoWay}" Width="110" Height="30"
-                              AutomationProperties.Name="按状态筛选">
-                        <ComboBoxItem Content="全部" />
-                        <ComboBoxItem Content="待处理" />
-                        <ComboBoxItem Content="已处理" />
-                        <ComboBoxItem Content="已撤销" />
-                    </ComboBox>
-                    <Button Content="登记投诉" Padding="12,6" Margin="12,0,0,0" Background="#2D6A4F" Foreground="White"
-                            BorderThickness="0" Command="{Binding RegisterCommand}" />
-                    <Button Content="刷新" Padding="12,6" Margin="8,0,0,0" Command="{Binding ReloadCommand}" />
+                <!--  操作按钮固定在最右侧  -->
+                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Orientation="Horizontal">
+                    <Button Margin="12,0,0,0"
+                            Padding="16,0"
+                            AutomationProperties.Name="登记投诉"
+                            Command="{Binding RegisterCommand}"
+                            Content="登记投诉"
+                            Style="{StaticResource PrimaryBtn}" />
+                    <Button Margin="8,0,0,0"
+                            Padding="16,0"
+                            AutomationProperties.Name="刷新"
+                            Command="{Binding ReloadCommand}"
+                            Content="刷新"
+                            Style="{StaticResource GhostBtn}" />
+                </StackPanel>
+
+                <!--  筛选条件靠左：状态分段单选 + 日期区间（对齐 BS）  -->
+                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                    <RadioButton AutomationProperties.Name="只看待处理"
+                                 BorderThickness="1,1,1,1"
+                                 Checked="StatusFilter_Checked"
+                                 CommandParameter="Pending"
+                                 Content="待处理"
+                                 GroupName="StatusFilter"
+                                 IsChecked="True"
+                                 Style="{StaticResource SegRadio}"
+                                 Tag="6,0,0,6" />
+                    <RadioButton AutomationProperties.Name="只看已处理"
+                                 Checked="StatusFilter_Checked"
+                                 CommandParameter="Resolved"
+                                 Content="已处理"
+                                 GroupName="StatusFilter"
+                                 Style="{StaticResource SegRadio}"
+                                 Tag="0" />
+                    <RadioButton AutomationProperties.Name="只看已取消"
+                                 Checked="StatusFilter_Checked"
+                                 CommandParameter="Cancelled"
+                                 Content="已取消"
+                                 GroupName="StatusFilter"
+                                 Style="{StaticResource SegRadio}"
+                                 Tag="0" />
+                    <RadioButton AutomationProperties.Name="查看全部"
+                                 Checked="StatusFilter_Checked"
+                                 CommandParameter=""
+                                 Content="全部"
+                                 GroupName="StatusFilter"
+                                 Style="{StaticResource SegRadio}"
+                                 Tag="0,6,6,0" />
+
+                    <TextBlock Margin="16,0,6,0"
+                               VerticalAlignment="Center"
+                               Text="开始日期" />
+                    <DatePicker Width="150"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="开始日期"
+                                PreviewMouseLeftButtonUp="DatePicker_PreviewMouseUp"
+                                SelectedDate="{Binding FromDate, Mode=TwoWay}"
+                                SelectedDateFormat="Short"
+                                Style="{StaticResource FilterDatePicker}" />
+                    <TextBlock Margin="8,0,6,0"
+                               VerticalAlignment="Center"
+                               Text="至" />
+                    <DatePicker Width="150"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="结束日期"
+                                PreviewMouseLeftButtonUp="DatePicker_PreviewMouseUp"
+                                SelectedDate="{Binding ToDate, Mode=TwoWay}"
+                                SelectedDateFormat="Short"
+                                Style="{StaticResource FilterDatePicker}" />
                 </StackPanel>
             </DockPanel>
 
-            <DataGrid Grid.Row="1" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
-                      CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
-                      HeadersVisibility="Column" GridLinesVisibility="All"
-                      AlternatingRowBackground="#FAFAFA">
+            <DataGrid Grid.Row="1"
+                      AlternatingRowBackground="#FAFAFA"
+                      AutoGenerateColumns="False"
+                      AutomationProperties.Name="投诉列表"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      HeadersVisibility="Column"
+                      IsReadOnly="True"
+                      MinRowHeight="68"
+                      ItemsSource="{Binding Rows}">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="150" />
-                    <DataGridTextColumn Header="订单号" Binding="{Binding OrderNo}" Width="130" />
-                    <DataGridTextColumn Header="服务" Binding="{Binding ServiceName}" Width="120" />
-                    <DataGridTextColumn Header="被投诉技师" Binding="{Binding OriginalTechnicianName}" Width="110" />
-                    <DataGridTextColumn Header="会员" Binding="{Binding MemberName}" Width="100" />
-                    <DataGridTextColumn Header="内容" Binding="{Binding Comment}" Width="180" />
-                    <DataGridTextColumn Header="状态" Binding="{Binding Status, Converter={StaticResource ComplaintLabel}}" Width="80" />
-                    <DataGridTextColumn Header="处理方式" Binding="{Binding Resolution, Converter={StaticResource ComplaintLabel}}" Width="90" />
-                    <DataGridTextColumn Header="改派至" Binding="{Binding ReassignedToTechnicianName}" Width="100" />
-                    <DataGridTemplateColumn Header="操作" Width="*">
+                    <DataGridTextColumn Width="130" Binding="{Binding OrderNo}" Header="订单号" />
+                    <DataGridTextColumn Width="110" Binding="{Binding ServiceName}" Header="项目" />
+                    <DataGridTextColumn Width="95" Binding="{Binding OriginalTechnicianName}" Header="被投诉技师" />
+                    <DataGridTextColumn Width="85" Binding="{Binding MemberName}" Header="会员" />
+
+                    <!--  标签 / 描述  -->
+                    <DataGridTemplateColumn Width="*" MinWidth="160" Header="标签 / 描述">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Margin="2" Padding="6,2" Content="处理" Background="#2D6A4F" Foreground="White" BorderThickness="0"
-                                            Visibility="{Binding Status, Converter={StaticResource StringEquals}, ConverterParameter=Pending, Mode=OneWay}"
+                                <StackPanel Margin="0,4" VerticalAlignment="Center">
+                                    <ItemsControl ItemsSource="{Binding TagList}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Margin="0,0,4,4"
+                                                        Padding="6,1"
+                                                        Background="#FDF6EC"
+                                                        BorderBrush="#F5DAB1"
+                                                        BorderThickness="1"
+                                                        CornerRadius="3">
+                                                    <TextBlock FontSize="12" Foreground="#E6A23C" Text="{Binding}" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock FontSize="12"
+                                               Foreground="#909399"
+                                               Text="{Binding Comment}"
+                                               TextWrapping="Wrap"
+                                               Visibility="{Binding HasComment, Converter={StaticResource BoolToVisible}}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!--  状态  -->
+                    <DataGridTemplateColumn Width="80" Header="状态">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Padding="8,2"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center"
+                                        Background="{Binding StatusBrush}"
+                                        CornerRadius="3">
+                                    <TextBlock FontSize="12" Foreground="White" Text="{Binding StatusLabel}" />
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!--  处理结果  -->
+                    <DataGridTemplateColumn Width="120" Header="处理结果">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ResolutionLabel}"
+                                               Visibility="{Binding HasResolution, Converter={StaticResource BoolToVisible}}" />
+                                    <TextBlock Foreground="#909399"
+                                               Text="—"
+                                               Visibility="{Binding HasResolution, Converter={StaticResource InverseBoolToVisible}}" />
+                                    <TextBlock Margin="6,0,0,0"
+                                               FontSize="12"
+                                               Foreground="#909399"
+                                               Text="{Binding ReassignText}"
+                                               Visibility="{Binding HasReassign, Converter={StaticResource BoolToVisible}}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!--  登记 / 处理（人 + 时间）  -->
+                    <DataGridTemplateColumn Width="300" Header="登记/处理">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,4" VerticalAlignment="Center">
+                                    <!--  处理 / 取消：处理人 日期 标签（最新，排最上）  -->
+                                    <StackPanel Margin="0,0,0,3"
+                                                Orientation="Horizontal"
+                                                Visibility="{Binding HasResolved, Converter={StaticResource BoolToVisible}}">
+                                        <TextBlock VerticalAlignment="Center" Text="{Binding ResolvedByName}" />
+                                        <TextBlock Margin="6,0,0,0"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="12"
+                                                   Foreground="#909399"
+                                                   Text="{Binding ResolvedAtText}" />
+                                        <Border Margin="6,0,0,0"
+                                                Padding="6,1"
+                                                VerticalAlignment="Center"
+                                                Background="{Binding ResultTagBrush}"
+                                                CornerRadius="3"
+                                                Visibility="{Binding HasResultTag, Converter={StaticResource BoolToVisible}}">
+                                            <TextBlock FontSize="11" Foreground="White" Text="{Binding ResultTagLabel}" />
+                                        </Border>
+                                    </StackPanel>
+                                    <!--  登记：登记人 日期 登记标记（最早，排最下）  -->
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock VerticalAlignment="Center" Text="{Binding RecordedLine}" />
+                                        <TextBlock Margin="6,0,0,0"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="12"
+                                                   Foreground="#909399"
+                                                   Text="{Binding CreatedAtText}" />
+                                        <Border Margin="6,0,0,0"
+                                                Padding="6,1"
+                                                VerticalAlignment="Center"
+                                                Background="#5B8FF9"
+                                                CornerRadius="3">
+                                            <TextBlock FontSize="11" Foreground="White" Text="登记" />
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <!--  操作：仅待处理可处理 / 取消  -->
+                    <DataGridTemplateColumn Width="150" Header="操作">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal"
+                                            VerticalAlignment="Center"
+                                            Visibility="{Binding IsPending, Converter={StaticResource BoolToVisible}}">
+                                    <Button AutomationProperties.Name="处理投诉"
                                             Command="{Binding DataContext.ResolveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}" />
-                                    <Button Margin="2" Padding="6,2" Content="撤销"
-                                            Visibility="{Binding Status, Converter={StaticResource StringEquals}, ConverterParameter=Pending, Mode=OneWay}"
+                                            CommandParameter="{Binding Dto}"
+                                            Content="处理"
+                                            Style="{StaticResource RowPrimary}" />
+                                    <Button AutomationProperties.Name="取消投诉"
                                             Command="{Binding DataContext.CancelCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}" />
+                                            CommandParameter="{Binding Dto}"
+                                            Content="取消"
+                                            Style="{StaticResource RowDanger}" />
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
@@ -60,12 +237,13 @@
                 </DataGrid.Columns>
             </DataGrid>
 
-            <!-- 分页（BS 端订单流水同款样式） -->
-            <ctrl:PaginationBar Grid.Row="2" Margin="0,8,0,0"
-                                Total="{Binding Total}"
+            <!--  分页（BS 端订单流水同款样式）  -->
+            <ctrl:PaginationBar Grid.Row="2"
+                                Margin="0,8,0,0"
                                 Page="{Binding Page, Mode=TwoWay}"
+                                PageChangedCommand="{Binding ReloadCommand}"
                                 PageSize="{Binding PageSize, Mode=TwoWay}"
-                                PageChangedCommand="{Binding ReloadCommand}" />
+                                Total="{Binding Total}" />
         </Grid>
     </Border>
 </UserControl>

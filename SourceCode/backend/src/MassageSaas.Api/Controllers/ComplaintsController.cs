@@ -58,7 +58,8 @@ public class ComplaintsController : ControllerBase
             .Include(c => c.ReassignedToTechnician)
             .Include(c => c.RecordedByUser)
             .Include(c => c.ResolvedByUser)
-            .OrderByDescending(c => c.CreatedAt)
+            // 最后处理（含取消）的排最前；未处理的按登记时间。即按最近一次活动时间倒序。
+            .OrderByDescending(c => c.ResolvedAt ?? c.CreatedAt)
             .Skip((pq.SafePage - 1) * pq.SafePageSize)
             .Take(pq.SafePageSize)
             .ToListAsync(ct);

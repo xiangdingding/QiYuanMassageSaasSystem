@@ -164,6 +164,58 @@ public class PayrollTests
     }
 
     [Fact]
+    public async Task Generate_RejectsFutureMonth()
+    {
+        var (db, ctx) = NewDb();
+        AddTech(db, 10);
+        await db.SaveChangesAsync();
+
+        // 下个月（业务月按北京时间）应被拒绝
+        var nextCn = DateTime.UtcNow.AddHours(8).AddMonths(1);
+        var ctl = NewController(db, ctx);
+        var rejected = (await ctl.Generate(new GeneratePayrollRequest(1, nextCn.Year, nextCn.Month, null), default))
+            .Result as ObjectResult;
+        rejected!.StatusCode.Should().Be(400);
+    }
+
+    [Fact]
+    public async Task Generate_AllowsCurrentMonth()
+    {
+        var (db, ctx) = NewDb();
+        AddTech(db, 10);
+        await db.SaveChangesAsync();
+
+        var nowCn = DateTime.UtcNow.AddHours(8);
+        var ctl = NewController(db, ctx);
+        var ok = (await ctl.Generate(new GeneratePayrollRequest(1, nowCn.Year, nowCn.Month, null), default)).Result as OkObjectResult;
+        ok.Should().NotBeNull("当前月允许生成");
+    }
+
+    [Fact]
+    public async Task DeleteDraft_HardDeletes_AllowingSameMonthRegenerate()
+    {
+        var (db, ctx) = NewDb();
+        AddTech(db, 10);
+        await db.SaveChangesAsync();
+
+        var ctl = NewController(db, ctx);
+        var generated = ((await ctl.Generate(new GeneratePayrollRequest(1, 2026, 4, null), default)).Result as OkObjectResult)!
+            .Value as PayrollPeriodDetailDto;
+        var periodId = generated!.Period.Id;
+
+        var del = await ctl.DeleteDraft(periodId, default);
+        del.Should().BeOfType<NoContentResult>();
+
+        // 物理删除：包含软删除过滤器在内都查不到，且不残留占用 UNIQUE(StoreId,Year,Month) 的行
+        (await db.PayrollPeriods.IgnoreQueryFilters().AnyAsync(p => p.Id == periodId)).Should().BeFalse();
+
+        // 同月可再次生成，不应再报 409 重复
+        var regen = (await ctl.Generate(new GeneratePayrollRequest(1, 2026, 4, null), default)).Result as OkObjectResult;
+        regen.Should().NotBeNull();
+        (regen!.Value as PayrollPeriodDetailDto)!.Period.Status.Should().Be("Draft");
+    }
+
+    [Fact]
     public async Task UpdateItem_AppliesOvertimeUsingProfileRate()
     {
         var (db, ctx) = NewDb();

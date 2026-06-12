@@ -351,14 +351,14 @@ public class EnumLabelConverter : IValueConverter
 {
     private static readonly Dictionary<string, string> Map = new()
     {
-        ["Active"] = "活跃", ["Expired"] = "已过期", ["Disabled"] = "已停用",
+        ["Active"] = "活跃", ["Expired"] = "已过期", ["Disabled"] = "已停用", ["Trial"] = "试用中",
         ["Idle"] = "空闲", ["OnDuty"] = "在岗", ["Resting"] = "休息", ["OffDuty"] = "下班",
         ["Cash"] = "现金", ["MemberCard"] = "会员卡", ["Wechat"] = "微信",
-        ["Alipay"] = "支付宝", ["BankCard"] = "银行卡", ["Unpaid"] = "未支付",
+        ["Alipay"] = "支付宝", ["BankCard"] = "银行卡", ["Unpaid"] = "未支付", ["Other"] = "其他",
         ["Pending"] = "待结账", ["InProgress"] = "服务中", ["Completed"] = "已完成",
         ["Cancelled"] = "已取消", ["Refunded"] = "已退款",
         ["FixedAmount"] = "固定金额", ["Percentage"] = "百分比", ["Tiered"] = "阶梯", ["Timed"] = "按时计费",
-        ["ShopOwner"] = "店主", ["StoreManager"] = "店长", ["Cashier"] = "收银员", ["Technician"] = "技师",
+        ["PlatformAdmin"] = "平台管理员", ["ShopOwner"] = "店主", ["StoreManager"] = "店长", ["Cashier"] = "收银员", ["Technician"] = "技师",
         ["OnlinePayment"] = "在线支付", ["OfflineManual"] = "线下激活",
         // 工资单状态 + 工资奖扣类型
         ["Draft"] = "草稿", ["Locked"] = "已封盘", ["Paid"] = "已发放",

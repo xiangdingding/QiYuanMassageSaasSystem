@@ -169,11 +169,12 @@ async function loadHistory() {
 async function submit() {
   if (!appStore.activeStoreId || !preview.value) return;
   if (Math.abs(variance.value) > 0.005) {
-    await ElMessageBox.confirm(
+    const ok = await ElMessageBox.confirm(
       `差额 ¥${variance.value.toFixed(2)}，确定提交？`,
       '差额确认',
       { type: 'warning' }
-    ).catch(() => null);
+    ).then(() => true).catch(() => false);
+    if (!ok) return;
   }
   submitting.value = true;
   try {

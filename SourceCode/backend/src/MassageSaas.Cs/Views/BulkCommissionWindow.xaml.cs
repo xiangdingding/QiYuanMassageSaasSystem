@@ -1,25 +1,40 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
+using System.ComponentModel;
 using System.Linq;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using MassageSaas.Cs.Services;
 using MassageSaas.Shared.Commissions;
-using MassageSaas.Shared.Services;
-using MassageSaas.Shared.Staff;
 
 namespace MassageSaas.Cs.Views;
 
 /// <summary>
 /// 批量设置提成规则：对「服务 × 技师」的笛卡尔积按同一份模板生成/更新通用规则。
-/// 逻辑与 BS 端 openBulk / submitBulk 一致；FixedAmount/Percentage 支持轮钟/点钟双值，Tiered 用阶梯档位。
+/// 界面与逻辑对齐 BS CommissionsView 的批量弹窗：纵向表单 + 服务/技师多选下拉 + 分段规则类型 +
+/// 固定金额/百分比双值（轮钟/点钟）、按时计费/阶梯单值、阶梯档位；覆盖开关 + "应用到 N 个组合"。
 /// </summary>
 public partial class BulkCommissionWindow : Window
 {
     private readonly IApiClient _api;
     private readonly long? _storeId;
     private readonly ObservableCollection<CommissionFormWindow.TierRow> _tiers = new();
+    private readonly ObservableCollection<PickItem> _services = new();
+    private readonly ObservableCollection<PickItem> _techs = new();
+
+    /// <summary>多选项：勾选状态 + 显示文案 + Id。</summary>
+    public class PickItem : INotifyPropertyChanged
+    {
+        public long Id { get; init; }
+        public string Label { get; init; } = string.Empty;
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set { if (_isSelected != value) { _isSelected = value; PropertyChanged?.Invoke(this, new(nameof(IsSelected))); } }
+        }
+        public event PropertyChangedEventHandler? PropertyChanged;
+    }
 
     public BulkCommissionWindow(IApiClient api, long? storeId)
     {
@@ -28,7 +43,10 @@ public partial class BulkCommissionWindow : Window
         _storeId = storeId;
         _tiers.Add(new CommissionFormWindow.TierRow { FromQty = 0, Amount = 0m });
         TiersGrid.ItemsSource = _tiers;
+        ServiceItems.ItemsSource = _services;
+        TechItems.ItemsSource = _techs;
         UpdatePanels();
+        UpdateSummaries();
         _ = LoadOptionsAsync();
     }
 
@@ -38,39 +56,90 @@ public partial class BulkCommissionWindow : Window
         {
             var services = await _api.GetServicesAsync(false);
             var techs = await _api.GetStaffAsync(role: "Technician", pageSize: 200, storeId: _storeId);
-            ServiceList.ItemsSource = services;
-            TechList.ItemsSource = techs.Items;
+
+            foreach (var s in services)
+                _services.Add(new PickItem { Id = s.Id, Label = $"{s.Code} {s.Name}" });
+            foreach (var t in techs.Items)
+                _techs.Add(new PickItem { Id = t.Id, Label = $"{(t.EmployeeNo?.ToString() ?? "-")} · {t.RealName ?? t.Username}" });
         }
         catch (System.Exception ex) { ErrorReporter.Show(ex); }
     }
 
-    private string RuleType => (RuleTypeBox.SelectedItem as ComboBoxItem)?.Content as string ?? "FixedAmount";
+    private string RuleType =>
+        RbPercent.IsChecked == true ? "Percentage"
+        : RbTiered.IsChecked == true ? "Tiered"
+        : RbTimed.IsChecked == true ? "Timed"
+        : "FixedAmount";
+
     private bool IsDual => RuleType is "FixedAmount" or "Percentage";
 
-    private void RuleType_Changed(object sender, SelectionChangedEventArgs e) => UpdatePanels();
+    private void RuleType_Changed(object sender, RoutedEventArgs e) => UpdatePanels();
 
     private void UpdatePanels()
     {
-        if (DualPanel is null) return; // 初始化早于子元素
-        DualPanel.Visibility = IsDual ? Visibility.Visible : Visibility.Collapsed;
-        SinglePanel.Visibility = RuleType == "Timed" ? Visibility.Visible : Visibility.Collapsed;
-        TierPanel.Visibility = RuleType == "Tiered" ? Visibility.Visible : Visibility.Collapsed;
+        if (FixedPanel is null) return; // Checked 在 InitializeComponent 阶段早于子元素创建
+
+        var fixedV = RuleType == "FixedAmount";
+        var percentV = RuleType == "Percentage";
+        var singleV = RuleType is "Timed" or "Tiered";
+        var tierV = RuleType == "Tiered";
+
+        FixedLabel.Visibility = FixedPanel.Visibility = fixedV ? Visibility.Visible : Visibility.Collapsed;
+        PercentLabel.Visibility = PercentPanel.Visibility = percentV ? Visibility.Visible : Visibility.Collapsed;
+        SingleFieldLabel.Visibility = SinglePanel.Visibility = singleV ? Visibility.Visible : Visibility.Collapsed;
+        TierFieldLabel.Visibility = TierPanel.Visibility = tierV ? Visibility.Visible : Visibility.Collapsed;
+
+        // 单值区文案随类型变化（对齐 BS bulkAmountLabel）
+        if (RuleType == "Timed") SingleFieldLabel.Text = "元/小时";
+        else if (RuleType == "Tiered") SingleFieldLabel.Text = "默认数值";
     }
 
-    private int ServiceCount => ServiceList.SelectedItems.Count;
-    private int TechCount => TechList.SelectedItems.Count;
+    // ---- 多选汇总 / 组合数 ----
+    private int ServiceCount => _services.Count(s => s.IsSelected);
+    private int TechCount => _techs.Count(t => t.IsSelected);
     private int PairCount => ServiceCount * TechCount;
 
-    private void Selection_Changed(object sender, SelectionChangedEventArgs e)
+    private void Selection_Changed(object sender, RoutedEventArgs e) => UpdateSummaries();
+
+    private void UpdateSummaries()
     {
-        if (PairCountText is null) return;
-        PairCountText.Text = $"将处理 {PairCount} 个 (服务 × 技师) 组合";
+        if (ServiceSummary is null) return;
+        SetSummary(ServiceSummary, ServiceCount, "请选择一个或多个服务", "已选 {0} 个服务");
+        SetSummary(TechSummary, TechCount, "请选择一个或多个技师", "已选 {0} 个技师");
+
+        if (PairCountText is not null)
+            PairCountText.Text = $"将处理 {PairCount} 个 (服务 × 技师) 组合";
+
+        if (ApplyButton is not null)
+        {
+            ApplyButton.Content = $"应用到 {PairCount} 个组合";
+            ApplyButton.IsEnabled = PairCount > 0;
+        }
     }
 
-    private void SelectAllServices_Click(object sender, RoutedEventArgs e) { ServiceList.SelectAll(); }
-    private void ClearServices_Click(object sender, RoutedEventArgs e) { ServiceList.UnselectAll(); }
-    private void SelectAllTechs_Click(object sender, RoutedEventArgs e) { TechList.SelectAll(); }
-    private void ClearTechs_Click(object sender, RoutedEventArgs e) { TechList.UnselectAll(); }
+    private static readonly System.Windows.Media.Brush PlaceholderBrush =
+        new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#9CA3AF"));
+    private static readonly System.Windows.Media.Brush TextBrush =
+        new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#374151"));
+
+    private static void SetSummary(System.Windows.Controls.TextBlock tb, int count, string empty, string fmt)
+    {
+        tb.Text = count == 0 ? empty : string.Format(fmt, count);
+        tb.Foreground = count == 0 ? PlaceholderBrush : TextBrush;
+    }
+
+    private void SelectAllServices_Click(object sender, RoutedEventArgs e) { foreach (var s in _services) s.IsSelected = true; UpdateSummaries(); }
+    private void ClearServices_Click(object sender, RoutedEventArgs e) { foreach (var s in _services) s.IsSelected = false; UpdateSummaries(); }
+    private void SelectAllTechs_Click(object sender, RoutedEventArgs e) { foreach (var t in _techs) t.IsSelected = true; UpdateSummaries(); }
+    private void ClearTechs_Click(object sender, RoutedEventArgs e) { foreach (var t in _techs) t.IsSelected = false; UpdateSummaries(); }
+
+    private void Overwrite_Changed(object sender, RoutedEventArgs e)
+    {
+        if (OverwriteHint is null) return;
+        OverwriteHint.Text = OverwriteBox.IsChecked == true
+            ? "已有的“通用”规则（不含仅轮钟/仅点钟）会被更新"
+            : "已存在的服务+技师组合将被跳过";
+    }
 
     private void AddTier_Click(object sender, RoutedEventArgs e)
     {
@@ -88,13 +157,19 @@ public partial class BulkCommissionWindow : Window
         if (TiersGrid.SelectedItem is CommissionFormWindow.TierRow row) _tiers.Remove(row);
     }
 
-    private static decimal? ParseDecOptional(string? s) =>
-        string.IsNullOrWhiteSpace(s) ? null
-            : decimal.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var v) ? v : null;
-    private static decimal ParseDec(string? s) =>
-        decimal.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var v) ? v : 0m;
-    private static int ParseInt(string? s) =>
-        int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : 0;
+    private decimal? RotationAmount() => RuleType switch
+    {
+        "FixedAmount" => (decimal)RotationFixedBox.Value,
+        "Percentage" => (decimal)RotationPercentBox.Value,
+        _ => null
+    };
+
+    private decimal? DesignationAmount() => RuleType switch
+    {
+        "FixedAmount" => (decimal)DesignationFixedBox.Value,
+        "Percentage" => (decimal)DesignationPercentBox.Value,
+        _ => null
+    };
 
     private string? SerializeTiers() =>
         RuleType != "Tiered" ? null
@@ -108,21 +183,21 @@ public partial class BulkCommissionWindow : Window
         decimal? rotation = null, designation = null;
         if (IsDual)
         {
-            rotation = ParseDecOptional(RotationBox.Text);
-            designation = ParseDecOptional(DesignationBox.Text);
+            rotation = RotationAmount();
+            designation = DesignationAmount();
             if (rotation is null || designation is null) { Warn("请同时填写轮钟与点钟数值"); return; }
         }
 
         var amount = IsDual ? System.Math.Min(rotation ?? 0m, designation ?? 0m)
-            : RuleType == "Timed" ? ParseDec(AmountBox.Text) : 0m;
+            : RuleType is "Timed" or "Tiered" ? (decimal)AmountBox.Value : 0m;
 
         var req = new BulkCommissionRuleRequest(
-            ServiceIds: ServiceList.SelectedItems.Cast<ServiceItemDto>().Select(s => s.Id).ToArray(),
-            TechnicianIds: TechList.SelectedItems.Cast<StaffDto>().Select(t => t.Id).ToArray(),
+            ServiceIds: _services.Where(s => s.IsSelected).Select(s => s.Id).ToArray(),
+            TechnicianIds: _techs.Where(t => t.IsSelected).Select(t => t.Id).ToArray(),
             RuleType: RuleType,
             Amount: amount,
             TieredRulesJson: SerializeTiers(),
-            Priority: ParseInt(PriorityBox.Text),
+            Priority: (int)PriorityBox.Value,
             IsActive: true,
             RotationAmount: IsDual ? rotation : null,
             DesignationAmount: IsDual ? designation : null,

@@ -389,6 +389,9 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<int>("EndHalf")
+                        .HasColumnType("int");
+
                     b.Property<DateOnly>("FromDate")
                         .HasColumnType("date");
 
@@ -398,6 +401,9 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Property<string>("Reason")
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
+
+                    b.Property<int>("StartHalf")
+                        .HasColumnType("int");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -1211,8 +1217,9 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<int>("LeaveDays")
-                        .HasColumnType("int");
+                    b.Property<decimal>("LeaveDays")
+                        .HasPrecision(8, 1)
+                        .HasColumnType("decimal(8,1)");
 
                     b.Property<decimal>("NetTotal")
                         .HasPrecision(18, 2)

@@ -168,6 +168,13 @@ public enum LeaveStatus
     Cancelled = 90
 }
 
+/// <summary>请假起止边界的半天选择：上午 / 下午。用于支持半天假与天数计算。</summary>
+public enum DayHalf
+{
+    Morning = 0,   // 上午
+    Afternoon = 1  // 下午
+}
+
 public enum InventoryMovementKind
 {
     PurchaseIn = 0,  // 采购入库

@@ -18,7 +18,7 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="状态：" />
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Status}" FontWeight="SemiBold" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Status, Converter={StaticResource EnumLabel}}" FontWeight="SemiBold" />
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="当前套餐：" Margin="0,8,0,0" />
                 <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CurrentPlanName, FallbackValue='—'}" Margin="0,8,0,0" />
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="到期时间：" Margin="0,8,0,0" />

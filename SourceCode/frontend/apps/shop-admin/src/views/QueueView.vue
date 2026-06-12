@@ -150,7 +150,8 @@ async function callNext() {
 
 async function resetDay() {
   if (!appStore.activeStoreId) return;
-  await ElMessageBox.confirm('确认重置今日所有技师轮次？', '提示', { type: 'warning' }).catch(() => null);
+  const ok = await ElMessageBox.confirm('确认重置今日所有技师轮次？', '提示', { type: 'warning' }).then(() => true).catch(() => false);
+  if (!ok) return;
   await queueApi.resetDay(appStore.activeStoreId);
   ElMessage.success('已重置');
   reload();

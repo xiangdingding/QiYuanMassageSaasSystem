@@ -28,6 +28,9 @@ public static class ErrorReporter
                 return ("登录已失效", serverMsg ?? "请重新登录");
             if (api.StatusCode == HttpStatusCode.Forbidden)
                 return ("权限不足", serverMsg ?? "无权访问该接口或订阅已到期");
+            // 业务冲突（409，如"该日已存在该员工的排班"）：与 BS 一致，直接展示后端提示，标题用中性"提示"
+            if (api.StatusCode == HttpStatusCode.Conflict && serverMsg is not null)
+                return ("提示", serverMsg);
             return ($"请求失败 ({(int)api.StatusCode})", serverMsg ?? api.ReasonPhrase ?? api.Message);
         }
         return ("出错", ex.Message);

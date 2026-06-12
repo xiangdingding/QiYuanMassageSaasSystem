@@ -56,3 +56,14 @@ public record BulkCommissionRuleRequest(
     bool OverwriteExisting);
 
 public record BulkCommissionRuleResult(int Created, int Updated, int Skipped);
+
+/// <summary>批量启用/禁用提成规则：把选中的 Ids 统一置为 IsActive。</summary>
+public record BulkCommissionStatusRequest(long[] Ids, bool IsActive);
+
+public record BulkCommissionStatusResult(int Updated);
+
+/// <summary>批量删除提成规则：软删除选中的 Ids（启用中的会被跳过，需先禁用）。</summary>
+public record BulkCommissionDeleteRequest(long[] Ids);
+
+/// <summary>Deleted = 实际删除条数；SkippedActive = 因仍启用而跳过的条数。</summary>
+public record BulkCommissionDeleteResult(int Deleted, int SkippedActive);

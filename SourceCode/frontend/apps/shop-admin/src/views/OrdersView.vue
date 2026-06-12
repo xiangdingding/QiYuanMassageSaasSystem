@@ -621,7 +621,8 @@ async function onRefund() {
 
 async function onCancel() {
   if (!detail.value) return;
-  await ElMessageBox.confirm('确认取消该订单？', '提示', { type: 'warning' }).catch(() => null);
+  const ok = await ElMessageBox.confirm('确认取消该订单？', '提示', { type: 'warning' }).then(() => true).catch(() => false);
+  if (!ok) return;
   await ordersApi.cancel(detail.value.id);
   ElMessage.success('已取消');
   drawerOpen.value = false;

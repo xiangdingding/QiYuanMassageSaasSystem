@@ -9,7 +9,11 @@ namespace MassageSaas.Cs.Views;
 
 public partial class ComplaintResolveWindow : Window
 {
-    public record TechPick(long Id, string Name);
+    public record TechPick(long Id, string Name)
+    {
+        // 自定义下拉框模板下选中区会回退到 ToString，避免显示记录默认的 JSON 形式
+        public override string ToString() => Name;
+    }
 
     private readonly long? _originalTechnicianId;
     private readonly bool _hasOrderItem;

@@ -411,6 +411,7 @@ public class PayrollItemConfiguration : IEntityTypeConfiguration<PayrollItem>
         b.Property(x => x.AttendanceBonus).HasPrecision(18, 2);
         b.Property(x => x.AdjustmentTotal).HasPrecision(18, 2);
         b.Property(x => x.NetTotal).HasPrecision(18, 2);
+        b.Property(x => x.LeaveDays).HasPrecision(8, 1);
         b.Property(x => x.Remark).HasMaxLength(500);
         b.HasOne(x => x.Period).WithMany(p => p.Items).HasForeignKey(x => x.PeriodId).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);

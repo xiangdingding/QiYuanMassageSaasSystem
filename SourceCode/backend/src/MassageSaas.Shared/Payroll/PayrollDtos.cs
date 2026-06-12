@@ -42,7 +42,7 @@ public record PayrollItemDto(
     decimal NetTotal,
     int ServedRoundCount,
     int ScheduledDays,
-    int LeaveDays,
+    decimal LeaveDays,
     string? Remark,
     IReadOnlyList<PayrollAdjustmentDto> Adjustments);
 

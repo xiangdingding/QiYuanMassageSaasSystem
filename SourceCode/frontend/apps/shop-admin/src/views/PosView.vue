@@ -1299,7 +1299,8 @@ async function finishReceipt() {
 
 async function resetAll() {
   if (cart.length > 0) {
-    await ElMessageBox.confirm('确认清空当前订单？', '提示', { type: 'warning' }).catch(() => null);
+    const ok = await ElMessageBox.confirm('确认清空当前订单？', '提示', { type: 'warning' }).then(() => true).catch(() => false);
+    if (!ok) return;
   }
   cart.splice(0, cart.length);
   clearMember();

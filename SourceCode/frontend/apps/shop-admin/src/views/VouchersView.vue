@@ -412,7 +412,8 @@ async function copyBatchCodes() {
 }
 
 async function cancel(row: VoucherDto) {
-  await ElMessageBox.confirm(`确认作废券 ${row.code}？`, '提示', { type: 'warning' }).catch(() => null);
+  const ok = await ElMessageBox.confirm(`确认作废券 ${row.code}？`, '提示', { type: 'warning' }).then(() => true).catch(() => false);
+  if (!ok) return;
   await vouchersApi.cancel(row.id);
   ElMessage.success('已作废');
   await reload();

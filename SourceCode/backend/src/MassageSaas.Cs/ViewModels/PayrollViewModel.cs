@@ -17,6 +17,12 @@ public partial class PayrollViewModel : ObservableObject
     {
         _api = api;
         _context = context;
+
+        // 年份/月份下拉选项：年份取近 6 年；月份取近 24 个月（YYYY-MM，新到旧），默认当前月
+        var thisYear = DateTime.Today.Year;
+        YearOptions = new ObservableCollection<int>(Enumerable.Range(0, 6).Select(i => thisYear - i));
+        MonthOptions = new ObservableCollection<int>(Enumerable.Range(1, 12));
+
         _ = ReloadAsync();
     }
 
@@ -38,8 +44,28 @@ public partial class PayrollViewModel : ObservableObject
     [ObservableProperty]
     private int yearFilter = DateTime.Today.Year;
 
+    /// <summary>生成工资单的目标月份（1-12）；年份取上方「年份」下拉。默认当前月。</summary>
+    [ObservableProperty]
+    private int genMonthNumber = DateTime.Today.Month;
+
+    /// <summary>年份下拉项（近 6 年）：既是列表筛选年份，也是生成工资单的目标年份。</summary>
+    [ObservableProperty]
+    private ObservableCollection<int> yearOptions = new();
+
+    /// <summary>月份下拉项（1-12）。</summary>
+    [ObservableProperty]
+    private ObservableCollection<int> monthOptions = new();
+
     [ObservableProperty]
     private bool isBusy;
+
+    /// <summary>工资单页标题：显示当前门店名（与 BS「{门店} 工资单」一致）。</summary>
+    public string PeriodsTitle => string.IsNullOrWhiteSpace(_context.ActiveStore?.Name)
+        ? "工资单" : $"{_context.ActiveStore!.Name} 工资单";
+
+    /// <summary>薪资配置页标题：显示当前门店名（与 BS「薪资配置（{门店}）」一致）。</summary>
+    public string ProfilesTitle => string.IsNullOrWhiteSpace(_context.ActiveStore?.Name)
+        ? "薪资配置" : $"薪资配置（{_context.ActiveStore!.Name}）";
 
     /// <summary>当前查看的工资单是否为草稿——只有草稿可改条目 / 录奖扣。</summary>
     public bool CanEditCurrent => CurrentPeriod?.Status == "Draft";
@@ -61,7 +87,7 @@ public partial class PayrollViewModel : ObservableObject
             if (CurrentPeriod is not null)
             {
                 var still = Periods.FirstOrDefault(p => p.Id == CurrentPeriod.Id);
-                if (still is not null) await ViewDetailAsync(still);
+                if (still is not null) await LoadDetailAsync(still);
                 else ClearDetail();
             }
         }
@@ -89,8 +115,23 @@ public partial class PayrollViewModel : ObservableObject
         SelectedItem = null;
     }
 
+    /// <summary>「查看」按钮：加载明细后弹出独立大窗（DataContext 复用本 VM，窗内命令直接作用于同一份明细）。</summary>
     [RelayCommand]
     private async Task ViewDetailAsync(PayrollPeriodDto? period)
+    {
+        if (period is null) return;
+        await LoadDetailAsync(period);
+        if (CurrentPeriod is null) return;
+        var win = new Views.PayrollDetailWindow
+        {
+            DataContext = this,
+            Owner = Application.Current?.MainWindow
+        };
+        win.ShowDialog();
+    }
+
+    /// <summary>仅加载某月工资单明细到 CurrentPeriod/DetailItems，不弹窗——供刷新/重载复用。</summary>
+    private async Task LoadDetailAsync(PayrollPeriodDto? period)
     {
         if (period is null) return;
         try
@@ -103,18 +144,17 @@ public partial class PayrollViewModel : ObservableObject
         catch (Exception ex) { ErrorReporter.Show(ex); }
     }
 
+    /// <summary>生成工资单：与 BS 一致——直接按工具栏内嵌月份生成草稿（无弹窗、无备注），
+    /// 未来月份/重复由后端校验并提示。生成后刷新列表并提示，不自动弹明细。</summary>
     [RelayCommand]
     private async Task GenerateAsync()
     {
         if (_context.ActiveStoreId is not long sid) { MessageBox.Show("未选择门店"); return; }
-        var dlg = new Views.PayrollGenerateWindow();
-        if (dlg.ShowDialog() != true) return;
         try
         {
-            var detail = await _api.GeneratePayrollAsync(
-                new GeneratePayrollRequest(sid, dlg.Year, dlg.Month, dlg.Remark));
+            await _api.GeneratePayrollAsync(new GeneratePayrollRequest(sid, YearFilter, GenMonthNumber, null));
             await ReloadAsync();
-            await ViewDetailAsync(detail.Period);
+            MessageBox.Show("已生成草稿，请进入查看明细", "已生成", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
     }
@@ -214,7 +254,7 @@ public partial class PayrollViewModel : ObservableObject
     {
         if (CurrentPeriod is null) return;
         var keepItemId = SelectedItem?.Id;
-        await ViewDetailAsync(CurrentPeriod);
+        await LoadDetailAsync(CurrentPeriod);
         if (keepItemId is long id)
             SelectedItem = DetailItems.FirstOrDefault(i => i.Id == id);
     }
@@ -229,6 +269,7 @@ public partial class PayrollViewModel : ObservableObject
         {
             await _api.UpsertSalaryProfileAsync(profile.UserId, dlg.BuildRequest());
             if (_context.ActiveStoreId is long sid) await LoadProfilesAsync(sid);
+            MessageBox.Show("已保存", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
     }

@@ -220,6 +220,12 @@ public interface IApiClient
     [Post("/commission-rules/bulk")]
     Task<BulkCommissionRuleResult> BulkCreateCommissionRulesAsync([Body] BulkCommissionRuleRequest req);
 
+    [Put("/commission-rules/bulk-status")]
+    Task<BulkCommissionStatusResult> BulkUpdateCommissionStatusAsync([Body] BulkCommissionStatusRequest req);
+
+    [Post("/commission-rules/bulk-delete")]
+    Task<BulkCommissionDeleteResult> BulkDeleteCommissionRulesAsync([Body] BulkCommissionDeleteRequest req);
+
     [Get("/reports/daily")]
     Task<DailyReportDto> GetDailyReportAsync([Query] long storeId, [Query] DateTime? date = null);
 
@@ -455,7 +461,10 @@ public interface IApiClient
     [Get("/schedules/leaves")]
     Task<List<LeaveRequestDto>> GetLeavesAsync(
         [Query] long? userId = null,
-        [Query] string? status = null);
+        [Query] string? status = null,
+        [Query] string? type = null,
+        [Query] DateTime? from = null,
+        [Query] DateTime? to = null);
 
     [Post("/schedules/leaves")]
     Task<LeaveRequestDto> SubmitLeaveAsync([Body] CreateLeaveRequest req);

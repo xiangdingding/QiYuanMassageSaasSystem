@@ -92,7 +92,7 @@
     </el-tabs>
 
     <!-- 工资单详情对话框 -->
-    <el-dialog v-model="detailOpen" :title="detailTitle" width="980px">
+    <el-dialog v-model="detailOpen" :title="detailTitle" width="92%" top="5vh" class="payroll-detail-dialog">
       <div v-if="detail" class="detail">
         <div class="metric-row">
           <div>状态：<el-tag :type="statusTag(detail.period.status)">{{ statusLabel(detail.period.status) }}</el-tag></div>
@@ -100,14 +100,18 @@
           <div>人数：{{ detail.period.itemCount }}</div>
         </div>
 
-        <el-table :data="detail.items" stripe size="small">
+        <el-table :data="detail.items" stripe
+                  highlight-current-row @row-click="(row: PayrollItemDto) => { expandedItem = row }">
           <el-table-column prop="employeeNo" label="工号" width="70" />
           <el-table-column prop="userName" label="员工" width="100" />
           <el-table-column label="底薪" width="90">
             <template #default="{ row }">¥{{ row.baseSalary.toFixed(2) }}</template>
           </el-table-column>
-          <el-table-column label="提成" width="100">
+          <el-table-column label="服务提成" width="100">
             <template #default="{ row }">¥{{ row.commissionTotal.toFixed(2) }}</template>
+          </el-table-column>
+          <el-table-column label="开卡提成" width="100">
+            <template #default="{ row }">¥{{ row.referralCommissionTotal.toFixed(2) }}</template>
           </el-table-column>
           <el-table-column label="加班" width="120">
             <template #default="{ row }">
@@ -139,9 +143,11 @@
           </el-table-column>
         </el-table>
 
-        <div v-if="expandedItem" class="adj-section">
-          <h4>{{ expandedItem.userName }} 的奖扣明细</h4>
-          <el-table :data="expandedItem.adjustments" size="small" stripe>
+        <div class="adj-section">
+          <h4 v-if="expandedItem">{{ expandedItem.userName }} 的奖扣明细</h4>
+          <h4 v-else class="adj-hint">点击上方员工行查看其奖扣明细</h4>
+          <el-table v-if="expandedItem" :data="expandedItem.adjustments" stripe>
+            <template #empty>该员工暂无奖扣记录</template>
             <el-table-column prop="kind" label="类型" width="80">
               <template #default="{ row }">{{ row.kind === 'Bonus' ? '奖金' : '扣款' }}</template>
             </el-table-column>
@@ -350,24 +356,29 @@ async function openDetail(row: PayrollPeriodDto) {
 }
 
 async function lockPeriod(row: PayrollPeriodDto) {
-  await ElMessageBox.confirm(
+  const ok = await ElMessageBox.confirm(
     `封盘后该月工资单不可再修改。确认封盘 ${row.year}-${row.month}？`,
     '提示', { type: 'warning' }
-  ).catch(() => null);
+  ).then(() => true).catch(() => false);
+  if (!ok) return;
   await payrollApi.lock(row.id);
   ElMessage.success('已封盘');
   await loadPeriods();
 }
 
 async function markPaid(row: PayrollPeriodDto) {
-  await ElMessageBox.confirm(`确认 ${row.year}-${row.month} 已发放工资？`, '提示').catch(() => null);
+  const ok = await ElMessageBox.confirm(`确认 ${row.year}-${row.month} 已发放工资？`, '提示')
+    .then(() => true).catch(() => false);
+  if (!ok) return;
   await payrollApi.markPaid(row.id);
   ElMessage.success('已标记发放');
   await loadPeriods();
 }
 
 async function removeDraft(row: PayrollPeriodDto) {
-  await ElMessageBox.confirm(`确认删除 ${row.year}-${row.month} 工资单草稿？`, '提示', { type: 'warning' }).catch(() => null);
+  const ok = await ElMessageBox.confirm(`确认删除 ${row.year}-${row.month} 工资单草稿？`, '提示', { type: 'warning' })
+    .then(() => true).catch(() => false);
+  if (!ok) return;
   await payrollApi.removeDraft(row.id);
   ElMessage.success('已删除');
   await loadPeriods();
@@ -514,6 +525,19 @@ onMounted(async () => {
 .metric-row { display: flex; gap: 32px; align-items: center; font-size: 14px; }
 .adj-section { padding-top: 8px; border-top: 1px dashed var(--el-border-color); }
 .adj-section h4 { margin: 8px 0; }
+.adj-hint { color: #999; font-weight: normal; }
 .hint { color: #999; margin-left: 8px; font-size: 12px; }
 .neg { color: #c45656; }
+/* 无障碍：工资单/薪资配置列表字号调大，避免偏小 */
+.table-wrap :deep(.el-table) { font-size: 15px; }
+.table-wrap :deep(.el-table th .cell) { font-size: 15px; }
+</style>
+
+<!-- 工资单详情对话框是 teleport 到 body 的，根节点拿不到 scoped 属性，这里用非 scoped 规则限制最大宽度并让长列表在弹窗内滚动 -->
+<style>
+.payroll-detail-dialog { max-width: 1400px; }
+.payroll-detail-dialog .el-dialog__body { max-height: 78vh; overflow-y: auto; }
+/* 无障碍：工资明细/奖扣表字号调大，避免默认偏小 */
+.payroll-detail-dialog .el-table { font-size: 15px; }
+.payroll-detail-dialog .el-table th .cell { font-size: 15px; }
 </style>

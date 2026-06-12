@@ -49,13 +49,25 @@ public class SchedulesController : ControllerBase
         if (end <= start)
             return BadRequest(new { code = "InvalidRange", message = "下班时间必须晚于上班时间" });
 
-        var workDate = DateOnly.FromDateTime(req.WorkDate);
-        var dup = await _db.StaffSchedules.AnyAsync(s =>
-            s.StoreId == req.StoreId && s.UserId == req.UserId && s.WorkDate == workDate, ct);
-        if (dup) return Conflict(new { code = "Duplicate", message = "该日已存在该员工的排班" });
-
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == req.UserId && u.IsActive, ct);
         if (user is null) return BadRequest(new { code = "UserNotFound", message = "员工不存在或已停用" });
+
+        var workDate = DateOnly.FromDateTime(req.WorkDate);
+        // 同人同日唯一（唯一索引 StoreId+WorkDate+UserId，不区分软删除）。
+        // 采用 Upsert：已存在（含被软删除的）就直接更新为新班次，不再报"该日已存在该员工的排班"。
+        // 这样新增排班永远成功（创建或更新），CS / BS 行为完全一致。
+        var existing = await _db.StaffSchedules.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(s => s.StoreId == req.StoreId && s.UserId == req.UserId && s.WorkDate == workDate, ct);
+        if (existing is not null)
+        {
+            existing.IsDeleted = false;
+            existing.StartTime = start;
+            existing.EndTime = end;
+            existing.Remark = req.Remark;
+            await _db.SaveChangesAsync(ct);
+            await _db.Entry(existing).Reference(s => s.User).LoadAsync(ct);
+            return Ok(MapDto(existing));
+        }
 
         var entity = new StaffSchedule
         {
@@ -87,6 +99,9 @@ public class SchedulesController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<LeaveRequestDto>>> Leaves(
         [FromQuery] long? userId = null,
         [FromQuery] string? status = null,
+        [FromQuery] string? type = null,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
         CancellationToken ct = default)
     {
         var q = _db.LeaveRequests.AsNoTracking()
@@ -96,6 +111,19 @@ public class SchedulesController : ControllerBase
         if (userId.HasValue) q = q.Where(l => l.UserId == userId.Value);
         if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<LeaveStatus>(status, true, out var st))
             q = q.Where(l => l.Status == st);
+        if (!string.IsNullOrWhiteSpace(type) && Enum.TryParse<LeaveType>(type, true, out var ty))
+            q = q.Where(l => l.Type == ty);
+        // 日期按区间重叠过滤（请假跨度 [FromDate, ToDate] 与 [from, to] 有交集即命中）
+        if (from.HasValue)
+        {
+            var f = DateOnly.FromDateTime(from.Value);
+            q = q.Where(l => l.ToDate >= f);
+        }
+        if (to.HasValue)
+        {
+            var t = DateOnly.FromDateTime(to.Value);
+            q = q.Where(l => l.FromDate <= t);
+        }
         var rows = await q.OrderByDescending(l => l.CreatedAt).Take(200).ToListAsync(ct);
         return Ok(rows.Select(MapLeave).ToList());
     }
@@ -107,6 +135,14 @@ public class SchedulesController : ControllerBase
             return BadRequest(new { code = "InvalidType", message = "请假类型不合法" });
         if (req.ToDate < req.FromDate)
             return BadRequest(new { code = "InvalidRange", message = "结束日期不能早于开始日期" });
+        if (!Enum.TryParse<DayHalf>(req.StartHalf, true, out var startHalf)
+            || !Enum.TryParse<DayHalf>(req.EndHalf, true, out var endHalf))
+            return BadRequest(new { code = "InvalidHalf", message = "上午/下午时段不合法" });
+
+        var fromDate = DateOnly.FromDateTime(req.FromDate);
+        var toDate = DateOnly.FromDateTime(req.ToDate);
+        if (LeaveDayMath.Compute(fromDate, toDate, startHalf, endHalf) <= 0m)
+            return BadRequest(new { code = "InvalidRange", message = "请假时长须大于 0（同日不能从下午请到上午）" });
 
         // 技师只能给自己请假；店长/收银员可代员工提交
         if (_tenantContext.UserId is not long uid) return Unauthorized();
@@ -118,8 +154,10 @@ public class SchedulesController : ControllerBase
         {
             UserId = req.UserId,
             Type = type,
-            FromDate = DateOnly.FromDateTime(req.FromDate),
-            ToDate = DateOnly.FromDateTime(req.ToDate),
+            FromDate = fromDate,
+            ToDate = toDate,
+            StartHalf = startHalf,
+            EndHalf = endHalf,
             Reason = req.Reason,
             Status = LeaveStatus.Pending
         };
@@ -179,6 +217,9 @@ public class SchedulesController : ControllerBase
         l.Type.ToString(),
         l.FromDate.ToDateTime(TimeOnly.MinValue),
         l.ToDate.ToDateTime(TimeOnly.MinValue),
+        l.StartHalf.ToString(),
+        l.EndHalf.ToString(),
+        LeaveDayMath.Compute(l.FromDate, l.ToDate, l.StartHalf, l.EndHalf),
         l.Reason, l.Status.ToString(),
         l.ApproverUserId,
         l.ApproverUser != null ? (l.ApproverUser.RealName ?? l.ApproverUser.Username) : null,

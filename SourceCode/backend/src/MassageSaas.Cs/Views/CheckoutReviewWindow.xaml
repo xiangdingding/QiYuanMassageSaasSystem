@@ -29,9 +29,13 @@
                                        TextWrapping="Wrap" Margin="0,0,12,0" />
                             <ComboBox Grid.Column="1" Width="140" Height="30"
                                       ItemsSource="{Binding Options}"
-                                      SelectedValuePath="Value" DisplayMemberPath="Label"
+                                      SelectedValuePath="Value"
                                       SelectedValue="{Binding Rating, Mode=TwoWay}"
-                                      AutomationProperties.Name="{Binding Label}" />
+                                      AutomationProperties.Name="{Binding Label}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
                         </Grid>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

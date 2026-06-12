@@ -104,7 +104,11 @@ public partial class ReviewCreateWindow : Window
     }
 
     /// <summary>技师下拉项：Id 用于提交，Display 用于展示。</summary>
-    private record TechOption(long Id, string Display);
+    private record TechOption(long Id, string Display)
+    {
+        // 自定义下拉框模板下选中区会回退到 ToString，避免显示记录默认的 JSON 形式
+        public override string ToString() => Display;
+    }
 
     /// <summary>常用标签勾选项：CheckBox 双向绑定 IsSelected，提交时读取。</summary>
     private sealed class TagOption

@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MassageSaas.Cs.Services;
 using MassageSaas.Shared.Staff;
+using MassageSaas.Shared.Stores;
 
 namespace MassageSaas.Cs.ViewModels;
 
@@ -12,18 +14,34 @@ public partial class StaffViewModel : ObservableObject
     private readonly IApiClient _api;
     private readonly AppContextService _context;
 
+    /// <summary>门店过滤下拉项：Id 为 null 表示"全部门店"。</summary>
+    public record StoreOption(long? Id, string Label);
+
     public StaffViewModel(IApiClient api, AppContextService context)
     {
         _api = api;
         _context = context;
+
+        var opts = new ObservableCollection<StoreOption> { new(null, "全部门店") };
+        foreach (var s in _context.Stores) opts.Add(new StoreOption(s.Id, s.Name));
+        StoreOptions = opts;
+
         _ = ReloadAsync();
     }
 
     [ObservableProperty]
-    private ObservableCollection<StaffDto> rows = new();
+    private ObservableCollection<StaffRowViewModel> rows = new();
 
     [ObservableProperty]
     private string? roleFilter;
+
+    /// <summary>门店过滤下拉项（全部门店 + 各门店）。</summary>
+    [ObservableProperty]
+    private ObservableCollection<StoreOption> storeOptions = new();
+
+    /// <summary>选中的过滤门店 Id；null = 全部门店（对齐 BS 的门店下拉）。</summary>
+    [ObservableProperty]
+    private long? storeFilter;
 
     [ObservableProperty]
     private string keyword = string.Empty;
@@ -40,6 +58,21 @@ public partial class StaffViewModel : ObservableObject
         if (_suppressAutoReload) return;
         Page = 1;
         _ = ReloadAsync();
+    }
+
+    /// <summary>门店下拉选值即查（回到第 1 页，对齐 BS）。</summary>
+    partial void OnStoreFilterChanged(long? value)
+    {
+        if (_suppressAutoReload) return;
+        Page = 1;
+        _ = ReloadAsync();
+    }
+
+    private string StoreNameOf(long? storeId)
+    {
+        if (storeId is not long id) return "—";
+        var s = _context.Stores.FirstOrDefault(x => x.Id == id);
+        return s?.Name ?? $"#{id}";
     }
 
     // ---- 分页（对齐 BS） ----
@@ -71,9 +104,10 @@ public partial class StaffViewModel : ObservableObject
             var data = await _api.GetStaffAsync(
                 page: Page, pageSize: PageSize,
                 role: string.IsNullOrEmpty(RoleFilter) ? null : RoleFilter,
-                storeId: _context.ActiveStoreId,
+                storeId: StoreFilter,
                 keyword: string.IsNullOrWhiteSpace(Keyword) ? null : Keyword);
-            Rows = new ObservableCollection<StaffDto>(data.Items);
+            Rows = new ObservableCollection<StaffRowViewModel>(
+                data.Items.Select(s => new StaffRowViewModel(s, StoreNameOf(s.StoreId))));
             Total = data.Total;
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
@@ -94,6 +128,7 @@ public partial class StaffViewModel : ObservableObject
         _suppressAutoReload = true;
         Keyword = string.Empty;
         RoleFilter = null;
+        StoreFilter = null;
         Page = 1;
         _suppressAutoReload = false;
         await ReloadAsync();
@@ -118,29 +153,41 @@ public partial class StaffViewModel : ObservableObject
     [RelayCommand]
     private async Task CreateAsync()
     {
-        if (_context.ActiveStoreId is null) { MessageBox.Show("未选择门店"); return; }
-        var dlg = new Views.StaffFormWindow(null, _context.ActiveStoreId.Value);
+        var defaultStore = _context.ActiveStoreId ?? _context.Stores.FirstOrDefault()?.Id ?? 0;
+        var nextEmployeeNo = await NextEmployeeNoAsync();
+        // 窗口自己调接口：仅当真正添加成功（DialogResult=true）才会走到这里刷新；异常时窗口保持打开
+        var dlg = new Views.StaffFormWindow(_api, null, defaultStore, _context.Stores, nextEmployeeNo)
+        { Owner = Application.Current?.MainWindow };
         if (dlg.ShowDialog() != true) return;
+        MessageBox.Show("已保存", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+        await ReloadAsync();
+    }
+
+    /// <summary>取「现有最大工号 + 1」作为新建默认工号；无任何工号时从 1 开始。</summary>
+    private async Task<int> NextEmployeeNoAsync()
+    {
         try
         {
-            await _api.CreateStaffAsync(dlg.BuildCreateRequest());
-            await ReloadAsync();    
+            var all = await _api.GetStaffAsync(page: 1, pageSize: 1000, storeId: null);
+            var max = all.Items
+                .Where(s => s.EmployeeNo.HasValue)
+                .Select(s => s.EmployeeNo!.Value)
+                .DefaultIfEmpty(0)
+                .Max();
+            return max + 1;
         }
-        catch (Exception ex) { ErrorReporter.Show(ex); }
+        catch { return 1; }
     }
 
     [RelayCommand]
     private async Task EditAsync(StaffDto? s)
     {
         if (s is null) return;
-        var dlg = new Views.StaffFormWindow(s, s.StoreId ?? _context.ActiveStoreId ?? 0);
+        var dlg = new Views.StaffFormWindow(_api, s, s.StoreId ?? _context.ActiveStoreId ?? 0, _context.Stores)
+        { Owner = Application.Current?.MainWindow };
         if (dlg.ShowDialog() != true) return;
-        try
-        {
-            await _api.UpdateStaffAsync(s.Id, dlg.BuildUpdateRequest());
-            await ReloadAsync();
-        }
-        catch (Exception ex) { ErrorReporter.Show(ex); }
+        MessageBox.Show("已保存", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+        await ReloadAsync();
     }
 
     [RelayCommand]

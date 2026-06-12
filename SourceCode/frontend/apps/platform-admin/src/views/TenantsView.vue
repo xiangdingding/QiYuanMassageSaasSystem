@@ -221,7 +221,8 @@ function openOverview(row: TenantSummary) {
 
 async function changeStatus(row: TenantSummary, status: 'Active' | 'Disabled') {
   const verb = status === 'Disabled' ? '停用' : '启用';
-  await ElMessageBox.confirm(`确认${verb}租户「${row.name}」？`, '请确认', { type: 'warning' }).catch(() => null);
+  const ok = await ElMessageBox.confirm(`确认${verb}租户「${row.name}」？`, '请确认', { type: 'warning' }).then(() => true).catch(() => false);
+  if (!ok) return;
   try {
     await tenantsApi.updateStatus(row.id, status);
     ElMessage.success(`已${verb}`);

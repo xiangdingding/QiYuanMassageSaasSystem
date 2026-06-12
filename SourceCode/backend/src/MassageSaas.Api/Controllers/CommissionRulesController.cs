@@ -138,9 +138,50 @@ public class CommissionRulesController : ControllerBase
     {
         var rule = await _db.CommissionRules.FirstOrDefaultAsync(r => r.Id == id, ct);
         if (rule is null) return NotFound();
+        if (rule.IsActive)
+            return BadRequest(new { code = "ActiveCannotDelete", message = "请先禁用该提成规则，再删除。" });
         rule.IsDeleted = true;
         await _db.SaveChangesAsync(ct);
         return NoContent();
+    }
+
+    /// <summary>批量启用/禁用：把选中的规则统一置为启用或停用。</summary>
+    [HttpPut("bulk-status")]
+    public async Task<ActionResult<BulkCommissionStatusResult>> BulkStatus(
+        [FromBody] BulkCommissionStatusRequest req, CancellationToken ct)
+    {
+        if (req.Ids is null || req.Ids.Length == 0)
+            return BadRequest(new { code = "NoRules", message = "请至少选择一条提成规则" });
+
+        var rules = await _db.CommissionRules
+            .Where(r => req.Ids.Contains(r.Id))
+            .ToListAsync(ct);
+        foreach (var r in rules) r.IsActive = req.IsActive;
+        await _db.SaveChangesAsync(ct);
+        return Ok(new BulkCommissionStatusResult(rules.Count));
+    }
+
+    /// <summary>批量删除：软删除选中的规则。与单条删除一致，启用中的规则跳过（需先禁用）。</summary>
+    [HttpPost("bulk-delete")]
+    public async Task<ActionResult<BulkCommissionDeleteResult>> BulkDelete(
+        [FromBody] BulkCommissionDeleteRequest req, CancellationToken ct)
+    {
+        if (req.Ids is null || req.Ids.Length == 0)
+            return BadRequest(new { code = "NoRules", message = "请至少选择一条提成规则" });
+
+        var rules = await _db.CommissionRules
+            .Where(r => req.Ids.Contains(r.Id))
+            .ToListAsync(ct);
+
+        int deleted = 0, skippedActive = 0;
+        foreach (var r in rules)
+        {
+            if (r.IsActive) { skippedActive++; continue; }
+            r.IsDeleted = true;
+            deleted++;
+        }
+        await _db.SaveChangesAsync(ct);
+        return Ok(new BulkCommissionDeleteResult(deleted, skippedActive));
     }
 
     /// <summary>
@@ -181,8 +222,15 @@ public class CommissionRulesController : ControllerBase
                         && sidSet.Contains(r.ServiceId!.Value)
                         && tidSet.Contains(r.TechnicianId!.Value))
             .ToListAsync(ct);
-        var existingMap = existing.ToDictionary(
-            r => (r.ServiceId!.Value, r.TechnicianId!.Value));
+        // 同一(服务,技师,source=null)历史上可能存在多条规则；按分组取一条作为规范规则，
+        // 多余的软删除清理掉，既避免 ToDictionary 重复键 500，又消除规则歧义。
+        var existingMap = new Dictionary<(long, long), CommissionRule>();
+        foreach (var g in existing.GroupBy(r => (r.ServiceId!.Value, r.TechnicianId!.Value)))
+        {
+            var ordered = g.OrderByDescending(r => r.Priority).ThenByDescending(r => r.Id).ToList();
+            existingMap[g.Key] = ordered[0];
+            for (var i = 1; i < ordered.Count; i++) ordered[i].IsDeleted = true;
+        }
 
         int created = 0, updated = 0, skipped = 0;
         var supportsDual = SupportsDualAmount(rt);

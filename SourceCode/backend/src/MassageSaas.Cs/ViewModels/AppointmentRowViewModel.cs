@@ -28,6 +28,7 @@ public class AppointmentRowViewModel
         "Arrived" => "已到店",
         "Completed" => "已完成",
         "Cancelled" => "已取消",
+        "NoShow" => "未到店",
         _ => Dto.Status
     };
 

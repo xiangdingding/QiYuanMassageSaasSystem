@@ -13,20 +13,33 @@
             <DockPanel Grid.Row="0" Margin="0,0,0,12">
                 <TextBlock DockPanel.Dock="Left" Text="员工管理" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <TextBlock Text="角色：" VerticalAlignment="Center" />
-                    <ComboBox Width="120" SelectedValuePath="Tag" SelectedValue="{Binding RoleFilter}">
-                        <ComboBoxItem Content="全部" Tag="" />
+                    <TextBox Width="200"
+                             Style="{StaticResource SearchBox}"
+                             Tag="账号 / 姓名 / 手机号"
+                             Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="搜索框" />
+                    <ComboBox Width="120" Margin="8,0,0,0"
+                              Style="{StaticResource FilterCombo}"
+                              SelectedValuePath="Tag" SelectedValue="{Binding RoleFilter}"
+                              AutomationProperties.Name="按角色过滤">
+                        <ComboBoxItem Content="全部角色" Tag="" />
                         <ComboBoxItem Content="店主" Tag="ShopOwner" />
                         <ComboBoxItem Content="店长" Tag="StoreManager" />
                         <ComboBoxItem Content="收银员" Tag="Cashier" />
                         <ComboBoxItem Content="技师" Tag="Technician" />
                     </ComboBox>
-                    <TextBox Width="160" Margin="8,0,0,0" Padding="6"
-                             Text="{Binding Keyword, UpdateSourceTrigger=PropertyChanged}"
-                             AutomationProperties.Name="搜索框" />
-                    <Button Content="查询" Padding="12,6" Margin="8,0,0,0" Command="{Binding SearchCommand}" />
-                    <Button Content="重置" Padding="12,6" Margin="8,0,0,0" Command="{Binding ResetQueryCommand}" />
-                    <Button Content="新建" Padding="12,6" Margin="8,0,0,0" Background="#2D6A4F" Foreground="White" BorderThickness="0" Command="{Binding CreateCommand}" />
+                    <ComboBox Width="150" Margin="8,0,0,0"
+                              Style="{StaticResource FilterCombo}"
+                              ItemsSource="{Binding StoreOptions}"
+                              SelectedValuePath="Id" SelectedValue="{Binding StoreFilter}"
+                              AutomationProperties.Name="按门店过滤">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button Content="查询" Padding="16,0" Margin="8,0,0,0" Command="{Binding SearchCommand}" Style="{StaticResource PrimaryBtn}" />
+                    <Button Content="重置" Padding="16,0" Margin="8,0,0,0" Command="{Binding ResetQueryCommand}" Style="{StaticResource GhostBtn}" />
+                    <Button Content="添加员工" Padding="16,0" Margin="8,0,0,0" Command="{Binding CreateCommand}" Style="{StaticResource PrimaryBtn}" />
                 </StackPanel>
             </DockPanel>
 
@@ -40,37 +53,53 @@
                         <Setter Property="AutomationProperties.Name">
                             <Setter.Value>
                                 <MultiBinding StringFormat="工号 {0}，{1}，{2}，{3}">
-                                    <Binding Path="EmployeeNo" FallbackValue="无" />
-                                    <Binding Path="RealName" FallbackValue="" />
-                                    <Binding Path="Role" />
-                                    <Binding Path="IsActive" />
+                                    <Binding Path="Dto.EmployeeNo" FallbackValue="无" />
+                                    <Binding Path="Dto.RealName" FallbackValue="" />
+                                    <Binding Path="Dto.Role" />
+                                    <Binding Path="Dto.IsActive" />
                                 </MultiBinding>
                             </Setter.Value>
                         </Setter>
                     </Style>
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="工号" Binding="{Binding EmployeeNo}" Width="60" />
-                    <DataGridTextColumn Header="用户名" Binding="{Binding Username}" Width="*" MinWidth="140" />
-                    <DataGridTextColumn Header="姓名" Binding="{Binding RealName}" Width="120" />
-                    <DataGridTextColumn Header="手机号" Binding="{Binding Phone}" Width="120" />
-                    <DataGridTextColumn Header="角色" Binding="{Binding Role, Converter={StaticResource EnumLabel}}" Width="90" />
-                    <DataGridTextColumn Header="盲人" Binding="{Binding IsBlind, Converter={StaticResource BoolLabel}, ConverterParameter='盲人|—'}" Width="60" />
-                    <DataGridTextColumn Header="状态" Binding="{Binding IsActive, Converter={StaticResource BoolLabel}, ConverterParameter='在职|停用'}" Width="70" />
-                    <DataGridTextColumn Header="最近登录" Binding="{Binding LastLoginAt, StringFormat='yyyy-MM-dd HH:mm:ss'}" Width="160" />
-                    <DataGridTemplateColumn Header="操作" Width="300">
+                    <DataGridTextColumn Header="工号" Binding="{Binding Dto.EmployeeNo}" Width="60" />
+                    <DataGridTextColumn Header="账号" Binding="{Binding Dto.Username}" Width="*" MinWidth="130" />
+                    <DataGridTextColumn Header="姓名" Binding="{Binding Dto.RealName}" Width="110" />
+                    <DataGridTextColumn Header="手机号" Binding="{Binding Dto.Phone}" Width="120" />
+                    <DataGridTextColumn Header="角色" Binding="{Binding Dto.Role, Converter={StaticResource EnumLabel}}" Width="90" />
+                    <DataGridTextColumn Header="所属门店" Binding="{Binding StoreName}" Width="140" />
+                    <DataGridTextColumn Header="盲人" Binding="{Binding Dto.IsBlind, Converter={StaticResource BoolLabel}, ConverterParameter='盲人|—'}" Width="60" />
+                    <DataGridTemplateColumn Header="状态" Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="3" Padding="8,2" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                        Background="{Binding Dto.IsActive, Converter={StaticResource ActiveStatusBrush}}">
+                                    <TextBlock Foreground="White" FontSize="12"
+                                               Text="{Binding Dto.IsActive, Converter={StaticResource BoolLabel}, ConverterParameter='在职|停职'}" />
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="操作" Width="Auto" MinWidth="280">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Margin="2" Padding="6,2" Content="编辑"
+                                    <Button Content="编辑"
+                                            AutomationProperties.Name="编辑员工"
                                             Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}" />
-                                    <Button Margin="2" Padding="6,2" Content="重置密码"
+                                            CommandParameter="{Binding Dto}"
+                                            Style="{StaticResource RowPrimary}" />
+                                    <Button Content="重置密码"
+                                            AutomationProperties.Name="重置密码"
                                             Command="{Binding DataContext.ResetPasswordCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}" />
-                                    <Button Margin="2" Padding="6,2" Content="跨店调动"
+                                            CommandParameter="{Binding Dto}"
+                                            Style="{StaticResource RowWarning}" />
+                                    <Button Content="跨店调动"
+                                            AutomationProperties.Name="跨店调动"
                                             Command="{Binding DataContext.TransferCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}" />
+                                            CommandParameter="{Binding Dto}"
+                                            Style="{StaticResource RowPrimary}" />
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>

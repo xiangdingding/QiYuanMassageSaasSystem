@@ -240,7 +240,11 @@ export const commissionsApi = {
   update: (id: number, body: any) => http().put<CommissionRule>(`/commission-rules/${id}`, body).then((r) => r.data),
   remove: (id: number) => http().delete(`/commission-rules/${id}`),
   bulk: (body: any) =>
-    http().post<{ created: number; updated: number; skipped: number }>('/commission-rules/bulk', body).then((r) => r.data)
+    http().post<{ created: number; updated: number; skipped: number }>('/commission-rules/bulk', body).then((r) => r.data),
+  bulkStatus: (ids: number[], isActive: boolean) =>
+    http().put<{ updated: number }>('/commission-rules/bulk-status', { ids, isActive }).then((r) => r.data),
+  bulkDelete: (ids: number[]) =>
+    http().post<{ deleted: number; skippedActive: number }>('/commission-rules/bulk-delete', { ids }).then((r) => r.data)
 };
 
 /** 推荐规则（全店统一，存于 Tenant）。与 CS 端「推荐规则」Tab 一致。 */
@@ -539,7 +543,9 @@ export interface StaffScheduleDto {
 }
 export interface LeaveRequestDto {
   id: number; userId: number; userName: string; type: string;
-  fromDate: string; toDate: string; reason: string | null; status: string;
+  fromDate: string; toDate: string;
+  startHalf: string; endHalf: string; days: number;
+  reason: string | null; status: string;
   approverUserId: number | null; approverName: string | null;
   approvedAt: string | null; createdAt: string;
 }
@@ -556,7 +562,7 @@ export interface PayrollAdjustmentDto {
 }
 export interface PayrollItemDto {
   id: number; userId: number; userName: string; employeeNo: number | null;
-  baseSalary: number; commissionTotal: number; tipsTotal: number;
+  baseSalary: number; commissionTotal: number; referralCommissionTotal: number; tipsTotal: number;
   overtimeHours: number; overtimeAmount: number;
   attendanceBonus: number; adjustmentTotal: number; netTotal: number;
   servedRoundCount: number; scheduledDays: number; leaveDays: number;
@@ -631,7 +637,7 @@ export const schedulesApi = {
     http().get<StaffScheduleDto[]>('/schedules', { params: { storeId, from, to } }).then((r) => r.data),
   create: (body: any) => http().post<StaffScheduleDto>('/schedules', body).then((r) => r.data),
   remove: (id: number) => http().delete(`/schedules/${id}`),
-  leaves: (params?: { userId?: number; status?: string }) =>
+  leaves: (params?: { userId?: number; status?: string; type?: string; from?: string; to?: string }) =>
     http().get<LeaveRequestDto[]>('/schedules/leaves', { params }).then((r) => r.data),
   submitLeave: (body: any) => http().post<LeaveRequestDto>('/schedules/leaves', body).then((r) => r.data),
   approveLeave: (id: number, approve: boolean, reason?: string | null) =>

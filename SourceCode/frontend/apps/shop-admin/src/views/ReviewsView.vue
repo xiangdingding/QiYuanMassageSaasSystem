@@ -3,6 +3,10 @@
     <el-card shadow="never">
       <div class="toolbar">
         <span class="title">服务评价</span>
+        <el-select v-model="technicianFilter" placeholder="全部技师" clearable filterable style="width:200px">
+          <el-option v-for="t in techList" :key="t.id"
+                     :label="`${t.realName || t.username}（工号 ${t.employeeNo ?? '—'}）`" :value="t.id" />
+        </el-select>
         <el-select v-model="ratingFilter" placeholder="全部评价" clearable style="width:140px">
           <el-option label="非常满意" :value="5" />
           <el-option label="满意" :value="4" />
@@ -151,6 +155,7 @@ const rows = ref<ServiceReviewDto[]>([]);
 const summary = ref<any[]>([]);
 const loading = ref(false);
 const ratingFilter = ref<number | undefined>(undefined);
+const technicianFilter = ref<number | undefined>(undefined);
 const dateRange = ref<[Date, Date] | null>(null);
 const page = ref(1);
 const pageSize = ref(20);
@@ -262,6 +267,7 @@ async function reload() {
     const to = dateRange.value?.[1]?.toISOString();
     if (tab.value === 'list') {
       const resp = await reviewsApi.list({
+        technicianId: technicianFilter.value,
         rating: ratingFilter.value,
         from, to,
         page: page.value,
@@ -280,7 +286,7 @@ async function reload() {
 
 function onTabChange() { page.value = 1; reload(); }
 // 筛选变化回到第 1 页再查
-watch([ratingFilter, dateRange], () => { page.value = 1; reload(); });
+watch([ratingFilter, technicianFilter, dateRange], () => { page.value = 1; reload(); });
 watch(() => appStore.activeStoreId, () => loadTechList());
 
 onMounted(async () => {

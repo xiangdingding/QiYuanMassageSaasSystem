@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <el-tabs v-model="activeTab" class="rule-tabs">
-      <el-tab-pane label="提成规则" name="commission">
+      <el-tab-pane label="服务提成规则" name="commission">
     <el-card shadow="never">
       <div class="toolbar">
         <el-select v-model="filterServiceId" placeholder="按服务过滤" clearable filterable style="width: 300px">
@@ -11,12 +11,17 @@
           <el-option v-for="t in technicians" :key="t.id" :label="`${t.employeeNo ?? ''} · ${t.realName ?? t.username}`" :value="t.id" />
         </el-select>
         <el-button type="primary" @click="reload">查询</el-button>
+        <div class="spacer" />
         <el-button type="success" @click="openCreate">新建规则</el-button>
         <el-button type="warning" @click="openBulk">批量设置</el-button>
+        <el-button :disabled="selectedRows.length === 0" @click="batchSetActive(true)">批量启用</el-button>
+        <el-button :disabled="selectedRows.length === 0" @click="batchSetActive(false)">批量禁用</el-button>
+        <el-button type="danger" plain :disabled="selectedRows.length === 0" @click="batchDelete">批量删除</el-button>
       </div>
 
       <div class="table-wrap">
-      <el-table :data="rows" v-loading="loading" stripe height="100%">
+      <el-table :data="rows" v-loading="loading" stripe height="100%" @selection-change="onSelectionChange">
+        <el-table-column type="selection" width="48" />
         <el-table-column label="规则类型" width="100">
           <template #default="{ row }">{{ ruleLabel(row.ruleType) }}</template>
         </el-table-column>
@@ -38,13 +43,14 @@
         <el-table-column prop="priority" label="优先级" width="80" />
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
-            <el-tag :type="row.isActive ? 'success' : 'info'">{{ row.isActive ? '启用' : '停用' }}</el-tag>
+            <el-tag :type="row.isActive ? 'success' : 'danger'" effect="dark">{{ row.isActive ? '启用' : '停用' }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" :width="$actCol(160)">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="onDelete(row)">删除</el-button>
+            <el-button link type="danger" :disabled="row.isActive"
+                       :title="row.isActive ? '请先禁用该规则再删除' : ''" @click="onDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -52,7 +58,7 @@
     </el-card>
       </el-tab-pane>
 
-      <el-tab-pane label="推荐规则" name="referral">
+      <el-tab-pane label="推荐开卡提成规则" name="referral">
         <el-card shadow="never" v-loading="referralLoading" class="referral-card">
           <!-- 顾客推荐 -->
           <div class="ref-title">顾客推荐</div>
@@ -106,7 +112,7 @@
             <div class="muted ref-note">固定金额：每推荐开一张卡固定记一笔；开卡实收百分比：按开卡实收金额的比例记一笔，均并入该员工当月工资。</div>
           </div>
 
-          <el-button type="primary" :loading="referralSaving" @click="saveReferral">保存推荐规则</el-button>
+          <el-button type="primary" :loading="referralSaving" @click="saveReferral">保存推荐开卡提成规则</el-button>
         </el-card>
       </el-tab-pane>
     </el-tabs>
@@ -602,9 +608,37 @@ async function submitBulk() {
 }
 
 async function onDelete(row: CommissionRule) {
-  await ElMessageBox.confirm('确认删除该规则？', '提示', { type: 'warning' }).catch(() => null);
+  if (row.isActive) { ElMessage.warning('请先禁用该规则再删除'); return; }
+  const ok = await ElMessageBox.confirm('确认删除该规则？', '提示', { type: 'warning' }).then(() => true).catch(() => false);
+  if (!ok) return;
   await commissionsApi.remove(row.id);
   ElMessage.success('已删除');
+  reload();
+}
+
+// ============ 批量启用 / 禁用 ============
+const selectedRows = ref<CommissionRule[]>([]);
+function onSelectionChange(rows: CommissionRule[]) {
+  selectedRows.value = rows;
+}
+async function batchSetActive(isActive: boolean) {
+  if (selectedRows.value.length === 0) return;
+  const ids = selectedRows.value.map((r) => r.id);
+  const result = await commissionsApi.bulkStatus(ids, isActive);
+  ElMessage.success(`已${isActive ? '启用' : '禁用'} ${result.updated} 条规则`);
+  reload();
+}
+
+async function batchDelete() {
+  if (selectedRows.value.length === 0) return;
+  const ids = selectedRows.value.map((r) => r.id);
+  const ok = await ElMessageBox.confirm(`确认删除选中的 ${ids.length} 条规则？启用中的规则将被跳过。`, '提示', { type: 'warning' })
+    .then(() => true).catch(() => false);
+  if (!ok) return;
+  const result = await commissionsApi.bulkDelete(ids);
+  let msg = `已删除 ${result.deleted} 条规则`;
+  if (result.skippedActive > 0) msg += `，${result.skippedActive} 条因启用中被跳过（请先禁用）`;
+  ElMessage.success(msg);
   reload();
 }
 
@@ -649,6 +683,7 @@ onMounted(async () => {
 <style scoped>
 .page { padding-bottom: 24px; }
 .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.toolbar .spacer { flex: 1 1 auto; }
 .muted { color: var(--el-text-color-secondary); font-size: 12px; }
 .dual-amount { display: flex; flex-direction: column; gap: 8px; }
 .dual-row { display: flex; align-items: center; gap: 8px; }

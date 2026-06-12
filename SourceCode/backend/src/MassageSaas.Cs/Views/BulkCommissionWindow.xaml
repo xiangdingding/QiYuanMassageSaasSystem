@@ -1,132 +1,270 @@
 <Window x:Class="MassageSaas.Cs.Views.BulkCommissionWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctrl="clr-namespace:MassageSaas.Cs.Controls"
         Title="批量设置提成规则"
-        Height="680" Width="720"
-        WindowStartupLocation="CenterScreen"
+        Height="760" Width="640"
+        WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize">
+    <Window.Resources>
+        <!-- 多选下拉的外观（白底描边、悬停/展开绿边、右侧灰箭头），对齐 FilterCombo -->
+        <Style x:Key="MultiSelectToggle" TargetType="ToggleButton">
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="bd" Background="White" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="26" />
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter Grid.Column="0" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                <Path Grid.Column="1" Data="M0,0 L4,4 L8,0" Stroke="#9CA3AF" StrokeThickness="1.4"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#2D6A4F" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#2D6A4F" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
     <DockPanel Margin="20">
+        <!-- 底部操作条 -->
         <Border DockPanel.Dock="Bottom" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
             <DockPanel>
                 <TextBlock x:Name="PairCountText" DockPanel.Dock="Left" VerticalAlignment="Center"
                            Foreground="#2D6A4F" Text="将处理 0 个 (服务 × 技师) 组合" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="取消" Padding="16,6" Margin="0,0,8,0" Click="Cancel_Click" />
-                    <Button x:Name="ApplyButton" Content="应用" Padding="16,6" Background="#2D6A4F" Foreground="White"
-                            BorderThickness="0" Click="Apply_Click" />
+                    <Button Margin="0,0,8,0" Padding="20,0"
+                            AutomationProperties.Name="取消"
+                            Click="Cancel_Click"
+                            Content="取消"
+                            Style="{StaticResource GhostBtn}" />
+                    <Button x:Name="ApplyButton" Padding="20,0"
+                            AutomationProperties.Name="应用批量设置"
+                            Click="Apply_Click"
+                            Content="应用到 0 个组合"
+                            Style="{StaticResource PrimaryBtn}" />
                 </StackPanel>
             </DockPanel>
         </Border>
 
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="16" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="96" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-            <!-- 左：服务 + 技师多选 -->
-            <DockPanel Grid.Column="0">
-                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
-                    <TextBlock Text="服务项目（多选）" Foreground="#666" VerticalAlignment="Center" />
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="全选" Padding="8,2" Click="SelectAllServices_Click" />
-                        <Button Content="清空" Padding="8,2" Margin="6,0,0,0" Click="ClearServices_Click" />
-                    </StackPanel>
-                </DockPanel>
-                <ListBox x:Name="ServiceList" DockPanel.Dock="Top" Height="230" SelectionMode="Extended"
-                         SelectionChanged="Selection_Changed" AutomationProperties.Name="服务项目多选">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock>
-                                <Run Text="{Binding Code, Mode=OneWay}" Foreground="#999" />
-                                <Run Text="  " />
-                                <Run Text="{Binding Name, Mode=OneWay}" />
-                            </TextBlock>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-
-                <DockPanel DockPanel.Dock="Top" Margin="0,12,0,4">
-                    <TextBlock Text="技师（多选）" Foreground="#666" VerticalAlignment="Center" />
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="全选" Padding="8,2" Click="SelectAllTechs_Click" />
-                        <Button Content="清空" Padding="8,2" Margin="6,0,0,0" Click="ClearTechs_Click" />
-                    </StackPanel>
-                </DockPanel>
-                <ListBox x:Name="TechList" Height="230" SelectionMode="Extended"
-                         SelectionChanged="Selection_Changed" AutomationProperties.Name="技师多选">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock>
-                                <Run Text="{Binding EmployeeNo, FallbackValue='-', Mode=OneWay}" Foreground="#999" />
-                                <Run Text=" · " />
-                                <Run Text="{Binding RealName, TargetNullValue='', Mode=OneWay}" />
-                            </TextBlock>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </DockPanel>
-
-            <!-- 右：规则参数 -->
-            <StackPanel Grid.Column="2">
-                <TextBlock Text="规则类型" Foreground="#666" Margin="0,0,0,4" />
-                <ComboBox x:Name="RuleTypeBox" AutomationProperties.Name="规则类型" Height="32" Margin="0,0,0,12" VerticalContentAlignment="Center"
-                          SelectionChanged="RuleType_Changed">
-                    <ComboBoxItem Content="FixedAmount" IsSelected="True" />
-                    <ComboBoxItem Content="Percentage" />
-                    <ComboBoxItem Content="Tiered" />
-                    <ComboBoxItem Content="Timed" />
-                </ComboBox>
-
-                <!-- 双值：轮钟/点钟（FixedAmount / Percentage） -->
-                <StackPanel x:Name="DualPanel">
-                    <TextBlock Text="按上钟方式（轮钟 / 点钟）" Foreground="#666" Margin="0,0,0,4" />
-                    <Grid Margin="0,0,0,8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="60" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="轮钟" VerticalAlignment="Center" Foreground="#666" />
-                        <TextBox Grid.Column="1" x:Name="RotationBox" AutomationProperties.Name="轮钟数值" Height="32" Padding="6,0" VerticalContentAlignment="Center" />
-                    </Grid>
-                    <Grid Margin="0,0,0,12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="60" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="点钟" VerticalAlignment="Center" Foreground="#666" />
-                        <TextBox Grid.Column="1" x:Name="DesignationBox" AutomationProperties.Name="点钟数值" Height="32" Padding="6,0" VerticalContentAlignment="Center" />
+                <!-- 服务项目（多选） -->
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="服务项目" VerticalAlignment="Center" Foreground="#606266" Margin="0,0,0,12" />
+                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,12">
+                    <Grid Width="320">
+                        <ToggleButton x:Name="ServiceToggle" Style="{StaticResource MultiSelectToggle}"
+                                      AutomationProperties.Name="服务项目多选">
+                            <TextBlock x:Name="ServiceSummary" Text="请选择一个或多个服务" Foreground="#9CA3AF"
+                                       TextTrimming="CharacterEllipsis" />
+                        </ToggleButton>
+                        <Popup IsOpen="{Binding IsChecked, ElementName=ServiceToggle, Mode=TwoWay}" StaysOpen="False"
+                               Placement="Bottom" AllowsTransparency="True" PopupAnimation="Slide" Focusable="False">
+                            <Border Background="White" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="6"
+                                    Margin="0,4,0,0" Width="320" SnapsToDevicePixels="True">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="8,8,8,4">
+                                        <Button Content="全选" Padding="10,2" Click="SelectAllServices_Click" Style="{StaticResource GhostBtn}" Height="26" />
+                                        <Button Content="清空" Padding="10,2" Margin="6,0,0,0" Click="ClearServices_Click" Style="{StaticResource GhostBtn}" Height="26" />
+                                    </StackPanel>
+                                    <ScrollViewer MaxHeight="240">
+                                        <ItemsControl x:Name="ServiceItems">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" Click="Selection_Changed"
+                                                              Margin="10,5" Content="{Binding Label}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
                     </Grid>
                 </StackPanel>
 
-                <!-- 单值：Timed（元/小时） -->
-                <StackPanel x:Name="SinglePanel" Visibility="Collapsed">
-                    <TextBlock Text="元 / 小时（按时计费）" Foreground="#666" Margin="0,0,0,4" />
-                    <TextBox x:Name="AmountBox" AutomationProperties.Name="元每小时" Height="32" Padding="6,0" Margin="0,0,0,12" Text="0" VerticalContentAlignment="Center" />
+                <!-- 技师（多选） -->
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="技师" VerticalAlignment="Center" Foreground="#606266" Margin="0,0,0,12" />
+                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,12">
+                    <Grid Width="320">
+                        <ToggleButton x:Name="TechToggle" Style="{StaticResource MultiSelectToggle}"
+                                      AutomationProperties.Name="技师多选">
+                            <TextBlock x:Name="TechSummary" Text="请选择一个或多个技师" Foreground="#9CA3AF"
+                                       TextTrimming="CharacterEllipsis" />
+                        </ToggleButton>
+                        <Popup IsOpen="{Binding IsChecked, ElementName=TechToggle, Mode=TwoWay}" StaysOpen="False"
+                               Placement="Bottom" AllowsTransparency="True" PopupAnimation="Slide" Focusable="False">
+                            <Border Background="White" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="6"
+                                    Margin="0,4,0,0" Width="320" SnapsToDevicePixels="True">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="8,8,8,4">
+                                        <Button Content="全选" Padding="10,2" Click="SelectAllTechs_Click" Style="{StaticResource GhostBtn}" Height="26" />
+                                        <Button Content="清空" Padding="10,2" Margin="6,0,0,0" Click="ClearTechs_Click" Style="{StaticResource GhostBtn}" Height="26" />
+                                    </StackPanel>
+                                    <ScrollViewer MaxHeight="240">
+                                        <ItemsControl x:Name="TechItems">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" Click="Selection_Changed"
+                                                              Margin="10,5" Content="{Binding Label}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                </StackPanel>
+
+                <!-- 规则类型（分段按钮，对齐 BS el-radio-button） -->
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="规则类型" VerticalAlignment="Center" Foreground="#606266" Margin="0,0,0,12" />
+                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,12">
+                    <RadioButton x:Name="RbFixed" GroupName="BulkRuleType" Content="固定金额"
+                                 BorderThickness="1,1,1,1" Tag="4,0,0,4" IsChecked="True"
+                                 Style="{StaticResource SegRadio}" Checked="RuleType_Changed"
+                                 AutomationProperties.Name="规则类型固定金额" />
+                    <RadioButton x:Name="RbPercent" GroupName="BulkRuleType" Content="百分比"
+                                 Tag="0" Style="{StaticResource SegRadio}" Checked="RuleType_Changed"
+                                 AutomationProperties.Name="规则类型百分比" />
+                    <RadioButton x:Name="RbTiered" GroupName="BulkRuleType" Content="阶梯"
+                                 Tag="0" Style="{StaticResource SegRadio}" Checked="RuleType_Changed"
+                                 AutomationProperties.Name="规则类型阶梯" />
+                    <RadioButton x:Name="RbTimed" GroupName="BulkRuleType" Content="按时计费"
+                                 Tag="0,4,4,0" Style="{StaticResource SegRadio}" Checked="RuleType_Changed"
+                                 AutomationProperties.Name="规则类型按时计费" />
+                </StackPanel>
+
+                <!-- 固定金额：轮钟/点钟金额（元） -->
+                <TextBlock x:Name="FixedLabel" Grid.Row="3" Grid.Column="0" Text="按上钟方式" VerticalAlignment="Top" Margin="0,6,0,12" Foreground="#606266" />
+                <Border x:Name="FixedPanel" Grid.Row="3" Grid.Column="1" Background="#F8FAFC" Padding="12" CornerRadius="4" Margin="0,0,0,12">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="72" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="轮钟金额" VerticalAlignment="Center" Foreground="#606266" />
+                            <ctrl:NumericUpDown Grid.Column="1" x:Name="RotationFixedBox" Width="200"
+                                                Decimals="2" Minimum="0" Maximum="100000" Step="5"
+                                                AutomationProperties.Name="轮钟金额" />
+                            <TextBlock Grid.Column="2" Text="元" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#909399" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="72" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="点钟金额" VerticalAlignment="Center" Foreground="#606266" />
+                            <ctrl:NumericUpDown Grid.Column="1" x:Name="DesignationFixedBox" Width="200"
+                                                Decimals="2" Minimum="0" Maximum="100000" Step="5"
+                                                AutomationProperties.Name="点钟金额" />
+                            <TextBlock Grid.Column="2" Text="元" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#909399" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 百分比：轮钟/点钟比例（%） -->
+                <TextBlock x:Name="PercentLabel" Grid.Row="4" Grid.Column="0" Text="按上钟方式" VerticalAlignment="Top" Margin="0,6,0,12" Foreground="#606266" Visibility="Collapsed" />
+                <Border x:Name="PercentPanel" Grid.Row="4" Grid.Column="1" Background="#F8FAFC" Padding="12" CornerRadius="4" Margin="0,0,0,12" Visibility="Collapsed">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="72" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="轮钟比例" VerticalAlignment="Center" Foreground="#606266" />
+                            <ctrl:NumericUpDown Grid.Column="1" x:Name="RotationPercentBox" Width="200"
+                                                Decimals="2" Minimum="0" Maximum="100" Step="1"
+                                                AutomationProperties.Name="轮钟比例" />
+                            <TextBlock Grid.Column="2" Text="%" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#909399" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="72" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="点钟比例" VerticalAlignment="Center" Foreground="#606266" />
+                            <ctrl:NumericUpDown Grid.Column="1" x:Name="DesignationPercentBox" Width="200"
+                                                Decimals="2" Minimum="0" Maximum="100" Step="1"
+                                                AutomationProperties.Name="点钟比例" />
+                            <TextBlock Grid.Column="2" Text="%" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#909399" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 单值：Timed（元/小时）/ Tiered（默认数值） -->
+                <TextBlock x:Name="SingleFieldLabel" Grid.Row="5" Grid.Column="0" Text="元/小时" VerticalAlignment="Center" Margin="0,0,0,12" Foreground="#606266" Visibility="Collapsed" />
+                <StackPanel x:Name="SinglePanel" Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,12" Visibility="Collapsed">
+                    <ctrl:NumericUpDown x:Name="AmountBox" Width="200"
+                                        Decimals="2" Minimum="0" Maximum="100000" Step="5"
+                                        AutomationProperties.Name="金额或比例" />
                 </StackPanel>
 
                 <!-- 阶梯档位：Tiered -->
-                <StackPanel x:Name="TierPanel" Visibility="Collapsed">
-                    <TextBlock Text="阶梯档位（从第几次起 / 数值）" Foreground="#666" Margin="0,0,0,4" />
-                    <DataGrid x:Name="TiersGrid" AutomationProperties.Name="阶梯档位" Height="150" AutoGenerateColumns="False" CanUserAddRows="False"
-                              HeadersVisibility="Column" RowHeight="34">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="从第几次起" Binding="{Binding FromQty}" Width="*" />
-                            <DataGridTextColumn Header="数值" Binding="{Binding Amount}" Width="*" />
-                        </DataGrid.Columns>
-                    </DataGrid>
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,12">
-                        <Button Content="+ 添加档位" Padding="8,3" Click="AddTier_Click" />
-                        <Button Content="删除选中" Padding="8,3" Margin="6,0,0,0" Click="RemoveTier_Click" />
-                    </StackPanel>
+                <TextBlock x:Name="TierFieldLabel" Grid.Row="6" Grid.Column="0" Text="阶梯档位" VerticalAlignment="Top" Margin="0,6,0,12" Foreground="#606266" Visibility="Collapsed" />
+                <StackPanel x:Name="TierPanel" Grid.Row="6" Grid.Column="1" Margin="0,0,0,12" Visibility="Collapsed">
+                    <Border Background="#F8FAFC" Padding="8" CornerRadius="4">
+                        <StackPanel>
+                            <DataGrid x:Name="TiersGrid" AutomationProperties.Name="阶梯档位" Height="150" AutoGenerateColumns="False"
+                                      CanUserAddRows="False" CanUserDeleteRows="False"
+                                      HeadersVisibility="Column" GridLinesVisibility="All"
+                                      AlternatingRowBackground="#FAFAFA" RowHeight="34">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="从第几单起" Binding="{Binding FromQty}" Width="*" />
+                                    <DataGridTextColumn Header="提成金额（元）" Binding="{Binding Amount, StringFormat='F2'}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <Button Content="+ 添加档位" Padding="8,3" Click="AddTier_Click" />
+                                <Button Content="删除选中" Padding="8,3" Margin="6,0,0,0" Click="RemoveTier_Click" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
-                <TextBlock Text="优先级（数字越大越先匹配）" Foreground="#666" Margin="0,0,0,4" />
-                <TextBox x:Name="PriorityBox" AutomationProperties.Name="优先级" Height="32" Padding="6,0" Margin="0,0,0,12" Text="0" VerticalContentAlignment="Center" />
+                <!-- 优先级 -->
+                <TextBlock Grid.Row="7" Grid.Column="0" Text="优先级" VerticalAlignment="Center" Margin="0,0,0,12" Foreground="#606266" />
+                <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,12">
+                    <ctrl:NumericUpDown x:Name="PriorityBox" Width="200"
+                                        Decimals="0" Minimum="0" Maximum="100" Step="1"
+                                        AutomationProperties.Name="优先级" />
+                    <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Foreground="#909399" FontSize="12"
+                               Text="数字越大越先匹配" />
+                </StackPanel>
 
-                <CheckBox x:Name="OverwriteBox" Content="覆盖已有的“通用”规则（不勾则跳过已存在的组合）" />
-            </StackPanel>
-        </Grid>
+                <!-- 覆盖已有（开关 + 提示） -->
+                <TextBlock Grid.Row="8" Grid.Column="0" Text="覆盖已有" VerticalAlignment="Center" Margin="0,0,0,12" Foreground="#606266" />
+                <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,12">
+                    <ToggleButton x:Name="OverwriteBox" VerticalAlignment="Center"
+                                  Style="{StaticResource SwitchToggle}" Checked="Overwrite_Changed" Unchecked="Overwrite_Changed"
+                                  AutomationProperties.Name="覆盖已有规则" />
+                    <TextBlock x:Name="OverwriteHint" Margin="10,0,0,0" VerticalAlignment="Center" Foreground="#909399" FontSize="12"
+                               TextWrapping="Wrap" Text="已存在的服务+技师组合将被跳过" />
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
     </DockPanel>
 </Window>

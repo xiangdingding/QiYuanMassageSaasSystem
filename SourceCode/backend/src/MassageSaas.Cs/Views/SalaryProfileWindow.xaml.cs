@@ -1,6 +1,4 @@
-using System.Globalization;
 using System.Windows;
-using System.Windows.Controls;
 using MassageSaas.Shared.Payroll;
 
 namespace MassageSaas.Cs.Views;
@@ -11,33 +9,23 @@ public partial class SalaryProfileWindow : Window
     {
         InitializeComponent();
         UserLabel.Text = $"员工：{profile.UserName}";
-        BaseBox.Text = profile.BaseMonthly.ToString("0.##", CultureInfo.InvariantCulture);
-        OtRateBox.Text = profile.OvertimeHourRate.ToString("0.##", CultureInfo.InvariantCulture);
-        BonusBox.Text = profile.AttendanceBonusAmount.ToString("0.##", CultureInfo.InvariantCulture);
-        DaysBox.Text = profile.RequiredAttendanceDays.ToString(CultureInfo.InvariantCulture);
+        BaseBox.Value = (double)profile.BaseMonthly;
+        OtRateBox.Value = (double)profile.OvertimeHourRate;
+        BonusBox.Value = (double)profile.AttendanceBonusAmount;
+        DaysBox.Value = profile.RequiredAttendanceDays;
         RemarkBox.Text = profile.Remark ?? string.Empty;
     }
 
-    private decimal ParseDec(TextBox b, decimal fallback)
-        => decimal.TryParse(b.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var v) ? v : fallback;
-    private int ParseInt(TextBox b, int fallback)
-        => int.TryParse(b.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : fallback;
-
+    // 数值由 NumericUpDown 约束（Minimum=0），无需再做非负校验
     public UpsertSalaryProfileRequest BuildRequest() => new(
-        BaseMonthly: ParseDec(BaseBox, 0m),
-        OvertimeHourRate: ParseDec(OtRateBox, 0m),
-        AttendanceBonusAmount: ParseDec(BonusBox, 0m),
-        RequiredAttendanceDays: ParseInt(DaysBox, 0),
+        BaseMonthly: (decimal)BaseBox.Value,
+        OvertimeHourRate: (decimal)OtRateBox.Value,
+        AttendanceBonusAmount: (decimal)BonusBox.Value,
+        RequiredAttendanceDays: (int)DaysBox.Value,
         Remark: string.IsNullOrWhiteSpace(RemarkBox.Text) ? null : RemarkBox.Text.Trim());
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        if (ParseDec(BaseBox, -1m) < 0 || ParseDec(OtRateBox, -1m) < 0
-            || ParseDec(BonusBox, -1m) < 0 || ParseInt(DaysBox, -1) < 0)
-        {
-            MessageBox.Show("金额与天数不能为负");
-            return;
-        }
         DialogResult = true;
         Close();
     }

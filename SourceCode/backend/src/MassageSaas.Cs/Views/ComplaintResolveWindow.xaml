@@ -22,26 +22,36 @@
             <TextBlock x:Name="SummaryText" Foreground="#92400E" TextWrapping="Wrap" />
         </Border>
 
-        <TextBlock Grid.Row="1" Text="处理方式" Margin="0,0,0,4" />
-        <ComboBox Grid.Row="2" x:Name="ResolutionBox" Height="32" Margin="0,0,0,12"
-                  SelectionChanged="ResolutionBox_SelectionChanged">
-            <ComboBoxItem x:Name="ReassignItem" Content="改派给其他技师" Tag="Reassigned" />
-            <ComboBoxItem x:Name="RefundItem" Content="退款（记录用，退款另行操作）" Tag="Refunded" />
-            <ComboBoxItem Content="口头道歉 / 补偿" Tag="Apologized" />
+        <TextBlock Grid.Row="1" Text="处理方式" Margin="0,0,0,4" Foreground="#666" />
+        <ComboBox Grid.Row="2" x:Name="ResolutionBox" Width="200" HorizontalAlignment="Left" Margin="0,0,0,12"
+                  AutomationProperties.Name="处理方式"
+                  SelectionChanged="ResolutionBox_SelectionChanged"
+                  Style="{StaticResource FilterCombo}">
+            <ComboBoxItem x:Name="ReassignItem" Content="改派" Tag="Reassigned" />
+            <ComboBoxItem x:Name="RefundItem" Content="退款" Tag="Refunded" />
+            <ComboBoxItem Content="道歉/补偿" Tag="Apologized" />
             <ComboBoxItem Content="不予处理" Tag="NoAction" />
         </ComboBox>
 
-        <TextBlock Grid.Row="3" x:Name="TechLabel" Text="改派至技师" Margin="0,0,0,4" />
-        <ComboBox Grid.Row="4" x:Name="TechBox" Height="32" Margin="0,0,0,12"
-                  DisplayMemberPath="Name" AutomationProperties.Name="改派至技师" />
+        <TextBlock Grid.Row="3" x:Name="TechLabel" Text="改派至技师" Margin="0,0,0,4" Foreground="#666" />
+        <ComboBox Grid.Row="4" x:Name="TechBox" Width="240" HorizontalAlignment="Left" Margin="0,0,0,12"
+                  AutomationProperties.Name="改派至技师"
+                  Style="{StaticResource FilterCombo}">
+            <ComboBox.ItemTemplate>
+                <DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
 
-        <TextBlock Grid.Row="5" Text="处理说明" Margin="0,0,0,4" />
-        <TextBox Grid.Row="6" x:Name="NoteBox" Padding="6" Height="70" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,12" />
+        <TextBlock Grid.Row="5" Text="处理说明" Margin="0,0,0,4" Foreground="#666" />
+        <TextBox Grid.Row="6" x:Name="NoteBox" Height="70" Margin="0,0,0,12" MaxLength="500"
+                 AutomationProperties.Name="处理说明" Style="{StaticResource FieldTextMultiline}" />
 
         <Border Grid.Row="8" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="0,12,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="取消" Padding="16,6" Margin="0,0,8,0" Click="Cancel_Click" />
-                <Button Content="确认处理" Padding="16,6" Background="#2D6A4F" Foreground="White" BorderThickness="0" Click="Save_Click" />
+                <Button Content="取消" Padding="20,0" Margin="0,0,8,0" AutomationProperties.Name="取消"
+                        Click="Cancel_Click" Style="{StaticResource GhostBtn}" />
+                <Button Content="确认处理" Padding="20,0" AutomationProperties.Name="确认处理"
+                        Click="Save_Click" Style="{StaticResource PrimaryBtn}" />
             </StackPanel>
         </Border>
     </Grid>

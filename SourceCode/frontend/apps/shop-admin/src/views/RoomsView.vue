@@ -218,7 +218,8 @@ async function save() {
 }
 
 async function remove(row: Room) {
-  await ElMessageBox.confirm(`确认删除房间 ${row.roomNo}？`, '提示', { type: 'warning' }).catch(() => null);
+  const ok = await ElMessageBox.confirm(`确认删除房间 ${row.roomNo}？`, '提示', { type: 'warning' }).then(() => true).catch(() => false);
+  if (!ok) return;
   await roomsApi.remove(row.id);
   ElMessage.success('已删除');
   await reload();
