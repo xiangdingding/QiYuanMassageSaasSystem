@@ -150,3 +150,9 @@ export interface TenantOverview {
   orderCount30Days: number;
   topTechnicians: TenantTopTechnician[];
 }
+
+export interface PlatformSubscriptionSetting {
+  expiryNotice?: string | null;
+  contactPhone?: string | null;
+  contactWechat?: string | null;
+}

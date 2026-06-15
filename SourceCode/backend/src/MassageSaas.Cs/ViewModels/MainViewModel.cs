@@ -214,7 +214,7 @@ public partial class MainViewModel : ObservableObject
         "payroll" => new NavItem("工资结算", key, () => _sp.GetRequiredService<PayrollViewModel>()),
         "staff" => new NavItem("员工管理", key, () => _sp.GetRequiredService<StaffViewModel>()),
         "stores" => new NavItem("门店管理", key, () => _sp.GetRequiredService<StoresViewModel>()),
-        "subscription" => new NavItem("订阅状态", key, () => _sp.GetRequiredService<SubscriptionViewModel>()),
+        "subscription" => new NavItem("服务订阅", key, () => _sp.GetRequiredService<SubscriptionViewModel>()),
         _ => null
     };
 

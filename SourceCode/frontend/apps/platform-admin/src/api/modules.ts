@@ -8,6 +8,7 @@ import type {
   Plan,
   PlatformDashboard,
   PlatformRevenue,
+  PlatformSubscriptionSetting,
   TenantDetail,
   TenantOverview,
   TenantSummary
@@ -57,4 +58,11 @@ export const subscriptionsApi = {
     http().post('/subscriptions/activate-offline', req).then((r) => r.data),
   history: (tenantId: number) =>
     http().get(`/subscriptions/history`, { params: { tenantId } }).then((r) => r.data)
+};
+
+export const platformSettingsApi = {
+  getSubscription: () =>
+    http().get<PlatformSubscriptionSetting>('/platform-settings/subscription').then((r) => r.data),
+  updateSubscription: (body: PlatformSubscriptionSetting) =>
+    http().put<PlatformSubscriptionSetting>('/platform-settings/subscription', body).then((r) => r.data)
 };

@@ -16,6 +16,7 @@ import type {
   MemberPhoneGroup,
   MyQueue,
   PagedResult,
+  PlatformSubscriptionSetting,
   QueueRow,
   Room,
   ServiceItem,
@@ -348,7 +349,10 @@ export const subscriptionsApi = {
   pay: (body: { tenantId: number; planId: number; years: number; channel: 'Wechat' | 'Alipay' }) =>
     http().post<SubscriptionPaymentResp>('/subscriptions/pay', body).then((r) => r.data),
   payStatus: (orderNo: string) =>
-    http().get<SubscriptionPaymentResp>(`/subscriptions/pay/${orderNo}`).then((r) => r.data)
+    http().get<SubscriptionPaymentResp>(`/subscriptions/pay/${orderNo}`).then((r) => r.data),
+  // 平台端维护的"服务订阅"展示配置（说明 + 客服联系方式），本端只读
+  platformSetting: () =>
+    http().get<PlatformSubscriptionSetting>('/platform-settings/subscription').then((r) => r.data)
 };
 
 export const appointmentsApi = {

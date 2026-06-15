@@ -401,3 +401,10 @@ export interface DayClose {
   remark?: string | null;
   createdAt: string;
 }
+
+/** 平台级"服务订阅"展示配置：到期说明 + 客服联系方式（平台端维护，本端只读）。 */
+export interface PlatformSubscriptionSetting {
+  expiryNotice?: string | null;
+  contactPhone?: string | null;
+  contactWechat?: string | null;
+}

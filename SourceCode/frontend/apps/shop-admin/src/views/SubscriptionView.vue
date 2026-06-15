@@ -1,5 +1,5 @@
 <template>
-  <div class="page">
+  <div class="sub-page">
     <el-card shadow="never" v-loading="loading">
       <template #header><span>订阅与到期信息</span></template>
       <div v-if="status">
@@ -22,8 +22,11 @@
         </el-descriptions>
 
         <el-divider>说明</el-divider>
-        <p>订阅到期后，系统将进入<strong>只读</strong>模式：只能查询数据，无法新建订单、充值或编辑配置。</p>
-        <p>当前到期时间之后，新购买的年限会从当前到期时间继续累加；如已过期，则从今天起算。</p>
+        <p v-for="(line, i) in noticeLines" :key="i" class="notice-line">{{ line }}</p>
+        <p v-if="setting && (setting.contactPhone || setting.contactWechat)" class="notice-contact">
+          支付问题或线下支付请联系客服电话：<strong>{{ setting.contactPhone || '—' }}</strong>，
+          添加微信号：<strong>{{ setting.contactWechat || '—' }}</strong> 咨询帮助。
+        </p>
       </div>
       <el-empty v-else description="暂无订阅信息" />
     </el-card>
@@ -209,12 +212,14 @@ import {
   UserFilled
 } from '@element-plus/icons-vue';
 import { subscriptionsApi, type SubscriptionPaymentResp, type SubscriptionPlan } from '@/api/modules';
-import type { SubscriptionStatus } from '@/api/types';
+import type { PlatformSubscriptionSetting, SubscriptionStatus } from '@/api/types';
 
 const status = ref<SubscriptionStatus | null>(null);
 const loading = ref(false);
 const plans = ref<SubscriptionPlan[]>([]);
 const plansLoading = ref(false);
+const setting = ref<PlatformSubscriptionSetting | null>(null);
+const noticeLines = computed(() => (setting.value?.expiryNotice ?? '').split('\n').filter((l) => l.trim()));
 
 const payForm = reactive<{ planId: number | null; years: number; channel: 'Wechat' | 'Alipay' }>({
   planId: null,
@@ -275,12 +280,14 @@ async function loadAll() {
   loading.value = true;
   plansLoading.value = true;
   try {
-    const [s, p] = await Promise.all([
+    const [s, p, cfg] = await Promise.all([
       subscriptionsApi.me(),
-      subscriptionsApi.plans()
+      subscriptionsApi.plans(),
+      subscriptionsApi.platformSetting()
     ]);
     status.value = s;
     plans.value = p;
+    setting.value = cfg;
     if (payForm.planId == null) {
       // 默认选当前套餐；没有就选最便宜的
       const cur = p.find((x) => x.id === s.currentPlanId);
@@ -353,7 +360,14 @@ onUnmounted(stopPolling);
 </script>
 
 <style scoped>
-.page { padding-bottom: 24px; }
+/* 流式表单页：自身在 .main 内滚动，避免被全局 .page 表格锁定裁掉说明等内容 */
+.sub-page {
+  height: 100%;
+  overflow-y: auto;
+  padding-bottom: 24px;
+}
+.notice-line { margin: 4px 0; color: #475569; line-height: 1.7; }
+.notice-contact { margin: 10px 0 0; color: #9a3412; }
 .pay-body { padding: 4px 0; }
 .pay-line { margin: 6px 0; }
 

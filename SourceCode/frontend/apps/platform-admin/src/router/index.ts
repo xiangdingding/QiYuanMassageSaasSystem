@@ -15,7 +15,8 @@ const routes: RouteRecordRaw[] = [
       { path: '', name: 'dashboard', component: () => import('@/views/DashboardView.vue'), meta: { title: '运营大盘' } },
       { path: 'revenue', name: 'revenue', component: () => import('@/views/RevenueView.vue'), meta: { title: '营收报表' } },
       { path: 'tenants', name: 'tenants', component: () => import('@/views/TenantsView.vue'), meta: { title: '按摩店租户' } },
-      { path: 'plans', name: 'plans', component: () => import('@/views/PlansView.vue'), meta: { title: '套餐管理' } }
+      { path: 'plans', name: 'plans', component: () => import('@/views/PlansView.vue'), meta: { title: '套餐管理' } },
+      { path: 'settings', name: 'settings', component: () => import('@/views/SettingsView.vue'), meta: { title: '订阅与客服配置' } }
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: '/' }

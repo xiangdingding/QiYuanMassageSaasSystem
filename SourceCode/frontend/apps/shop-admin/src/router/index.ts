@@ -74,7 +74,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'stores', component: () => import('@/views/StoresView.vue'),
         meta: { title: '门店管理', icon: 'OfficeBuilding', menu: true, roles: ['ShopOwner'] } },
       { path: 'subscription', component: () => import('@/views/SubscriptionView.vue'),
-        meta: { title: '订阅状态', icon: 'CreditCard', menu: true, roles: ['ShopOwner'] } }
+        meta: { title: '服务订阅', icon: 'CreditCard', menu: true, roles: ['ShopOwner'] } }
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: '/' }

@@ -26,6 +26,10 @@
           <el-icon><Goods /></el-icon>
           <span>套餐管理</span>
         </el-menu-item>
+        <el-menu-item index="/settings">
+          <el-icon><Setting /></el-icon>
+          <span>订阅与客服配置</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>
@@ -57,6 +61,7 @@ import {
   DataAnalysis,
   Goods,
   OfficeBuilding,
+  Setting,
   TrendCharts,
   UserFilled
 } from '@element-plus/icons-vue';

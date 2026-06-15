@@ -1386,6 +1386,37 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.ToTable("plans", (string)null);
                 });
 
+            modelBuilder.Entity("MassageSaas.Domain.Entities.PlatformSetting", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ContactPhone")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ContactWechat")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ExpiryNotice")
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PlatformSettings");
+                });
+
             modelBuilder.Entity("MassageSaas.Domain.Entities.Room", b =>
                 {
                     b.Property<long>("Id")

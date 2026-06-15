@@ -52,6 +52,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<ServiceComplaint> ServiceComplaints => Set<ServiceComplaint>();
     public DbSet<StaffTransfer> StaffTransfers => Set<StaffTransfer>();
     public DbSet<TimedRoomSession> TimedRoomSessions => Set<TimedRoomSession>();
+    public DbSet<PlatformSetting> PlatformSettings => Set<PlatformSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

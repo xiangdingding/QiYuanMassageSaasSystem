@@ -9,6 +9,7 @@ using MassageSaas.Shared.MemberPackages;
 using MassageSaas.Shared.Members;
 using MassageSaas.Shared.Orders;
 using MassageSaas.Shared.Payroll;
+using MassageSaas.Shared.Plans;
 using MassageSaas.Shared.Queue;
 using MassageSaas.Shared.Reports;
 using MassageSaas.Shared.Reviews;
@@ -262,6 +263,18 @@ public interface IApiClient
 
     [Get("/subscriptions/me")]
     Task<TenantSubscriptionStatusDto> GetMySubscriptionAsync();
+
+    [Get("/plans")]
+    Task<List<PlanDto>> GetPlansAsync([Query] bool includeInactive = false);
+
+    [Post("/subscriptions/pay")]
+    Task<SubscriptionPaymentDto> CreateSubscriptionPaymentAsync([Body] CreateSubscriptionPaymentRequest req);
+
+    [Get("/subscriptions/pay/{orderNo}")]
+    Task<SubscriptionPaymentDto> GetSubscriptionPaymentStatusAsync(string orderNo);
+
+    [Get("/platform-settings/subscription")]
+    Task<PlatformSubscriptionSettingDto> GetPlatformSubscriptionSettingAsync();
 
     [Patch("/orders/{orderId}/items/{itemId}/transfer")]
     Task<OrderDto> TransferTechnicianAsync(long orderId, long itemId, [Body] TransferTechnicianRequest req);

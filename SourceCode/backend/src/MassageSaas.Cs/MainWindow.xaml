@@ -242,19 +242,22 @@
                     </StackPanel>
                 </Border>
 
-                <ItemsControl Grid.Row="1"
-                              Margin="0,8,0,0"
-                              ItemsSource="{Binding NavItems}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Button AutomationProperties.Name="{Binding Title}"
-                                    Command="{Binding DataContext.SelectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                    CommandParameter="{Binding}"
-                                    Content="{Binding Title}"
-                                    Style="{StaticResource NavButton}" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <!--  菜单项多（店主达 20 项）时超出侧栏高度，必须可滚动，否则末尾的"服务订阅"等会被裁掉  -->
+                <ScrollViewer Grid.Row="1"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding NavItems}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button AutomationProperties.Name="{Binding Title}"
+                                        Command="{Binding DataContext.SelectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        Content="{Binding Title}"
+                                        Style="{StaticResource NavButton}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
             </Grid>
 
             <!--  Main  -->
