@@ -14,6 +14,7 @@ import type {
   Order,
   OrderListItem,
   MemberPhoneGroup,
+  MyQueue,
   PagedResult,
   QueueRow,
   Room,
@@ -206,7 +207,10 @@ export const queueApi = {
   callNext: (storeId: number) =>
     http().post<{ technicianId: number | null; technicianName: string | null; employeeNo: number | null; position: number }>(
       '/queue/call-next', { storeId }).then((r) => r.data),
-  resetDay: (storeId: number) => http().post('/queue/reset-day', null, { params: { storeId } })
+  resetDay: (storeId: number) => http().post('/queue/reset-day', null, { params: { storeId } }),
+  // 技师自助：查自己的班次 / 自助上钟休息下班（不需要 ShopStaff 权限）
+  me: () => http().get<MyQueue>('/queue/me').then((r) => r.data),
+  setMyState: (state: string) => http().post('/queue/me/state', { state })
 };
 
 export interface StaffTransferDto {

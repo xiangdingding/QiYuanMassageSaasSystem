@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MassageSaas.Cs.Services;
@@ -41,27 +43,25 @@ public partial class StoresViewModel : ObservableObject
     [RelayCommand]
     private async Task CreateAsync()
     {
-        var dlg = new Views.StoreFormWindow(null);
+        // 窗口自己调接口：仅当成功（DialogResult=true）才刷新；异常时窗口保持打开
+        var dlg = new Views.StoreFormWindow(_api, null, Headquarters())
+        { Owner = Application.Current?.MainWindow };
         if (dlg.ShowDialog() != true) return;
-        try
-        {
-            await _api.CreateStoreAsync(dlg.BuildCreateRequest());
-            await ReloadAsync();
-        }
-        catch (Exception ex) { ErrorReporter.Show(ex); }
+        MessageBox.Show("已保存", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+        await ReloadAsync();
     }
 
     [RelayCommand]
     private async Task EditAsync(StoreDto? s)
     {
         if (s is null) return;
-        var dlg = new Views.StoreFormWindow(s);
+        var dlg = new Views.StoreFormWindow(_api, s, Headquarters())
+        { Owner = Application.Current?.MainWindow };
         if (dlg.ShowDialog() != true) return;
-        try
-        {
-            await _api.UpdateStoreAsync(s.Id, dlg.BuildUpdateRequest());
-            await ReloadAsync();
-        }
-        catch (Exception ex) { ErrorReporter.Show(ex); }
+        MessageBox.Show("已保存", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+        await ReloadAsync();
     }
+
+    /// <summary>当前所有总店（新建分店时选「所属总店」用）。</summary>
+    private List<StoreDto> Headquarters() => Rows.Where(r => r.IsHeadquarters).ToList();
 }

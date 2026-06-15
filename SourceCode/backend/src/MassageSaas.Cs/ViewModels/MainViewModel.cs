@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using MassageSaas.Cs.Services;
 using MassageSaas.Cs.Services.Devices;
 using MassageSaas.Cs.ViewModels.Pos;
+using MassageSaas.Shared.Auth;
 using MassageSaas.Shared.Stores;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -32,6 +33,11 @@ public partial class MainViewModel : ObservableObject
         Context = context;
         Navigation = navigation;
         BuildNav();
+
+        // MainViewModel 是单例：登录/登出/换号都复用同一实例，必须在会话变化时
+        // 按"当前登录人"重建菜单并清空上一个账号的派生状态，否则菜单会停留在
+        // 前一个登录人的权限（如技师登进来却看到店主的收银台，一点就 403）。
+        Session.Changed += OnSessionChanged;
 
         // 外设事件：MainViewModel 是单例，在此统一订阅，避免转瞬即逝的页面 VM 反复挂事件
         callerId.CallReceived += OnIncomingCall;
@@ -151,37 +157,66 @@ public partial class MainViewModel : ObservableObject
         if (NavItems.Count > 0) Select(NavItems.First());
     }
 
+    // 会话变化（登录成功 / 登出 / 换号）：按当前角色重建菜单，并清掉上一个账号的残留。
+    private void OnSessionChanged()
+    {
+        var dispatcher = App.Current?.Dispatcher;
+        if (dispatcher is null) { ApplySessionChange(); return; }
+        dispatcher.Invoke(ApplySessionChange);
+    }
+
+    private void ApplySessionChange()
+    {
+        // 收银台缓存属于上一个登录人的数据上下文（购物车/会员/技师），换号必须作废
+        _cachedPosVm = null;
+        // 门店与订阅状态都随租户/角色变化，先清空，等 InitializeAsync 按新账号重新拉取
+        Context.Stores = new();
+        Context.ActiveStore = null;
+        Context.SubscriptionStatus = null;
+        Context.SubscriptionExpireAt = null;
+        Context.DaysToExpire = null;
+        BuildNav();
+        RefreshUser();
+        OnPropertyChanged(nameof(SubscriptionWarning));
+    }
+
     private void BuildNav()
     {
-        var items = new List<NavItem>();
-        var role = Session.Role;
-        bool canPos = role is "ShopOwner" or "StoreManager" or "Cashier";
-        bool canLead = role is "ShopOwner" or "StoreManager";
-        bool isOwner = role == "ShopOwner";
-
-        if (canPos) items.Add(new NavItem("收银台", "pos", () => _sp.GetRequiredService<PosViewModel>()));
-        if (canPos) items.Add(new NavItem("预约管理", "appointments", () => _sp.GetRequiredService<AppointmentsViewModel>()));
-        if (canPos) items.Add(new NavItem("订单流水", "orders", () => _sp.GetRequiredService<OrdersViewModel>()));
-        if (canPos) items.Add(new NavItem("房间管理", "rooms", () => _sp.GetRequiredService<RoomsViewModel>()));
-        if (canPos) items.Add(new NavItem("会员管理", "members", () => _sp.GetRequiredService<MembersViewModel>()));
-        if (canLead) items.Add(new NavItem("会员类型", "member-types", () => _sp.GetRequiredService<MemberTypesViewModel>()));
-        items.Add(new NavItem("技师排队", "queue", () => _sp.GetRequiredService<QueueViewModel>()));
-        if (canPos) items.Add(new NavItem("日报与业绩", "reports", () => _sp.GetRequiredService<ReportsViewModel>()));
-        if (canPos) items.Add(new NavItem("日结/交班", "day-close", () => _sp.GetRequiredService<DayCloseViewModel>()));
-        if (canLead) items.Add(new NavItem("服务项目", "services", () => _sp.GetRequiredService<ServicesViewModel>()));
-        if (canPos) items.Add(new NavItem("优惠券", "vouchers", () => _sp.GetRequiredService<VouchersViewModel>()));
-        if (canPos) items.Add(new NavItem("物耗库存", "inventory", () => _sp.GetRequiredService<InventoryViewModel>()));
-        if (canPos) items.Add(new NavItem("服务评价", "reviews", () => _sp.GetRequiredService<ReviewsViewModel>()));
-        if (canPos) items.Add(new NavItem("投诉处理", "complaints", () => _sp.GetRequiredService<ComplaintsViewModel>()));
-        if (canLead) items.Add(new NavItem("排班与请假", "schedules", () => _sp.GetRequiredService<SchedulesViewModel>()));
-        if (canLead) items.Add(new NavItem("提成规则", "commissions", () => _sp.GetRequiredService<CommissionsViewModel>()));
-        if (canLead) items.Add(new NavItem("工资结算", "payroll", () => _sp.GetRequiredService<PayrollViewModel>()));
-        if (canLead) items.Add(new NavItem("员工管理", "staff", () => _sp.GetRequiredService<StaffViewModel>()));
-        if (isOwner) items.Add(new NavItem("门店管理", "stores", () => _sp.GetRequiredService<StoresViewModel>()));
-        if (isOwner) items.Add(new NavItem("订阅状态", "subscription", () => _sp.GetRequiredService<SubscriptionViewModel>()));
+        var items = ShopMenu.VisibleKeys(Session.Role)
+            .Select(CreateNavItem)
+            .OfType<NavItem>()
+            .ToList();
 
         NavItems = new ObservableCollection<NavItem>(items);
+        // 清掉旧的选中项，避免仍指向当前角色已无权访问的页面
+        SelectedNavItem = null;
     }
+
+    // 菜单可见性由 ShopMenu（跨端单一事实源）决定；这里只负责键 -> 标题 + VM 工厂的映射。
+    private NavItem? CreateNavItem(string key) => key switch
+    {
+        "pos" => new NavItem("收银台", key, () => _sp.GetRequiredService<PosViewModel>()),
+        "appointments" => new NavItem("预约管理", key, () => _sp.GetRequiredService<AppointmentsViewModel>()),
+        "orders" => new NavItem("订单流水", key, () => _sp.GetRequiredService<OrdersViewModel>()),
+        "rooms" => new NavItem("房间管理", key, () => _sp.GetRequiredService<RoomsViewModel>()),
+        "members" => new NavItem("会员管理", key, () => _sp.GetRequiredService<MembersViewModel>()),
+        "member-types" => new NavItem("会员类型", key, () => _sp.GetRequiredService<MemberTypesViewModel>()),
+        "queue" => new NavItem("技师排队", key, () => _sp.GetRequiredService<QueueViewModel>()),
+        "reports" => new NavItem("日报与业绩", key, () => _sp.GetRequiredService<ReportsViewModel>()),
+        "day-close" => new NavItem("日结/交班", key, () => _sp.GetRequiredService<DayCloseViewModel>()),
+        "services" => new NavItem("服务项目", key, () => _sp.GetRequiredService<ServicesViewModel>()),
+        "vouchers" => new NavItem("优惠券", key, () => _sp.GetRequiredService<VouchersViewModel>()),
+        "inventory" => new NavItem("物耗库存", key, () => _sp.GetRequiredService<InventoryViewModel>()),
+        "reviews" => new NavItem("服务评价", key, () => _sp.GetRequiredService<ReviewsViewModel>()),
+        "complaints" => new NavItem("投诉处理", key, () => _sp.GetRequiredService<ComplaintsViewModel>()),
+        "schedules" => new NavItem("排班与请假", key, () => _sp.GetRequiredService<SchedulesViewModel>()),
+        "commissions" => new NavItem("提成规则", key, () => _sp.GetRequiredService<CommissionsViewModel>()),
+        "payroll" => new NavItem("工资结算", key, () => _sp.GetRequiredService<PayrollViewModel>()),
+        "staff" => new NavItem("员工管理", key, () => _sp.GetRequiredService<StaffViewModel>()),
+        "stores" => new NavItem("门店管理", key, () => _sp.GetRequiredService<StoresViewModel>()),
+        "subscription" => new NavItem("订阅状态", key, () => _sp.GetRequiredService<SubscriptionViewModel>()),
+        _ => null
+    };
 
     [RelayCommand]
     private void Select(NavItem? item)

@@ -31,7 +31,9 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
     children: [
-      { path: '', redirect: '/pos' },
+      // 落地页按角色解析：技师等无权访问 /pos 的角色不能硬跳 /pos，
+      // 否则与下方守卫的越权回退会形成 / → /pos → / 的重定向死循环（切换账号卡死）。
+      { path: '', redirect: () => firstAllowedPath(useAuthStore().role) },
 
       { path: 'pos', component: () => import('@/views/PosView.vue'),
         meta: { title: '收银台', icon: 'Tickets', menu: true, roles: POS } },
@@ -78,6 +80,15 @@ const routes: RouteRecordRaw[] = [
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ];
 
+// 当前角色能访问的第一个菜单页路径；找不到则回登录页。
+// 用于落地页解析与越权回退，避免重定向到会再次重定向的 '/'。
+function firstAllowedPath(role: UserRole | null): string {
+  if (!role) return '/login';
+  const layout = routes.find((r) => r.path === '/');
+  const hit = (layout?.children ?? []).find((c) => c.meta?.menu && canSee(c.meta?.roles, role));
+  return hit ? '/' + (hit.path ?? '') : '/login';
+}
+
 export const router = createRouter({
   history: createWebHistory(),
   routes
@@ -88,9 +99,13 @@ router.beforeEach((to) => {
   if (!to.meta.public && !auth.isAuthenticated) {
     return { path: '/login', query: { redirect: to.fullPath } };
   }
-  if ((to.path === '/login' || to.path === '/register') && auth.isAuthenticated) return { path: '/' };
+  if ((to.path === '/login' || to.path === '/register') && auth.isAuthenticated) {
+    return { path: firstAllowedPath(auth.role) };
+  }
   if (to.meta.roles && !canSee(to.meta.roles, auth.role)) {
-    return { path: '/' };
+    // 跳到该角色合法首页（具体路径），不要回 '/'——否则会再次触发重定向循环。
+    const home = firstAllowedPath(auth.role);
+    return home === to.path ? false : { path: home };
   }
   return true;
 });

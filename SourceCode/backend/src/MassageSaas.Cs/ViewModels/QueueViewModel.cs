@@ -31,6 +31,54 @@ public partial class QueueViewModel : ObservableObject, IDisposable
 
     public bool CanManage => _session.Role is "ShopOwner" or "StoreManager" or "Cashier";
 
+    /// <summary>技师（无前台管理权限）：显示"我的班次"自助面板。</summary>
+    public bool IsTechnician => !CanManage;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MyStateLabel))]
+    [NotifyPropertyChangedFor(nameof(MyMeta))]
+    [NotifyPropertyChangedFor(nameof(MyCurrentText))]
+    [NotifyPropertyChangedFor(nameof(MyNotesText))]
+    private MyQueueDto? my;
+
+    public string MyStateLabel => My?.State switch
+    {
+        "OnDuty" => "在岗",
+        "Resting" => "休息",
+        "OffDuty" => "下班",
+        "Idle" => "空闲",
+        _ => "—"
+    };
+
+    public string MyMeta => My is null
+        ? string.Empty
+        : $"今日 {My.TodayRoundCount} 钟 · 排队号 {(My.QueuePosition > 0 ? My.QueuePosition.ToString() : "—")}";
+
+    public string MyCurrentText
+    {
+        get
+        {
+            if (My is null || (string.IsNullOrWhiteSpace(My.CurrentServiceName) && string.IsNullOrWhiteSpace(My.CurrentRoomNo)))
+                return "当前无上钟";
+            var room = string.IsNullOrWhiteSpace(My.CurrentRoomNo) ? "" : $"{My.CurrentRoomNo} 房 ";
+            var cust = string.IsNullOrWhiteSpace(My.CurrentCustomerName) ? "" : $" · 客户 {My.CurrentCustomerName}";
+            return $"当前上钟：{room}{My.CurrentServiceName}{cust}";
+        }
+    }
+
+    // 无必读时返回 null，配合 NullToCollapsed 隐藏整条提醒
+    public string? MyNotesText
+    {
+        get
+        {
+            if (My is null || !My.CurrentCustomerHasNotes) return null;
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(My.CurrentCustomerPreferences)) parts.Add($"偏好：{My.CurrentCustomerPreferences}");
+            if (!string.IsNullOrWhiteSpace(My.CurrentCustomerHealth)) parts.Add($"健康：{My.CurrentCustomerHealth}");
+            return parts.Count == 0 ? null : "上钟前必读 — " + string.Join("；", parts);
+        }
+    }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(OnDutyCount))]
     [NotifyPropertyChangedFor(nameof(RestingCount))]
@@ -55,15 +103,38 @@ public partial class QueueViewModel : ObservableObject, IDisposable
         try
         {
             var data = await _api.GetQueueAsync(sid);
-            // 队列里没有的技师补一行"下班"占位，便于把他们设上钟（对齐 BS）
-            var staff = await _api.GetStaffAsync(role: "Technician", pageSize: 200, storeId: sid);
-            var placeholders = staff.Items
-                .Where(t => data.All(q => q.TechnicianId != t.Id))
-                .Select(t => new TechnicianQueueItemDto(
-                    Id: 0, TechnicianId: t.Id, TechnicianName: t.RealName ?? t.Username,
-                    EmployeeNo: t.EmployeeNo, State: "OffDuty",
-                    QueuePosition: 0, TodayRoundCount: 0, EnteredAt: null, LastCalledAt: null));
-            Rows = new ObservableCollection<TechnicianQueueItemDto>(data.Concat(placeholders));
+            if (CanManage)
+            {
+                // 队列里没有的技师补一行"下班"占位，便于把他们设上钟（对齐 BS）；
+                // 查花名册要 ShopStaff 权限，技师没有，技师只看只读队列即可。
+                var staff = await _api.GetStaffAsync(role: "Technician", pageSize: 200, storeId: sid);
+                var placeholders = staff.Items
+                    .Where(t => data.All(q => q.TechnicianId != t.Id))
+                    .Select(t => new TechnicianQueueItemDto(
+                        Id: 0, TechnicianId: t.Id, TechnicianName: t.RealName ?? t.Username,
+                        EmployeeNo: t.EmployeeNo, State: "OffDuty",
+                        QueuePosition: 0, TodayRoundCount: 0, EnteredAt: null, LastCalledAt: null));
+                Rows = new ObservableCollection<TechnicianQueueItemDto>(data.Concat(placeholders));
+            }
+            else
+            {
+                Rows = new ObservableCollection<TechnicianQueueItemDto>(data);
+                My = await _api.GetMyQueueAsync();
+            }
+        }
+        catch (Exception ex) { ErrorReporter.Show(ex); }
+    }
+
+    // 技师自助上钟/休息/下班（/queue/me/state，技师本人即可调用）
+    [RelayCommand]
+    private async Task SetMyStateAsync(string? state)
+    {
+        if (string.IsNullOrEmpty(state)) return;
+        try
+        {
+            await _api.SetMyQueueStateAsync(new SetQueueStateRequest(state));
+            _speech.SayAsync(state switch { "OnDuty" => "已上钟", "Resting" => "已休息", _ => "已下班" });
+            await ReloadAsync();
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
     }

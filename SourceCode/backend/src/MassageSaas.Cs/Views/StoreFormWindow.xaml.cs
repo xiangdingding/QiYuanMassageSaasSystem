@@ -1,29 +1,51 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using MassageSaas.Cs.Services;
 using MassageSaas.Shared.Stores;
 
 namespace MassageSaas.Cs.Views;
 
+/// <summary>
+/// 新建分店 / 编辑门店。字段与逻辑对齐 BS StoresView 的表单弹窗：
+/// 「所属总店」用下拉选总店、仅新建时显示；「状态」开关仅编辑时显示；窗口自己调接口，成功才关、出错只提示保持打开。
+/// </summary>
 public partial class StoreFormWindow : Window
 {
-    public StoreFormWindow(StoreDto? editing)
+    private readonly IApiClient _api;
+    private readonly StoreDto? _editing;
+
+    private record StoreOpt(long? Id, string Name);
+
+    public StoreFormWindow(IApiClient api, StoreDto? editing, IReadOnlyList<StoreDto> headquarters)
     {
         InitializeComponent();
+        _api = api;
+        _editing = editing;
+        ParentBox.ItemsSource = headquarters.Select(s => new StoreOpt(s.Id, s.Name)).ToList();
+
         if (editing is not null)
         {
             Title = $"编辑门店 - {editing.Name}";
             NameBox.Text = editing.Name;
             AddressBox.Text = editing.Address ?? string.Empty;
             PhoneBox.Text = editing.Phone ?? string.Empty;
-            ParentBox.Text = editing.ParentStoreId?.ToString() ?? string.Empty;
-            ParentBox.IsEnabled = false;
             ActiveBox.IsChecked = editing.IsActive;
             CutoffBox.Text = FormatCutoff(editing.DayCloseCutoffMinutes);
+            ParentPanel.Visibility = Visibility.Collapsed;   // 编辑不改上级
+            StatusPanel.Visibility = Visibility.Visible;     // 仅编辑显示状态
+        }
+        else
+        {
+            Title = "新建分店";
+            ParentBox.SelectedValue = headquarters.FirstOrDefault()?.Id;
+            ParentPanel.Visibility = Visibility.Visible;
+            StatusPanel.Visibility = Visibility.Collapsed;   // 新建不显示状态
         }
     }
-
-    private long? ParentId =>
-        long.TryParse(ParentBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : null;
 
     private int Cutoff => ParseCutoff(CutoffBox.Text);
 
@@ -31,7 +53,7 @@ public partial class StoreFormWindow : Window
         Name: NameBox.Text.Trim(),
         Address: string.IsNullOrWhiteSpace(AddressBox.Text) ? null : AddressBox.Text.Trim(),
         Phone: string.IsNullOrWhiteSpace(PhoneBox.Text) ? null : PhoneBox.Text.Trim(),
-        ParentStoreId: ParentId,
+        ParentStoreId: ParentBox.SelectedValue as long?,
         DayCloseCutoffMinutes: Cutoff);
 
     public UpdateStoreRequest BuildUpdateRequest() => new(
@@ -41,18 +63,38 @@ public partial class StoreFormWindow : Window
         IsActive: ActiveBox.IsChecked == true,
         DayCloseCutoffMinutes: Cutoff);
 
-    private void Save_Click(object sender, RoutedEventArgs e)
+    private async void Save_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(NameBox.Text)) { MessageBox.Show("名称必填"); return; }
+        if (string.IsNullOrWhiteSpace(NameBox.Text)) { MessageBox.Show("请输入名称"); return; }
         var cutoff = Cutoff;
         if (cutoff < 0 || cutoff > 1439)
         {
             MessageBox.Show("营业日切日时间格式应为 HH:mm，且在 00:00 ~ 23:59 之间");
             return;
         }
-        DialogResult = true;
-        Close();
+
+        // 窗口自己调接口：成功才关闭；异常只提示、保持窗口打开，输入不丢失
+        var btn = sender as Button;
+        if (btn is not null) btn.IsEnabled = false;
+        try
+        {
+            if (_editing is null)
+                await _api.CreateStoreAsync(BuildCreateRequest());
+            else
+                await _api.UpdateStoreAsync(_editing.Id, BuildUpdateRequest());
+            DialogResult = true;
+            Close();
+        }
+        catch (Exception ex)
+        {
+            ErrorReporter.Show(ex);
+        }
+        finally
+        {
+            if (btn is not null) btn.IsEnabled = true;
+        }
     }
+
     private void Cancel_Click(object sender, RoutedEventArgs e) { DialogResult = false; Close(); }
 
     private static string FormatCutoff(int minutes)

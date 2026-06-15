@@ -15,6 +15,44 @@
         刚叫到：<strong>{{ lastCalled.employeeNo ?? '-' }} 号 · {{ lastCalled.technicianName }}</strong>
       </div>
 
+      <!-- 技师自助：我的班次（无前台管理权限的技师专用） -->
+      <div v-if="!canManage && my" class="my-shift" role="group" aria-label="我的班次">
+        <div class="my-head">
+          <span>我的状态：</span>
+          <el-tag size="large" :type="stateType(my.state)">{{ stateLabel(my.state) }}</el-tag>
+          <span class="my-meta">今日 {{ my.todayRoundCount }} 钟 · 排队号 {{ my.queuePosition || '—' }}</span>
+        </div>
+        <div class="my-actions">
+          <el-button
+            type="primary"
+            :disabled="my.state === 'OnDuty'"
+            aria-label="我要上钟"
+            @click="setMyState('OnDuty')"
+          >上钟</el-button>
+          <el-button
+            type="warning"
+            :disabled="my.state === 'Resting' || my.state === 'OffDuty'"
+            aria-label="我要休息"
+            @click="setMyState('Resting')"
+          >休息</el-button>
+          <el-button
+            class="off-btn"
+            :disabled="my.state === 'OffDuty'"
+            aria-label="我要下班"
+            @click="setMyState('OffDuty')"
+          >下班</el-button>
+        </div>
+        <div v-if="my.currentRoomNo || my.currentServiceName" class="my-current">
+          当前上钟：<strong>{{ my.currentRoomNo ? my.currentRoomNo + ' 房 ' : '' }}{{ my.currentServiceName }}</strong>
+          <span v-if="my.currentCustomerName"> · 客户 {{ my.currentCustomerName }}</span>
+          <div v-if="my.currentCustomerHasNotes" class="my-notes" role="alert">
+            上钟前必读 —
+            <span v-if="my.currentCustomerPreferences">偏好：{{ my.currentCustomerPreferences }}；</span>
+            <span v-if="my.currentCustomerHealth">健康：{{ my.currentCustomerHealth }}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="table-wrap">
       <el-table :data="rows" v-loading="loading" stripe height="100%">
         <el-table-column prop="employeeNo" label="工号" width="80" />
@@ -72,13 +110,14 @@ import { queueApi, staffApi } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
 import { useAuthStore } from '@/stores/auth';
 import { useAnnouncer } from '@/composables/useAnnouncer';
-import type { QueueRow, Staff } from '@/api/types';
+import type { MyQueue, QueueRow, Staff } from '@/api/types';
 
 const appStore = useAppStore();
 const auth = useAuthStore();
 const announcer = useAnnouncer();
 
 const rows = ref<QueueRow[]>([]);
+const my = ref<MyQueue | null>(null);
 const loading = ref(false);
 const lastCalled = ref<{ technicianName: string; employeeNo: number | null } | null>(null);
 
@@ -102,22 +141,28 @@ async function reload() {
   loading.value = true;
   try {
     const data = await queueApi.list(appStore.activeStoreId);
-    // 若后端返回的人少于已知技师人数，前端补一行 OffDuty 占位
-    const staff = await staffApi.list({ role: 'Technician', storeId: appStore.activeStoreId, pageSize: 200 });
-    const placeholders: QueueRow[] = staff.items
-      .filter((t: Staff) => !data.find((q) => q.technicianId === t.id))
-      .map((t: Staff) => ({
-        id: 0,
-        technicianId: t.id,
-        technicianName: t.realName ?? t.username,
-        employeeNo: t.employeeNo ?? null,
-        state: 'OffDuty',
-        queuePosition: 0,
-        todayRoundCount: 0,
-        enteredAt: null,
-        lastCalledAt: null
-      }));
-    rows.value = [...data, ...placeholders];
+    if (canManage.value) {
+      // 仅前台需要补全未上钟技师的占位行（便于把他们设上钟）；
+      // 查花名册要 ShopStaff 权限，技师没有，技师只看只读队列即可。
+      const staff = await staffApi.list({ role: 'Technician', storeId: appStore.activeStoreId, pageSize: 200 });
+      const placeholders: QueueRow[] = staff.items
+        .filter((t: Staff) => !data.find((q) => q.technicianId === t.id))
+        .map((t: Staff) => ({
+          id: 0,
+          technicianId: t.id,
+          technicianName: t.realName ?? t.username,
+          employeeNo: t.employeeNo ?? null,
+          state: 'OffDuty',
+          queuePosition: 0,
+          todayRoundCount: 0,
+          enteredAt: null,
+          lastCalledAt: null
+        }));
+      rows.value = [...data, ...placeholders];
+    } else {
+      rows.value = data;
+      my.value = await queueApi.me();
+    }
   } finally {
     loading.value = false;
   }
@@ -125,6 +170,13 @@ async function reload() {
 
 async function setState(technicianId: number, state: string) {
   await queueApi.setState(technicianId, state);
+  await reload();
+}
+
+// 技师自助上钟/休息/下班
+async function setMyState(state: string) {
+  await queueApi.setMyState(state);
+  announcer.speak(state === 'OnDuty' ? '已上钟' : state === 'Resting' ? '已休息' : '已下班');
   await reload();
 }
 
@@ -181,5 +233,36 @@ onUnmounted(() => {
   border-radius: 4px;
   margin-top: 12px;
   font-size: 16px;
+}
+.my-shift {
+  margin-top: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.my-head { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+.my-head .my-meta { color: #6b7280; font-size: 13px; }
+.my-actions { display: flex; gap: 12px; margin-top: 12px; }
+/* 下班按钮：白底黑字（与 CS 端白色按钮一致） */
+.my-actions .off-btn {
+  background: #fff;
+  color: #1a1a1a;
+  border: 1px solid #dcdfe6;
+}
+.my-actions .off-btn:hover:not(:disabled) {
+  background: #f5f7fa;
+  color: #1a1a1a;
+  border-color: #c0c4cc;
+}
+.my-current { margin-top: 12px; font-size: 14px; }
+.my-notes {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 4px;
+  color: #9a3412;
+  font-size: 13px;
 }
 </style>

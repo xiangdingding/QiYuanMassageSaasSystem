@@ -1,7 +1,9 @@
 <UserControl x:Class="MassageSaas.Cs.Views.QueueView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Border Background="White" CornerRadius="4" Padding="16">
+    <Border Padding="16"
+            Background="White"
+            CornerRadius="4">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -9,27 +11,46 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="False">
-                <TextBlock DockPanel.Dock="Left" Text="技师排队看板" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
-                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
-                    <Border Background="#E6F4EA" CornerRadius="3" Padding="8,3" Margin="0,0,6,0">
-                        <TextBlock Foreground="#2D6A4F" FontSize="13"><Run Text="在岗 " /><Run Text="{Binding OnDutyCount, Mode=OneWay}" /></TextBlock>
+            <DockPanel Grid.Row="0"
+                       Margin="0,0,0,12"
+                       LastChildFill="False">
+                <TextBlock VerticalAlignment="Center"
+                           DockPanel.Dock="Left"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Text="技师排队看板" />
+                <StackPanel Margin="16,0,0,0"
+                            VerticalAlignment="Center"
+                            DockPanel.Dock="Left"
+                            Orientation="Horizontal">
+                    <Border Margin="0,0,6,0"
+                            Padding="8,3"
+                            Background="#E6F4EA"
+                            CornerRadius="3">
+                        <TextBlock FontSize="13" Foreground="#2D6A4F"><Run Text="在岗 " /><Run Text="{Binding OnDutyCount, Mode=OneWay}" /></TextBlock>
                     </Border>
-                    <Border Background="#FEF3C7" CornerRadius="3" Padding="8,3" Margin="0,0,6,0">
-                        <TextBlock Foreground="#92400E" FontSize="13"><Run Text="休息 " /><Run Text="{Binding RestingCount, Mode=OneWay}" /></TextBlock>
+                    <Border Margin="0,0,6,0"
+                            Padding="8,3"
+                            Background="#FEF3C7"
+                            CornerRadius="3">
+                        <TextBlock FontSize="13" Foreground="#92400E"><Run Text="休息 " /><Run Text="{Binding RestingCount, Mode=OneWay}" /></TextBlock>
                     </Border>
-                    <Border Background="#F0F2F5" CornerRadius="3" Padding="8,3">
-                        <TextBlock Foreground="#6B7280" FontSize="13"><Run Text="下班 " /><Run Text="{Binding OffDutyCount, Mode=OneWay}" /></TextBlock>
+                    <Border Padding="8,3"
+                            Background="#F0F2F5"
+                            CornerRadius="3">
+                        <TextBlock FontSize="13" Foreground="#6B7280"><Run Text="下班 " /><Run Text="{Binding OffDutyCount, Mode=OneWay}" /></TextBlock>
                     </Border>
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <Button Padding="16,0" Margin="0,0,8,0"
+                    <Button Margin="0,0,8,0"
+                            Padding="16,0"
                             AutomationProperties.Name="叫下一个技师"
                             Command="{Binding CallNextCommand}"
                             Content="叫号"
                             Style="{StaticResource PrimaryBtn}"
                             Visibility="{Binding CanManage, Converter={StaticResource BoolToVisible}}" />
-                    <Button Padding="16,0" Margin="0,0,8,0"
+                    <Button Margin="0,0,8,0"
+                            Padding="16,0"
                             AutomationProperties.Name="刷新"
                             Command="{Binding ReloadCommand}"
                             Content="刷新"
@@ -43,24 +64,108 @@
                 </StackPanel>
             </DockPanel>
 
-            <Border Grid.Row="1" Background="#ECF5FF" CornerRadius="3" Padding="10" Margin="0,0,0,8"
-                    Visibility="{Binding LastCalled, Converter={StaticResource NullToCollapsed}}">
-                <TextBlock Text="{Binding LastCalled}" FontSize="14" Foreground="#1F5599" FontWeight="SemiBold" />
-            </Border>
+            <StackPanel Grid.Row="1">
+                <!--  技师自助：我的班次  -->
+                <Border Margin="0,0,0,8"
+                        Padding="14"
+                        AutomationProperties.Name="我的班次"
+                        Background="#F8FAFC"
+                        BorderBrush="#E2E8F0"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Visibility="{Binding IsTechnician, Converter={StaticResource BoolToVisible}}">
+                    <StackPanel>
+                        <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center"
+                                       FontSize="15"
+                                       Text="我的状态：" />
+                            <Border Padding="10,3"
+                                    Background="#E6F4EA"
+                                    CornerRadius="3">
+                                <TextBlock FontSize="15"
+                                           FontWeight="SemiBold"
+                                           Foreground="#2D6A4F"
+                                           Text="{Binding MyStateLabel}" />
+                            </Border>
+                            <TextBlock Margin="12,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="13"
+                                       Foreground="#6B7280"
+                                       Text="{Binding MyMeta}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,10,0,0" Orientation="Horizontal">
+                            <Button Margin="0,0,8,0"
+                                    Padding="20,6"
+                                    AutomationProperties.Name="我要上钟"
+                                    Command="{Binding SetMyStateCommand}"
+                                    CommandParameter="OnDuty"
+                                    Content="上钟"
+                                    Style="{StaticResource PrimaryBtn}" />
+                            <Button Margin="0,0,8,0"
+                                    Padding="20,6"
+                                    AutomationProperties.Name="我要休息"
+                                    Background="#e6a23c"
+                                    Command="{Binding SetMyStateCommand}"
+                                    CommandParameter="Resting"
+                                    Content="休息"
+                                    Foreground="White"
+                                    Style="{StaticResource GhostBtn}" />
+                            <Button Padding="20,6"
+                                    AutomationProperties.Name="我要下班"
+                                    Command="{Binding SetMyStateCommand}"
+                                    CommandParameter="OffDuty"
+                                    Content="下班"
+                                    Style="{StaticResource GhostBtn}" />
+                        </StackPanel>
+                        <TextBlock Margin="0,10,0,0"
+                                   FontSize="14"
+                                   Text="{Binding MyCurrentText}"
+                                   TextWrapping="Wrap" />
+                        <Border Margin="0,6,0,0"
+                                Padding="8"
+                                Background="#FFF7ED"
+                                BorderBrush="#FED7AA"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Visibility="{Binding MyNotesText, Converter={StaticResource NullToCollapsed}}">
+                            <TextBlock FontSize="13"
+                                       Foreground="#9A3412"
+                                       Text="{Binding MyNotesText}"
+                                       TextWrapping="Wrap" />
+                        </Border>
+                    </StackPanel>
+                </Border>
+                <!--  叫号广播横幅  -->
+                <Border Margin="0,0,0,8"
+                        Padding="10"
+                        Background="#ECF5FF"
+                        CornerRadius="3"
+                        Visibility="{Binding LastCalled, Converter={StaticResource NullToCollapsed}}">
+                    <TextBlock FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="#1F5599"
+                               Text="{Binding LastCalled}" />
+                </Border>
+            </StackPanel>
 
-            <DataGrid Grid.Row="2" ItemsSource="{Binding Rows}" AutoGenerateColumns="False"
-                      CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="True"
-                      HeadersVisibility="Column" GridLinesVisibility="All"
+            <DataGrid Grid.Row="2"
                       AlternatingRowBackground="#FAFAFA"
-                      AutomationProperties.Name="技师排队列表">
+                      AutoGenerateColumns="False"
+                      AutomationProperties.Name="技师排队列表"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      GridLinesVisibility="All"
+                      HeadersVisibility="Column"
+                      IsReadOnly="True"
+                      ItemsSource="{Binding Rows}">
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow">
                         <Setter Property="AutomationProperties.Name">
                             <Setter.Value>
                                 <MultiBinding StringFormat="工号 {0}，{1}，{2}，今日 {3} 钟，排队号 {4}">
-                                    <Binding Path="EmployeeNo" FallbackValue="无" />
+                                    <Binding FallbackValue="无" Path="EmployeeNo" />
                                     <Binding Path="TechnicianName" />
-                                    <Binding Path="State" Converter="{StaticResource EnumLabel}" />
+                                    <Binding Converter="{StaticResource EnumLabel}" Path="State" />
                                     <Binding Path="TodayRoundCount" />
                                     <Binding Path="QueuePosition" />
                                 </MultiBinding>
@@ -69,28 +174,49 @@
                     </Style>
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="工号" Binding="{Binding EmployeeNo}" Width="60" />
-                    <DataGridTextColumn Header="姓名" Binding="{Binding TechnicianName}" Width="*" MinWidth="120" />
-                    <DataGridTextColumn Header="状态" Binding="{Binding State, Converter={StaticResource EnumLabel}}" Width="80" />
-                    <DataGridTextColumn Header="排队号" Binding="{Binding QueuePosition}" Width="60" />
-                    <DataGridTextColumn Header="今日轮次" Binding="{Binding TodayRoundCount}" Width="80" />
-                    <DataGridTextColumn Header="进入时间" Binding="{Binding EnteredAt, StringFormat='HH:mm'}" Width="80" />
-                    <DataGridTextColumn Header="最近叫号" Binding="{Binding LastCalledAt, StringFormat='HH:mm'}" Width="80" />
-                    <DataGridTemplateColumn Header="操作" Width="320">
+                    <DataGridTextColumn Width="60"
+                                        Binding="{Binding EmployeeNo}"
+                                        Header="工号" />
+                    <DataGridTextColumn Width="*"
+                                        MinWidth="120"
+                                        Binding="{Binding TechnicianName}"
+                                        Header="姓名" />
+                    <DataGridTextColumn Width="80"
+                                        Binding="{Binding State, Converter={StaticResource EnumLabel}}"
+                                        Header="状态" />
+                    <DataGridTextColumn Width="60"
+                                        Binding="{Binding QueuePosition}"
+                                        Header="排队号" />
+                    <DataGridTextColumn Width="80"
+                                        Binding="{Binding TodayRoundCount}"
+                                        Header="今日轮次" />
+                    <DataGridTextColumn Width="80"
+                                        Binding="{Binding EnteredAt, StringFormat='HH:mm'}"
+                                        Header="进入时间" />
+                    <DataGridTextColumn Width="80"
+                                        Binding="{Binding LastCalledAt, StringFormat='HH:mm'}"
+                                        Header="最近叫号" />
+                    <DataGridTemplateColumn Width="320" Header="操作">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
                                     <Button AutomationProperties.Name="上钟"
-                                            Click="OnDuty_Click" Content="上钟" Tag="{Binding}"
+                                            Click="OnDuty_Click"
+                                            Content="上钟"
                                             Style="{StaticResource RowPrimary}"
+                                            Tag="{Binding}"
                                             Visibility="{Binding DataContext.CanManage, RelativeSource={RelativeSource AncestorType=DataGrid}, Converter={StaticResource BoolToVisible}}" />
                                     <Button AutomationProperties.Name="休息"
-                                            Click="Resting_Click" Content="休息" Tag="{Binding}"
+                                            Click="Resting_Click"
+                                            Content="休息"
                                             Style="{StaticResource RowGhost}"
+                                            Tag="{Binding}"
                                             Visibility="{Binding DataContext.CanManage, RelativeSource={RelativeSource AncestorType=DataGrid}, Converter={StaticResource BoolToVisible}}" />
                                     <Button AutomationProperties.Name="下班"
-                                            Click="OffDuty_Click" Content="下班" Tag="{Binding}"
+                                            Click="OffDuty_Click"
+                                            Content="下班"
                                             Style="{StaticResource RowDanger}"
+                                            Tag="{Binding}"
                                             Visibility="{Binding DataContext.CanManage, RelativeSource={RelativeSource AncestorType=DataGrid}, Converter={StaticResource BoolToVisible}}" />
                                 </StackPanel>
                             </DataTemplate>

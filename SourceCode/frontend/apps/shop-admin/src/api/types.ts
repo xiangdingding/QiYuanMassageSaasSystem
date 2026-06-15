@@ -250,6 +250,25 @@ export interface QueueRow {
   lastCalledAt?: string | null;
 }
 
+/** 技师自助"我的班次"：自己的排队状态 + 当前上钟的房间/客户/上钟前必读。 */
+export interface MyQueue {
+  id: number | null;
+  technicianId: number;
+  state: 'Idle' | 'OnDuty' | 'Resting' | 'OffDuty';
+  queuePosition: number;
+  todayRoundCount: number;
+  enteredAt?: string | null;
+  lastCalledAt?: string | null;
+  currentRoomNo?: string | null;
+  currentOrderId?: number | null;
+  currentServiceName?: string | null;
+  currentCustomerName?: string | null;
+  currentCustomerGender?: string | null;
+  currentCustomerPreferences?: string | null;
+  currentCustomerHealth?: string | null;
+  currentCustomerHasNotes: boolean;
+}
+
 export interface CommissionRule {
   id: number;
   serviceId?: number | null;

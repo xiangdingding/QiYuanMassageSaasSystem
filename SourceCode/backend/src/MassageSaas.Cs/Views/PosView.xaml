@@ -145,6 +145,37 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!--  朴素按钮：无背景色（透明）、黑字、圆角描边，悬停浅灰底  -->
+        <Style x:Key="PosPlainButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="Black" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd"
+                                Padding="{TemplateBinding Padding}"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="#D1D5DB"
+                                BorderThickness="1"
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#F3F4F6" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#BBB" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -183,13 +214,13 @@
                             DockPanel.Dock="Right"
                             Visibility="{Binding ServiceFilter, Converter={StaticResource NullToCollapsed}}" />
                     <TextBox x:Name="ServiceFilterBox"
-                             Width="240"
-                             Height="32"
-                             Padding="6,0"
+                             Width="390"
+                             Height="34"
                              HorizontalAlignment="Right"
-                             VerticalContentAlignment="Center"
                              AutomationProperties.HelpText="输入编码或名称，按回车快速加入第一项，按 Esc 清空"
                              AutomationProperties.Name="服务搜索框"
+                             Style="{StaticResource SearchBox}"
+                             Tag="输入编码或名称，按回车快速加入第一项，按 Esc 清空"
                              Text="{Binding ServiceFilter, UpdateSourceTrigger=PropertyChanged}">
                         <TextBox.InputBindings>
                             <KeyBinding Key="Enter" Command="{Binding QuickAddFirstCommand}" />
@@ -476,11 +507,10 @@
                         </Grid.ColumnDefinitions>
                         <TextBox Grid.Column="0"
                                  Height="38"
-                                 Padding="8,0"
-                                 VerticalContentAlignment="Center"
                                  AutomationProperties.HelpText="输入卡号或手机号，回车按人查询名下所有卡"
                                  AutomationProperties.Name="会员卡号或手机号"
                                  FontSize="15"
+                                 Style="{StaticResource SearchBox}"
                                  Text="{Binding MemberKeyword, UpdateSourceTrigger=PropertyChanged}">
                             <TextBox.InputBindings>
                                 <KeyBinding Key="Enter" Command="{Binding LookupMemberCommand}" />
@@ -696,12 +726,12 @@
                                         <Grid VerticalAlignment="Center">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" MinWidth="96" />
-                                                <ColumnDefinition Width="132" />
-                                                <ColumnDefinition Width="84" />
-                                                <ColumnDefinition Width="80" />
-                                                <ColumnDefinition Width="104" />
-                                                <ColumnDefinition Width="86" />
-                                                <ColumnDefinition Width="58" />
+                                                <ColumnDefinition Width="*" MinWidth="132" />
+                                                <ColumnDefinition Width="*" MinWidth="84" />
+                                                <ColumnDefinition Width="*" MinWidth="80" />
+                                                <ColumnDefinition Width="*" MinWidth="104" />
+                                                <ColumnDefinition Width="*" MinWidth="86" />
+                                                <ColumnDefinition Width="*" MinWidth="58" />
                                             </Grid.ColumnDefinitions>
 
                                             <!--  项目（计时房标签 + 名称 + 会员不一致标签）  -->
@@ -776,7 +806,9 @@
                                                       SelectedValuePath="Value"
                                                       Visibility="{Binding IsService, Converter={StaticResource BoolToVisible}}">
                                                 <ComboBox.ItemTemplate>
-                                                    <DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Label}" />
+                                                    </DataTemplate>
                                                 </ComboBox.ItemTemplate>
                                             </ComboBox>
                                             <TextBlock Grid.Column="2"
@@ -796,7 +828,9 @@
                                                       SelectedItem="{Binding Room, Mode=TwoWay}"
                                                       Visibility="{Binding IsService, Converter={StaticResource BoolToVisible}}">
                                                 <ComboBox.ItemTemplate>
-                                                    <DataTemplate><TextBlock Text="{Binding RoomNo}" /></DataTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding RoomNo}" />
+                                                    </DataTemplate>
                                                 </ComboBox.ItemTemplate>
                                             </ComboBox>
                                             <TextBlock Grid.Column="3"
@@ -907,22 +941,23 @@
                                        Foreground="#666"
                                        Text="优惠券" />
                             <TextBox Grid.Column="1"
-                                     Padding="6,0"
-                                     VerticalContentAlignment="Center"
                                      AutomationProperties.HelpText="录入券码后按应用"
                                      AutomationProperties.Name="优惠券券码"
+                                     Style="{StaticResource FieldText}"
                                      Text="{Binding VoucherCode, UpdateSourceTrigger=PropertyChanged}">
                                 <TextBox.InputBindings>
                                     <KeyBinding Key="Enter" Command="{Binding ApplyVoucherCommand}" />
                                 </TextBox.InputBindings>
                             </TextBox>
                             <Button Grid.Column="2"
+                                    Height="34"
                                     Margin="6,0,0,0"
-                                    Padding="10,4"
+                                    Padding="16,0"
                                     AutomationProperties.Name="应用优惠券"
                                     Command="{Binding ApplyVoucherCommand}"
                                     Content="应用"
-                                    IsEnabled="{Binding VoucherApplying, Converter={StaticResource BoolInverse}}" />
+                                    IsEnabled="{Binding VoucherApplying, Converter={StaticResource BoolInverse}}"
+                                    Style="{StaticResource PosPlainButton}" />
                         </Grid>
                         <Grid Margin="0,0,0,6"
                               AutomationProperties.Name="已应用优惠券"

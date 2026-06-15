@@ -3,7 +3,9 @@
     <el-card shadow="never">
       <div class="toolbar">
         <span class="title">总店与分店管理</span>
+        <div class="spacer" />
         <el-button type="primary" @click="openCreate">新建分店</el-button>
+        <el-button :icon="Refresh" @click="reload">刷新</el-button>
       </div>
       <div class="table-wrap">
       <el-table :data="rows" v-loading="loading" stripe height="100%">
@@ -77,6 +79,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
+import { Refresh } from '@element-plus/icons-vue';
 import { storesApi } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
 import type { Store } from '@/api/types';
@@ -201,5 +204,6 @@ onMounted(async () => {
 .page { padding-bottom: 24px; }
 .toolbar { display: flex; gap: 12px; align-items: center; }
 .title { font-weight: 600; font-size: 16px; }
+.spacer { flex: 1; }
 .hint { color: #909399; font-size: 12px; margin-top: 4px; line-height: 1.5; }
 </style>
