@@ -35,6 +35,8 @@ const routes: RouteRecordRaw[] = [
       // 否则与下方守卫的越权回退会形成 / → /pos → / 的重定向死循环（切换账号卡死）。
       { path: '', redirect: () => firstAllowedPath(useAuthStore().role) },
 
+      { path: 'dashboard', component: () => import('@/views/DashboardView.vue'),
+        meta: { title: '数据看板', icon: 'DataAnalysis', menu: true, roles: LEAD } },
       { path: 'pos', component: () => import('@/views/PosView.vue'),
         meta: { title: '收银台', icon: 'Tickets', menu: true, roles: POS } },
       { path: 'appointments', component: () => import('@/views/AppointmentsView.vue'),

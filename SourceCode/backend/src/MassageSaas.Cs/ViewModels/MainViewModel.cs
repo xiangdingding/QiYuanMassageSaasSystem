@@ -180,6 +180,33 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(SubscriptionWarning));
     }
 
+    // 菜单键 -> 全局快捷键提示。F2~F12 走功能键，其余走 Ctrl+字母；数据看板补 F1。
+    // 与 MainWindow.xaml 的 InputBindings 一一对应，改一处务必同步另一处。
+    private static readonly Dictionary<string, string> Shortcuts = new()
+    {
+        ["dashboard"] = "Ctrl+F",
+        ["pos"] = "F2",
+        ["appointments"] = "F3",
+        ["orders"] = "F4",
+        ["rooms"] = "F5",
+        ["members"] = "F6",
+        ["member-types"] = "F7",
+        ["queue"] = "F8",
+        ["reports"] = "F9",
+        ["day-close"] = "F10",
+        ["services"] = "F11",
+        ["vouchers"] = "F12",
+        ["inventory"] = "Ctrl+Q",
+        ["reviews"] = "Ctrl+W",
+        ["complaints"] = "Ctrl+E",
+        ["schedules"] = "Ctrl+R",
+        ["commissions"] = "Ctrl+T",
+        ["payroll"] = "Ctrl+Y",
+        ["staff"] = "Ctrl+U",
+        ["stores"] = "Ctrl+I",
+        ["subscription"] = "Ctrl+P",
+    };
+
     private void BuildNav()
     {
         var items = ShopMenu.VisibleKeys(Session.Role)
@@ -193,8 +220,17 @@ public partial class MainViewModel : ObservableObject
     }
 
     // 菜单可见性由 ShopMenu（跨端单一事实源）决定；这里只负责键 -> 标题 + VM 工厂的映射。
-    private NavItem? CreateNavItem(string key) => key switch
+    private NavItem? CreateNavItem(string key)
     {
+        var item = MapNavItem(key);
+        if (item is not null && Shortcuts.TryGetValue(key, out var sc))
+            item.Shortcut = sc;
+        return item;
+    }
+
+    private NavItem? MapNavItem(string key) => key switch
+    {
+        "dashboard" => new NavItem("数据看板", key, () => _sp.GetRequiredService<DashboardViewModel>()),
         "pos" => new NavItem("收银台", key, () => _sp.GetRequiredService<PosViewModel>()),
         "appointments" => new NavItem("预约管理", key, () => _sp.GetRequiredService<AppointmentsViewModel>()),
         "orders" => new NavItem("订单流水", key, () => _sp.GetRequiredService<OrdersViewModel>()),
@@ -271,6 +307,27 @@ public partial class MainViewModel : ObservableObject
     {
         if (!int.TryParse(indexStr, out var i) || i < 0 || i >= NavItems.Count) return;
         Select(NavItems[i]);
+    }
+
+    /// <summary>按菜单键导航（全局快捷键用）。当前角色无此菜单则静默忽略。</summary>
+    [RelayCommand]
+    private void NavByKey(string? key)
+    {
+        if (string.IsNullOrEmpty(key)) return;
+        var item = NavItems.FirstOrDefault(n => n.Key == key);
+        if (item is not null) Select(item);
+    }
+
+    /// <summary>F1 使用帮助：弹出说明书窗口，按当前显示模式（正常/无障碍）展示对应版本。</summary>
+    [RelayCommand]
+    private void ShowHelp()
+    {
+        _speech.SayAsync("使用帮助");
+        var dlg = new Views.HelpWindow(_api, _sp.GetRequiredService<PreferencesService>())
+        {
+            Owner = App.Current?.MainWindow
+        };
+        dlg.ShowDialog();
     }
 
     [RelayCommand]

@@ -16,6 +16,7 @@ import type {
   MemberPhoneGroup,
   MyQueue,
   PagedResult,
+  PlatformManual,
   PlatformSubscriptionSetting,
   QueueRow,
   Room,
@@ -353,6 +354,11 @@ export const subscriptionsApi = {
   // 平台端维护的"服务订阅"展示配置（说明 + 客服联系方式），本端只读
   platformSetting: () =>
     http().get<PlatformSubscriptionSetting>('/platform-settings/subscription').then((r) => r.data)
+};
+
+// 平台端维护的用户使用说明书（F1 帮助用），本端只读
+export const helpApi = {
+  manual: () => http().get<PlatformManual>('/platform-settings/manual').then((r) => r.data)
 };
 
 export const appointmentsApi = {

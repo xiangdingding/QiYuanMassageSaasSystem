@@ -7,8 +7,10 @@ import type {
   PagedResult,
   Plan,
   PlatformDashboard,
+  PlatformManual,
   PlatformRevenue,
   PlatformSubscriptionSetting,
+  UpdatePlatformManualRequest,
   TenantDetail,
   TenantOverview,
   TenantSummary
@@ -64,5 +66,9 @@ export const platformSettingsApi = {
   getSubscription: () =>
     http().get<PlatformSubscriptionSetting>('/platform-settings/subscription').then((r) => r.data),
   updateSubscription: (body: PlatformSubscriptionSetting) =>
-    http().put<PlatformSubscriptionSetting>('/platform-settings/subscription', body).then((r) => r.data)
+    http().put<PlatformSubscriptionSetting>('/platform-settings/subscription', body).then((r) => r.data),
+  getManual: () =>
+    http().get<PlatformManual>('/platform-settings/manual', { params: { raw: true } }).then((r) => r.data),
+  updateManual: (body: UpdatePlatformManualRequest) =>
+    http().put<PlatformManual>('/platform-settings/manual', body).then((r) => r.data)
 };

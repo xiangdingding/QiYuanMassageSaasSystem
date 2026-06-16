@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Interop;
 using MassageSaas.Cs.Services;
 using MassageSaas.Cs.ViewModels;
@@ -123,6 +124,18 @@ public partial class MainWindow : Window
         // 普通关闭按钮 = 最小化到托盘，不退出
         e.Cancel = true;
         HideToTray();
+    }
+
+    // F10 是系统键（默认激活窗口菜单），KeyBinding 捕获不到，这里手动路由到「日结/交班」。
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        if (key == Key.F10 && Keyboard.Modifiers == ModifierKeys.None
+            && DataContext is MainViewModel vm)
+        {
+            vm.NavByKeyCommand.Execute("day-close");
+            e.Handled = true;
+        }
     }
 
     // ---------- 标题栏窗口按钮 ----------

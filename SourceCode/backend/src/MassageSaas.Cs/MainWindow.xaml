@@ -9,8 +9,10 @@
         MinHeight="600"
         Background="#F5F7FA"
         Closing="Window_Closing"
+        PreviewKeyDown="Window_PreviewKeyDown"
         StateChanged="Window_StateChanged"
         WindowStartupLocation="CenterScreen"
+        WindowState="Maximized"
         WindowStyle="None">
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="40"
@@ -19,54 +21,35 @@
                       ResizeBorderThickness="6"
                       UseAeroCaptionButtons="False" />
     </WindowChrome.WindowChrome>
+    <!--  全局菜单导航快捷键（与 MainViewModel.Shortcuts 一一对应）。
+          F10 是系统键，KeyBinding 收不到，单独在 Window_PreviewKeyDown 里路由。
+          当前角色无某菜单时命令静默忽略。  -->
     <Window.InputBindings>
-        <KeyBinding Key="F2" Command="{Binding FocusMembersCommand}" />
-        <KeyBinding Key="F5" Command="{Binding RefreshCurrentCommand}" />
-        <KeyBinding Key="N"
-                    Command="{Binding NewSaleCommand}"
-                    Modifiers="Control" />
-        <KeyBinding Key="S"
-                    Command="{Binding QuickCheckoutCommand}"
-                    Modifiers="Control" />
-        <KeyBinding Key="Enter"
-                    Command="{Binding QuickCheckoutCommand}"
-                    Modifiers="Control" />
-        <KeyBinding Key="D1"
-                    Command="{Binding NavByIndexCommand}"
-                    CommandParameter="0"
-                    Modifiers="Alt" />
-        <KeyBinding Key="D2"
-                    Command="{Binding NavByIndexCommand}"
-                    CommandParameter="1"
-                    Modifiers="Alt" />
-        <KeyBinding Key="D3"
-                    Command="{Binding NavByIndexCommand}"
-                    CommandParameter="2"
-                    Modifiers="Alt" />
-        <KeyBinding Key="D4"
-                    Command="{Binding NavByIndexCommand}"
-                    CommandParameter="3"
-                    Modifiers="Alt" />
-        <KeyBinding Key="D5"
-                    Command="{Binding NavByIndexCommand}"
-                    CommandParameter="4"
-                    Modifiers="Alt" />
-        <KeyBinding Key="D6"
-                    Command="{Binding NavByIndexCommand}"
-                    CommandParameter="5"
-                    Modifiers="Alt" />
-        <KeyBinding Key="D7"
-                    Command="{Binding NavByIndexCommand}"
-                    CommandParameter="6"
-                    Modifiers="Alt" />
-        <KeyBinding Key="D8"
-                    Command="{Binding NavByIndexCommand}"
-                    CommandParameter="7"
-                    Modifiers="Alt" />
-        <KeyBinding Key="D9"
-                    Command="{Binding NavByIndexCommand}"
-                    CommandParameter="8"
-                    Modifiers="Alt" />
+        <KeyBinding Key="F1" Command="{Binding ShowHelpCommand}" />
+        <KeyBinding Key="F" Modifiers="Control" Command="{Binding NavByKeyCommand}" CommandParameter="dashboard" />
+        <KeyBinding Key="F2" Command="{Binding NavByKeyCommand}" CommandParameter="pos" />
+        <KeyBinding Key="F3" Command="{Binding NavByKeyCommand}" CommandParameter="appointments" />
+        <KeyBinding Key="F4" Command="{Binding NavByKeyCommand}" CommandParameter="orders" />
+        <KeyBinding Key="F5" Command="{Binding NavByKeyCommand}" CommandParameter="rooms" />
+        <KeyBinding Key="F6" Command="{Binding NavByKeyCommand}" CommandParameter="members" />
+        <KeyBinding Key="F7" Command="{Binding NavByKeyCommand}" CommandParameter="member-types" />
+        <KeyBinding Key="F8" Command="{Binding NavByKeyCommand}" CommandParameter="queue" />
+        <KeyBinding Key="F9" Command="{Binding NavByKeyCommand}" CommandParameter="reports" />
+        <KeyBinding Key="F11" Command="{Binding NavByKeyCommand}" CommandParameter="services" />
+        <KeyBinding Key="F12" Command="{Binding NavByKeyCommand}" CommandParameter="vouchers" />
+        <KeyBinding Key="Q" Modifiers="Control" Command="{Binding NavByKeyCommand}" CommandParameter="inventory" />
+        <KeyBinding Key="W" Modifiers="Control" Command="{Binding NavByKeyCommand}" CommandParameter="reviews" />
+        <KeyBinding Key="E" Modifiers="Control" Command="{Binding NavByKeyCommand}" CommandParameter="complaints" />
+        <KeyBinding Key="R" Modifiers="Control" Command="{Binding NavByKeyCommand}" CommandParameter="schedules" />
+        <KeyBinding Key="T" Modifiers="Control" Command="{Binding NavByKeyCommand}" CommandParameter="commissions" />
+        <KeyBinding Key="Y" Modifiers="Control" Command="{Binding NavByKeyCommand}" CommandParameter="payroll" />
+        <KeyBinding Key="U" Modifiers="Control" Command="{Binding NavByKeyCommand}" CommandParameter="staff" />
+        <KeyBinding Key="I" Modifiers="Control" Command="{Binding NavByKeyCommand}" CommandParameter="stores" />
+        <KeyBinding Key="P" Modifiers="Control" Command="{Binding NavByKeyCommand}" CommandParameter="subscription" />
+        <!--  收银台操作快捷键保留  -->
+        <KeyBinding Key="N" Modifiers="Control" Command="{Binding NewSaleCommand}" />
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding QuickCheckoutCommand}" />
+        <KeyBinding Key="Enter" Modifiers="Control" Command="{Binding QuickCheckoutCommand}" />
     </Window.InputBindings>
     <Window.Resources>
         <ResourceDictionary>
@@ -155,6 +138,44 @@
                         <Setter Property="FontWeight" Value="Medium" />
                     </DataTrigger>
                 </Style.Triggers>
+            </Style>
+
+            <!--  侧栏专用细长滚动条：透明轨道 + 圆角拇指，深色背景上更精致  -->
+            <Style x:Key="SidebarScrollBar" TargetType="ScrollBar">
+                <Setter Property="Width" Value="8" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ScrollBar">
+                            <Grid Width="8" Background="Transparent">
+                                <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Command="ScrollBar.PageUpCommand" Focusable="False" Opacity="0" />
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Command="ScrollBar.PageDownCommand" Focusable="False" Opacity="0" />
+                                    </Track.IncreaseRepeatButton>
+                                    <Track.Thumb>
+                                        <Thumb>
+                                            <Thumb.Template>
+                                                <ControlTemplate TargetType="Thumb">
+                                                    <Border x:Name="th" Width="5" Margin="0,2"
+                                                            Background="#4A5A6E" CornerRadius="3" />
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="th" Property="Background" Value="#7C8FA3" />
+                                                            <Setter TargetName="th" Property="Width" Value="6" />
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Thumb.Template>
+                                        </Thumb>
+                                    </Track.Thumb>
+                                </Track>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
         </ResourceDictionary>
     </Window.Resources>
@@ -246,14 +267,27 @@
                 <ScrollViewer Grid.Row="1"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer.Resources>
+                        <Style BasedOn="{StaticResource SidebarScrollBar}" TargetType="ScrollBar" />
+                    </ScrollViewer.Resources>
                     <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding NavItems}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Button AutomationProperties.Name="{Binding Title}"
                                         Command="{Binding DataContext.SelectCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                         CommandParameter="{Binding}"
-                                        Content="{Binding Title}"
-                                        Style="{StaticResource NavButton}" />
+                                        Style="{StaticResource NavButton}">
+                                    <DockPanel LastChildFill="False">
+                                        <TextBlock VerticalAlignment="Center"
+                                                   DockPanel.Dock="Left"
+                                                   Text="{Binding Title}" />
+                                        <TextBlock VerticalAlignment="Center"
+                                                   DockPanel.Dock="Right"
+                                                   FontSize="11"
+                                                   Foreground="#7C8FA3"
+                                                   Text="{Binding Shortcut}" />
+                                    </DockPanel>
+                                </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

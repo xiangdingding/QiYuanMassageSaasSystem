@@ -48,6 +48,9 @@
             <conv:LeaveLabelConverter x:Key="LeaveLabel" />
             <conv:ComplaintLabelConverter x:Key="ComplaintLabel" />
 
+            <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+                <views:DashboardView />
+            </DataTemplate>
             <DataTemplate DataType="{x:Type vmpos:PosViewModel}">
                 <views:PosView />
             </DataTemplate>

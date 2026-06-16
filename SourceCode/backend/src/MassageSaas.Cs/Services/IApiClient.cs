@@ -276,6 +276,9 @@ public interface IApiClient
     [Get("/platform-settings/subscription")]
     Task<PlatformSubscriptionSettingDto> GetPlatformSubscriptionSettingAsync();
 
+    [Get("/platform-settings/manual")]
+    Task<PlatformManualDto> GetPlatformManualAsync();
+
     [Patch("/orders/{orderId}/items/{itemId}/transfer")]
     Task<OrderDto> TransferTechnicianAsync(long orderId, long itemId, [Body] TransferTechnicianRequest req);
 

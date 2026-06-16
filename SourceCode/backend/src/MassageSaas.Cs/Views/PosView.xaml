@@ -176,6 +176,73 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!--  钟数 −/＋ 步进按钮：无边框、悬停浅底、字形居中加粗（外层圆角由容器统一）  -->
+        <Style x:Key="StepperBtn" TargetType="Button">
+            <Setter Property="Background" Value="#F2F5F9" />
+            <Setter Property="Foreground" Value="#374151" />
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="sb" Background="{TemplateBinding Background}">
+                            <TextBlock Text="{TemplateBinding Content}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       FontSize="{TemplateBinding FontSize}" FontWeight="Bold"
+                                       Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="sb" Property="Background" Value="#E2E8F0" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#C0C7D0" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--  细长滚动条：透明轨道 + 圆角拇指，比原生窄、悬停加深，浅色内容区更舒服  -->
+        <Style x:Key="SlimScrollBar" TargetType="ScrollBar">
+            <Setter Property="Width" Value="8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Width="8" Background="Transparent">
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand" Focusable="False" Opacity="0" />
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand" Focusable="False" Opacity="0" />
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border x:Name="th" Width="5" Margin="0,2"
+                                                        Background="#CBD2DB" CornerRadius="3" />
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="th" Property="Background" Value="#A7B0BD" />
+                                                        <Setter TargetName="th" Property="Width" Value="6" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -230,6 +297,9 @@
                 </DockPanel>
 
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer.Resources>
+                        <Style BasedOn="{StaticResource SlimScrollBar}" TargetType="ScrollBar" />
+                    </ScrollViewer.Resources>
                     <ItemsControl ItemsSource="{Binding FilteredServices}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -316,6 +386,9 @@
                         <ScrollViewer MinHeight="220"
                                       MaxHeight="420"
                                       VerticalScrollBarVisibility="Auto">
+                            <ScrollViewer.Resources>
+                                <Style BasedOn="{StaticResource SlimScrollBar}" TargetType="ScrollBar" />
+                            </ScrollViewer.Resources>
                             <ItemsControl ItemsSource="{Binding TimedRoomCards}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
@@ -646,10 +719,10 @@
                             </Style>
                         </Grid.Style>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" MinWidth="96" />
+                            <ColumnDefinition Width="*" MinWidth="92" />
                             <ColumnDefinition Width="132" />
                             <ColumnDefinition Width="84" />
-                            <ColumnDefinition Width="80" />
+                            <ColumnDefinition Width="120" />
                             <ColumnDefinition Width="104" />
                             <ColumnDefinition Width="86" />
                             <ColumnDefinition Width="58" />
@@ -717,6 +790,9 @@
                     </TextBlock>
 
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <ScrollViewer.Resources>
+                            <Style BasedOn="{StaticResource SlimScrollBar}" TargetType="ScrollBar" />
+                        </ScrollViewer.Resources>
                         <ItemsControl ItemsSource="{Binding Cart}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -725,13 +801,13 @@
                                             BorderThickness="0,0,0,1">
                                         <Grid VerticalAlignment="Center">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" MinWidth="96" />
-                                                <ColumnDefinition Width="*" MinWidth="132" />
-                                                <ColumnDefinition Width="*" MinWidth="84" />
-                                                <ColumnDefinition Width="*" MinWidth="80" />
-                                                <ColumnDefinition Width="*" MinWidth="104" />
-                                                <ColumnDefinition Width="*" MinWidth="86" />
-                                                <ColumnDefinition Width="*" MinWidth="58" />
+                                                <ColumnDefinition Width="*" MinWidth="92" />
+                                                <ColumnDefinition Width="132" />
+                                                <ColumnDefinition Width="84" />
+                                                <ColumnDefinition Width="120" />
+                                                <ColumnDefinition Width="104" />
+                                                <ColumnDefinition Width="86" />
+                                                <ColumnDefinition Width="58" />
                                             </Grid.ColumnDefinitions>
 
                                             <!--  项目（计时房标签 + 名称 + 会员不一致标签）  -->
@@ -770,9 +846,8 @@
 
                                             <!--  技师  -->
                                             <ComboBox Grid.Column="1"
-                                                      Height="34"
                                                       Margin="6,0,0,0"
-                                                      VerticalContentAlignment="Center"
+                                                      Style="{StaticResource FilterCombo}"
                                                       AutomationProperties.Name="选择技师"
                                                       ItemsSource="{Binding DataContext.Technicians, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                       SelectedItem="{Binding Technician, Mode=TwoWay}"
@@ -796,9 +871,8 @@
 
                                             <!--  排钟（上钟方式）  -->
                                             <ComboBox Grid.Column="2"
-                                                      Height="34"
                                                       Margin="6,0,0,0"
-                                                      VerticalContentAlignment="Center"
+                                                      Style="{StaticResource FilterCombo}"
                                                       AutomationProperties.HelpText="选择轮钟或点钟"
                                                       AutomationProperties.Name="上钟方式"
                                                       ItemsSource="{Binding Source={x:Static vmpos:CartItemViewModel.AssignmentOptions}}"
@@ -820,9 +894,8 @@
 
                                             <!--  房间  -->
                                             <ComboBox Grid.Column="3"
-                                                      Height="34"
                                                       Margin="6,0,0,0"
-                                                      VerticalContentAlignment="Center"
+                                                      Style="{StaticResource FilterCombo}"
                                                       AutomationProperties.Name="选择房间"
                                                       ItemsSource="{Binding DataContext.RoomOptions, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                       SelectedItem="{Binding Room, Mode=TwoWay}"
@@ -841,45 +914,47 @@
                                                        Visibility="{Binding IsRoomCharge, Converter={StaticResource BoolToVisible}}" />
 
                                             <!--  钟数：服务项用 −/＋ 步进；计时房展示时长  -->
-                                            <Grid Grid.Column="4"
-                                                  Height="34"
-                                                  Margin="6,0,0,0"
-                                                  Visibility="{Binding IsService, Converter={StaticResource BoolToVisible}}">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="34" />
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="34" />
-                                                </Grid.ColumnDefinitions>
-                                                <Button Grid.Column="0"
-                                                        AutomationProperties.Name="减少数量"
-                                                        Background="#EEF1F5"
-                                                        BorderBrush="#CBD5E0"
-                                                        BorderThickness="1"
-                                                        Command="{Binding DecrementCommand}"
-                                                        Content="−"
-                                                        Cursor="Hand"
-                                                        FontSize="18" />
-                                                <Border Grid.Column="1"
-                                                        Background="White"
-                                                        BorderBrush="#CBD5E0"
-                                                        BorderThickness="0,1,0,1">
-                                                    <TextBlock HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center"
-                                                               AutomationProperties.Name="数量"
-                                                               FontSize="15"
-                                                               FontWeight="SemiBold"
-                                                               Text="{Binding Quantity}" />
+                                            <Border Grid.Column="4"
+                                                    Height="34"
+                                                    Margin="6,0,0,0"
+                                                    HorizontalAlignment="Center"
+                                                    Width="104"
+                                                    Background="White"
+                                                    BorderBrush="#CBD5E0"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    SnapsToDevicePixels="True"
+                                                    Visibility="{Binding IsService, Converter={StaticResource BoolToVisible}}">
+                                                <Border CornerRadius="6" ClipToBounds="True">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="32" />
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="32" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <Button Grid.Column="0"
+                                                                Style="{StaticResource StepperBtn}"
+                                                                AutomationProperties.Name="减少数量"
+                                                                Command="{Binding DecrementCommand}"
+                                                                Content="−" />
+                                                        <Border Grid.Column="1"
+                                                                BorderBrush="#E2E8F0"
+                                                                BorderThickness="1,0">
+                                                            <TextBlock HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center"
+                                                                       AutomationProperties.Name="数量"
+                                                                       FontSize="15"
+                                                                       FontWeight="SemiBold"
+                                                                       Text="{Binding Quantity}" />
+                                                        </Border>
+                                                        <Button Grid.Column="2"
+                                                                Style="{StaticResource StepperBtn}"
+                                                                AutomationProperties.Name="增加数量"
+                                                                Command="{Binding IncrementCommand}"
+                                                                Content="＋" />
+                                                    </Grid>
                                                 </Border>
-                                                <Button Grid.Column="2"
-                                                        AutomationProperties.Name="增加数量"
-                                                        Background="#EEF1F5"
-                                                        BorderBrush="#CBD5E0"
-                                                        BorderThickness="1"
-                                                        Command="{Binding IncrementCommand}"
-                                                        Content="＋"
-                                                        Cursor="Hand"
-                                                        FontSize="16" />
-                                            </Grid>
+                                            </Border>
                                             <TextBlock Grid.Column="4"
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"

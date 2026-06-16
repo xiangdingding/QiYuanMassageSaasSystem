@@ -156,3 +156,18 @@ export interface PlatformSubscriptionSetting {
   contactPhone?: string | null;
   contactWechat?: string | null;
 }
+
+/** 平台级用户使用说明书：CS / BS × 正常 / 无障碍 共四份。平台端维护，各端 F1 帮助只读展示。 */
+export interface PlatformManual {
+  csManualNormal: string;
+  csManualA11y: string;
+  bsManualNormal: string;
+  bsManualA11y: string;
+}
+
+export interface UpdatePlatformManualRequest {
+  csManualNormal?: string | null;
+  csManualA11y?: string | null;
+  bsManualNormal?: string | null;
+  bsManualA11y?: string | null;
+}

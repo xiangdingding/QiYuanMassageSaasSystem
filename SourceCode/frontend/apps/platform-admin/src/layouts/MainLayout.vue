@@ -28,7 +28,7 @@
         </el-menu-item>
         <el-menu-item index="/settings">
           <el-icon><Setting /></el-icon>
-          <span>订阅与客服配置</span>
+          <span>订阅与手册配置</span>
         </el-menu-item>
       </el-menu>
     </el-aside>

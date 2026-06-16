@@ -1394,6 +1394,12 @@ namespace MassageSaas.Infrastructure.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<string>("BsManualA11y")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("BsManualNormal")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("ContactPhone")
                         .HasColumnType("longtext");
 
@@ -1402,6 +1408,12 @@ namespace MassageSaas.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CsManualA11y")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("CsManualNormal")
+                        .HasColumnType("longtext");
 
                     b.Property<string>("ExpiryNotice")
                         .HasColumnType("longtext");

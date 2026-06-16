@@ -60,7 +60,8 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="profile">个人设置</el-dropdown-item>
+                <el-dropdown-item command="help" aria-label="打开使用帮助，快捷键 F1">使用帮助（F1）</el-dropdown-item>
+              <el-dropdown-item command="profile">个人设置</el-dropdown-item>
                 <el-dropdown-item command="toggleA11y" :aria-label="prefs.isA11y ? '关闭无障碍模式，回到正常显示' : '切换到无障碍模式（字号放大、焦点加粗、读屏优化）'">
                   {{ prefs.isA11y ? '关闭无障碍模式' : '开启无障碍模式' }}
                 </el-dropdown-item>
@@ -79,11 +80,23 @@
       </el-main>
     </el-container>
     <ProfileDialog v-model="profileVisible" />
+
+    <el-drawer
+      v-model="helpVisible"
+      title="使用帮助"
+      size="46%"
+      :append-to-body="true"
+    >
+      <div class="help-toolbar">
+        <el-checkbox v-model="helpA11y" aria-label="切换无障碍版本说明书">无障碍版本</el-checkbox>
+      </div>
+      <pre class="manual-text" :class="{ a11y: helpA11y }" tabindex="0" aria-label="使用说明书内容">{{ helpText }}</pre>
+    </el-drawer>
   </el-container>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   AlarmClock,
@@ -91,6 +104,7 @@ import {
   Box,
   Calendar,
   CreditCard,
+  DataAnalysis,
   Discount,
   Goods,
   House,
@@ -110,11 +124,33 @@ import {
 import { canSee, useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
 import { usePrefsStore } from '@/stores/prefs';
-import { subscriptionsApi } from '@/api/modules';
-import type { UserRole } from '@/api/types';
+import { helpApi, subscriptionsApi } from '@/api/modules';
+import type { PlatformManual, UserRole } from '@/api/types';
 import ProfileDialog from '@/views/components/ProfileDialog.vue';
 
 const profileVisible = ref(false);
+
+// F1 使用帮助：按当前显示模式默认展示 BS 端「正常/无障碍」版说明书，可勾选切换。
+const helpVisible = ref(false);
+const helpA11y = ref(false);
+const manual = ref<PlatformManual | null>(null);
+const helpText = computed(() => {
+  if (!manual.value) return '加载中…';
+  return helpA11y.value ? manual.value.bsManualA11y : manual.value.bsManualNormal;
+});
+async function openHelp() {
+  helpA11y.value = prefs.isA11y;
+  if (!manual.value) {
+    try { manual.value = await helpApi.manual(); } catch { /* 加载失败时抽屉仍可开 */ }
+  }
+  helpVisible.value = true;
+}
+function onGlobalKeydown(e: KeyboardEvent) {
+  if (e.key === 'F1') {
+    e.preventDefault();
+    openHelp();
+  }
+}
 
 const route = useRoute();
 const router = useRouter();
@@ -138,7 +174,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 const roleLabel = computed(() => (auth.user?.role ? ROLE_LABELS[auth.user.role] : ''));
 
 const ICONS: Record<string, any> = {
-  AlarmClock, Avatar, Box, Calendar, CreditCard, Discount, Goods, House,
+  AlarmClock, Avatar, Box, Calendar, CreditCard, DataAnalysis, Discount, Goods, House,
   List, Money, OfficeBuilding, Postcard, StarFilled, TakeawayBox, Tickets, TrendCharts,
   User, UserFilled, Wallet, WarnTriangleFilled
 };
@@ -179,12 +215,15 @@ function onCommand(cmd: string) {
     router.replace('/login');
   } else if (cmd === 'profile') {
     profileVisible.value = true;
+  } else if (cmd === 'help') {
+    openHelp();
   } else if (cmd === 'toggleA11y') {
     prefs.toggle();
   }
 }
 
 onMounted(async () => {
+  window.addEventListener('keydown', onGlobalKeydown);
   await appStore.loadStores().catch(() => null);
   if (auth.user?.role === 'ShopOwner' || auth.user?.role === 'StoreManager') {
     try {
@@ -198,6 +237,8 @@ onMounted(async () => {
     }
   }
 });
+
+onUnmounted(() => window.removeEventListener('keydown', onGlobalKeydown));
 </script>
 
 <style scoped>
@@ -321,6 +362,18 @@ onMounted(async () => {
 }
 .user:hover { background: var(--el-color-primary-light-9); }
 .user .el-icon { color: var(--el-color-primary); font-size: 18px; }
+
+.help-toolbar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.manual-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #374151;
+  margin: 0;
+}
+.manual-text.a11y { font-size: 18px; line-height: 1.9; }
 
 .main {
   --el-main-padding: 16px;

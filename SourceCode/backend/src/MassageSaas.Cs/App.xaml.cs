@@ -98,6 +98,7 @@ public partial class App : Application
 
                 services.AddSingleton<MainViewModel>();
                 services.AddTransient<LoginViewModel>();
+                services.AddTransient<DashboardViewModel>();
                 services.AddTransient<PosViewModel>();
                 services.AddTransient<MembersViewModel>();
                 services.AddTransient<MemberTypesViewModel>();

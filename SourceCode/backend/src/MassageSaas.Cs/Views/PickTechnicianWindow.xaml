@@ -86,6 +86,33 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- 钟数 −/＋ 步进按钮：字形用 TextBlock 居中渲染，保证全角 ＋ 完整显示不被裁 -->
+        <Style x:Key="StepperBtn" TargetType="Button">
+            <Setter Property="Background" Value="#F2F5F9" />
+            <Setter Property="Foreground" Value="#374151" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="sb" Background="{TemplateBinding Background}">
+                            <TextBlock Text="{TemplateBinding Content}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       FontSize="18" FontWeight="Bold"
+                                       Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="sb" Property="Background" Value="#E2E8F0" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#C0C7D0" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid Margin="24">
@@ -113,8 +140,9 @@
         <DockPanel Grid.Row="1" Margin="0,0,0,14">
             <TextBlock DockPanel.Dock="Left" Text="技师" Width="84" FontSize="14" Foreground="#666"
                        VerticalAlignment="Center" />
-            <ComboBox x:Name="TechCombo" Height="38" VerticalContentAlignment="Center"
-                      IsEditable="False" SelectionChanged="Tech_SelectionChanged"
+            <ComboBox x:Name="TechCombo"
+                      Style="{StaticResource FilterCombo}"
+                      SelectionChanged="Tech_SelectionChanged"
                       AutomationProperties.Name="选择技师"
                       AutomationProperties.HelpText="必选，选择为本服务上钟的技师">
                 <ComboBox.ItemTemplate>
@@ -155,24 +183,28 @@
         <DockPanel Grid.Row="3" Margin="0,0,0,18">
             <TextBlock DockPanel.Dock="Left" Text="数量" Width="84" FontSize="14" Foreground="#666"
                        VerticalAlignment="Center" />
-            <Grid HorizontalAlignment="Left" Width="140" Height="38">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="38" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="38" />
-                </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Content="−" FontSize="18" Cursor="Hand"
-                        Background="#EEF1F5" BorderBrush="#CBD5E0" BorderThickness="1"
-                        Click="Decrement_Click" AutomationProperties.Name="减少数量" />
-                <Border Grid.Column="1" BorderBrush="#CBD5E0" BorderThickness="0,1,0,1" Background="White">
-                    <TextBlock x:Name="QtyText" Text="1" FontSize="15" FontWeight="SemiBold"
-                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                               AutomationProperties.Name="数量" />
+            <Border HorizontalAlignment="Left" Width="140" Height="38"
+                    Background="White" BorderBrush="#CBD5E0" BorderThickness="1"
+                    CornerRadius="6" SnapsToDevicePixels="True">
+                <Border CornerRadius="6" ClipToBounds="True">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="38" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="38" />
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="−" Style="{StaticResource StepperBtn}"
+                                Click="Decrement_Click" AutomationProperties.Name="减少数量" />
+                        <Border Grid.Column="1" BorderBrush="#E2E8F0" BorderThickness="1,0">
+                            <TextBlock x:Name="QtyText" Text="1" FontSize="15" FontWeight="SemiBold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       AutomationProperties.Name="数量" />
+                        </Border>
+                        <Button Grid.Column="2" Content="＋" Style="{StaticResource StepperBtn}"
+                                Click="Increment_Click" AutomationProperties.Name="增加数量" />
+                    </Grid>
                 </Border>
-                <Button Grid.Column="2" Content="＋" FontSize="16" Cursor="Hand"
-                        Background="#EEF1F5" BorderBrush="#CBD5E0" BorderThickness="1"
-                        Click="Increment_Click" AutomationProperties.Name="增加数量" />
-            </Grid>
+            </Border>
         </DockPanel>
 
         <!-- 底栏 -->
