@@ -47,6 +47,25 @@ python -m http.server 8080
 
 ## 替换占位内容
 
+### 各产品接入 / 下载地址（重要 · 上线前务必替换为真实地址）
+
+每张产品卡片底部有三个链接：**网页端（BS）/ PC 端下载 / 移动端**，
+对应 `index.html` 里各产品的 `<div class="product-access">`。当前均为**占位地址**：
+
+| 产品 | 网页端（BS） | PC 端下载 | 移动端 |
+|---|---|---|---|
+| 齐源按摩 | `https://massage.qiyuan-tech.com` | `…/massage-setup.exe` | `…/massage-app.apk` |
+| 齐源球馆 | `https://stadium.qiyuan-tech.com` | `…/stadium-setup.exe` | `…/stadium-app.apk` |
+| 齐源收银 | `https://pos.qiyuan-tech.com` | `…/pos-setup.exe` | `…/pos-app.apk` |
+| 齐源进销存 | `https://erp.qiyuan-tech.com` | `…/erp-setup.exe` | `…/erp-app.apk` |
+| 齐源送货打印单 | `https://delivery.qiyuan-tech.com` | `…/delivery-setup.exe` | `…/delivery-app.apk` |
+
+（PC / 移动端下载前缀均为 `https://dl.qiyuan-tech.com/`。）把每个 `href` 改成真实地址即可；
+移动端如为微信小程序，可把链接改为引导文案或二维码。
+
+### 其它占位
+
+- 首屏「78W+ 累计服务门店」与各产品「使用门店」数字为宣传占位，按实际数据修改即可。
 - 联系区/页脚的二维码目前为 SVG 占位图标，正式上线时可替换为真实微信二维码图片
   （把图片放到 `assets/`，在 `index.html` 的 `.wechat-qr` 处改为 `<img>` 即可）。
 - 如需补充公司地址、备案号、营业执照等信息，可在页脚 `.footer-bar` 处添加。

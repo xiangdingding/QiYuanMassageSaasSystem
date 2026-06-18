@@ -200,6 +200,28 @@ p { margin: 0; }
 .product-card--cta .btn { margin-top: auto; align-self: flex-start; background: #fff; color: var(--brand); }
 .product-card--cta .btn:hover { transform: translateY(-2px); }
 
+/* ===== 产品接入 / 下载链接 ===== */
+.product-access {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--line);
+}
+.product-access a {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 13px; font-weight: 600; color: var(--brand);
+  background: rgba(14, 122, 107, .08); padding: 7px 13px; border-radius: 999px;
+  transition: .18s ease;
+}
+.product-access a::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .7; }
+.product-access a:hover { background: var(--brand); color: #fff; transform: translateY(-1px); }
+.product-card[data-accent="blue"] .product-access a { color: #1d6fe0; background: rgba(29, 111, 224, .1); }
+.product-card[data-accent="blue"] .product-access a:hover { background: #1d6fe0; color: #fff; }
+.product-card[data-accent="orange"] .product-access a { color: #e0852a; background: rgba(232, 138, 42, .12); }
+.product-card[data-accent="orange"] .product-access a:hover { background: #e0852a; color: #fff; }
+.product-card[data-accent="purple"] .product-access a { color: #7c5cd6; background: rgba(124, 92, 214, .12); }
+.product-card[data-accent="purple"] .product-access a:hover { background: #7c5cd6; color: #fff; }
+.product-card[data-accent="teal"] .product-access a { color: #0ea5a4; background: rgba(14, 165, 164, .12); }
+.product-card[data-accent="teal"] .product-access a:hover { background: #0ea5a4; color: #fff; }
+
 /* ===== 定制开发 ===== */
 .custom-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
 .custom-copy h2 { font-size: clamp(24px, 3vw, 34px); font-weight: 800; margin-bottom: 18px; }
