@@ -1,0 +1,44 @@
+:root {
+  --qy-brand: #0e7a6b;
+  --qy-brand-2: #0ea5a4;
+  --qy-bg: #f5f6f8;
+  --van-primary-color: #0e7a6b;
+}
+
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; margin: 0; }
+body {
+  background: var(--qy-bg);
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+  color: #1f2733;
+  /* 适配刘海屏底部安全区 */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Android 平板 / Android PC / 大屏：把应用约束为居中手机宽列，避免控件拉伸难看 */
+#app {
+  max-width: 640px;
+  margin: 0 auto;
+  background: var(--qy-bg);
+  min-height: 100%;
+  position: relative;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .02);
+}
+
+.qy-page {
+  padding-bottom: calc(50px + env(safe-area-inset-bottom, 0px));
+  min-height: 100%;
+}
+
+.qy-brand-bg {
+  background: linear-gradient(135deg, #0e7a6b, #0ea5a4);
+  color: #fff;
+}
+
+.qy-section-title {
+  font-size: 14px;
+  color: #8a94a6;
+  padding: 14px 16px 8px;
+}
+
+.qy-money { font-variant-numeric: tabular-nums; }
