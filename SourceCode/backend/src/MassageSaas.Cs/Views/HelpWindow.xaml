@@ -1,0 +1,59 @@
+<Window x:Class="MassageSaas.Cs.Views.HelpWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="使用帮助"
+        Width="800"
+        Height="680"
+        Background="White"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock x:Name="HeaderText"
+                       DockPanel.Dock="Left"
+                       VerticalAlignment="Center"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       Foreground="#1F2937"
+                       Text="使用帮助" />
+            <CheckBox x:Name="A11yCheck"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Center"
+                      AutomationProperties.HelpText="勾选后显示面向盲人/低视力用户的无障碍版说明书"
+                      AutomationProperties.Name="切换无障碍版本说明书"
+                      Checked="A11yCheck_Changed"
+                      Content="无障碍版本"
+                      Unchecked="A11yCheck_Changed" />
+        </DockPanel>
+
+        <Border Grid.Row="1"
+                BorderBrush="#EBEEF5"
+                BorderThickness="1"
+                CornerRadius="6">
+            <TextBox x:Name="ManualText"
+                     AutomationProperties.Name="使用说明书内容"
+                     BorderThickness="0"
+                     FontSize="14"
+                     IsReadOnly="True"
+                     Padding="14"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto" />
+        </Border>
+
+        <StackPanel Grid.Row="2"
+                    Margin="0,12,0,0"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal">
+            <Button Padding="24,6"
+                    AutomationProperties.Name="关闭帮助"
+                    Click="Close_Click"
+                    Content="关闭"
+                    IsCancel="True" />
+        </StackPanel>
+    </Grid>
+</Window>

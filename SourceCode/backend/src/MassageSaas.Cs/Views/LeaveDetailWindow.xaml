@@ -1,0 +1,86 @@
+<Window x:Class="MassageSaas.Cs.Views.LeaveDetailWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="请假详情"
+        Height="460" Width="420"
+        MinHeight="420"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResize">
+    <Window.Resources>
+        <Style x:Key="Lbl" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#666" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,12,0" />
+        </Style>
+        <Style x:Key="Val" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#1F2937" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+    </Window.Resources>
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="White" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="6" Padding="16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="84" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource Lbl}" Text="员工" />
+                <TextBlock Grid.Row="0" Grid.Column="1" Margin="0,0,0,10" Style="{StaticResource Val}" Text="{Binding UserName}" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource Lbl}" Text="类型" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,0,0,10" Style="{StaticResource Val}" Text="{Binding TypeLabel}" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource Lbl}" Text="开始" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,0,0,10" Style="{StaticResource Val}" Text="{Binding StartText}" />
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource Lbl}" Text="结束" />
+                <TextBlock Grid.Row="3" Grid.Column="1" Margin="0,0,0,10" Style="{StaticResource Val}" Text="{Binding EndText}" />
+
+                <TextBlock Grid.Row="4" Grid.Column="0" Style="{StaticResource Lbl}" Text="天数" />
+                <TextBlock Grid.Row="4" Grid.Column="1" Margin="0,0,0,10" FontWeight="SemiBold" Foreground="#2D6A4F"
+                           VerticalAlignment="Center" Text="{Binding DaysText}" />
+
+                <TextBlock Grid.Row="5" Grid.Column="0" Style="{StaticResource Lbl}" Text="事由" />
+                <TextBlock Grid.Row="5" Grid.Column="1" Margin="0,0,0,10" Style="{StaticResource Val}" Text="{Binding Reason}" />
+
+                <TextBlock Grid.Row="6" Grid.Column="0" Style="{StaticResource Lbl}" Text="状态" />
+                <TextBlock Grid.Row="6" Grid.Column="1" Margin="0,0,0,10" Style="{StaticResource Val}" Text="{Binding StatusLabel}" />
+
+                <TextBlock Grid.Row="7" Grid.Column="0" Style="{StaticResource Lbl}" Text="登记时间" />
+                <TextBlock Grid.Row="7" Grid.Column="1" Margin="0,0,0,10" Style="{StaticResource Val}" Text="{Binding CreatedAtText}" />
+
+                <TextBlock Grid.Row="8" Grid.Column="0" Style="{StaticResource Lbl}" Text="审批人" />
+                <TextBlock Grid.Row="8" Grid.Column="1" Margin="0,0,0,10" Style="{StaticResource Val}" Text="{Binding ApproverName}" />
+
+                <TextBlock Grid.Row="9" Grid.Column="0" Style="{StaticResource Lbl}" Text="审批时间" />
+                <TextBlock Grid.Row="9" Grid.Column="1" Style="{StaticResource Val}" Text="{Binding ApprovedAtText}" />
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Margin="0,12,0,0" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="0,12,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="关闭" Padding="20,0" AutomationProperties.Name="关闭"
+                        Click="Close_Click" Style="{StaticResource GhostBtn}" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
