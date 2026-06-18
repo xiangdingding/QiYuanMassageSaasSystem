@@ -1421,6 +1421,12 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<string>("PrivacyPolicy")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ServiceAgreement")
+                        .HasColumnType("longtext");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
 

@@ -416,3 +416,9 @@ export interface PlatformManual {
   bsManualNormal: string;
   bsManualA11y: string;
 }
+
+/** 平台级注册协议：《用户服务协议》+《隐私协议》（平台端维护，注册页匿名只读）。 */
+export interface PlatformAgreement {
+  serviceAgreement: string;
+  privacyPolicy: string;
+}

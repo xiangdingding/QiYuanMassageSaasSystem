@@ -30,6 +30,15 @@
             @keyup.enter="submit"
           />
         </el-form-item>
+        <div class="agree-row">
+          <el-checkbox v-model="agreed" aria-label="我已阅读并同意用户服务协议和隐私协议" />
+          <span class="agree-text">
+            我已阅读并同意
+            <a href="javascript:void(0)" @click="showAgreement('service')">《用户服务协议》</a>
+            和
+            <a href="javascript:void(0)" @click="showAgreement('privacy')">《隐私协议》</a>
+          </span>
+        </div>
         <el-button
           type="primary"
           size="large"
@@ -44,6 +53,10 @@
         </div>
       </el-form>
     </el-card>
+
+    <el-dialog v-model="agreementVisible" :title="agreementTitle" width="640px" append-to-body>
+      <pre class="agreement-text">{{ agreementContent }}</pre>
+    </el-dialog>
   </div>
 </template>
 
@@ -51,9 +64,28 @@
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
-import { tenantsApi } from '@/api/modules';
+import { agreementsApi, tenantsApi } from '@/api/modules';
+import type { PlatformAgreement } from '@/api/types';
 
 const router = useRouter();
+
+// 注册协议：勾选同意 + 可点开查看（匿名拉取，登录前可读）
+const agreed = ref(false);
+const agreement = ref<PlatformAgreement | null>(null);
+const agreementVisible = ref(false);
+const agreementTitle = ref('');
+const agreementContent = ref('');
+
+async function showAgreement(which: 'service' | 'privacy') {
+  if (!agreement.value) {
+    try { agreement.value = await agreementsApi.get(); } catch { /* 拉取失败时弹窗仍可开 */ }
+  }
+  agreementTitle.value = which === 'service' ? '用户服务协议' : '隐私协议';
+  agreementContent.value = which === 'service'
+    ? (agreement.value?.serviceAgreement ?? '加载失败，请稍后重试')
+    : (agreement.value?.privacyPolicy ?? '加载失败，请稍后重试');
+  agreementVisible.value = true;
+}
 
 const form = reactive({
   name: '',
@@ -91,6 +123,10 @@ async function submit() {
   if (!formRef.value) return;
   const ok = await formRef.value.validate().catch(() => false);
   if (!ok) return;
+  if (!agreed.value) {
+    ElMessage.warning('请先阅读并勾选同意《用户服务协议》和《隐私协议》');
+    return;
+  }
   loading.value = true;
   try {
     const resp = await tenantsApi.register({
@@ -139,6 +175,29 @@ async function submit() {
   text-align: center;
   color: var(--el-text-color-secondary);
   margin: 4px 0 24px;
+}
+.agree-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 14px;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+}
+.agree-text a {
+  color: var(--el-color-primary);
+  text-decoration: none;
+}
+.agreement-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #374151;
+  margin: 0;
+  max-height: 60vh;
+  overflow-y: auto;
 }
 .footer-link {
   text-align: center;

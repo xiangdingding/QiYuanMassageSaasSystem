@@ -6,10 +6,12 @@ import type {
   OfflineActivateRequest,
   PagedResult,
   Plan,
+  PlatformAgreement,
   PlatformDashboard,
   PlatformManual,
   PlatformRevenue,
   PlatformSubscriptionSetting,
+  UpdatePlatformAgreementRequest,
   UpdatePlatformManualRequest,
   TenantDetail,
   TenantOverview,
@@ -70,5 +72,9 @@ export const platformSettingsApi = {
   getManual: () =>
     http().get<PlatformManual>('/platform-settings/manual', { params: { raw: true } }).then((r) => r.data),
   updateManual: (body: UpdatePlatformManualRequest) =>
-    http().put<PlatformManual>('/platform-settings/manual', body).then((r) => r.data)
+    http().put<PlatformManual>('/platform-settings/manual', body).then((r) => r.data),
+  getAgreements: () =>
+    http().get<PlatformAgreement>('/platform-settings/agreements', { params: { raw: true } }).then((r) => r.data),
+  updateAgreements: (body: UpdatePlatformAgreementRequest) =>
+    http().put<PlatformAgreement>('/platform-settings/agreements', body).then((r) => r.data)
 };

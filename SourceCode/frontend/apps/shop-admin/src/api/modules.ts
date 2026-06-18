@@ -16,6 +16,7 @@ import type {
   MemberPhoneGroup,
   MyQueue,
   PagedResult,
+  PlatformAgreement,
   PlatformManual,
   PlatformSubscriptionSetting,
   QueueRow,
@@ -359,6 +360,11 @@ export const subscriptionsApi = {
 // 平台端维护的用户使用说明书（F1 帮助用），本端只读
 export const helpApi = {
   manual: () => http().get<PlatformManual>('/platform-settings/manual').then((r) => r.data)
+};
+
+// 平台端维护的注册协议（《用户服务协议》《隐私协议》），匿名可读（注册页登录前展示）
+export const agreementsApi = {
+  get: () => http().get<PlatformAgreement>('/platform-settings/agreements').then((r) => r.data)
 };
 
 export const appointmentsApi = {

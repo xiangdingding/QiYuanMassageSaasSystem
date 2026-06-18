@@ -30,7 +30,8 @@
       "Bash(sed -n '465,575p' backend/src/MassageSaas.Api/Controllers/MembersController.cs)",
       "Bash(Select-Object -Last 40)",
       "PowerShell(Stop-Process *)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "PowerShell(& \"D:\\\\Project\\\\QiYuanProject\\\\齐源盲人按摩Saas系统\\\\Documents\\\\操作手册\\\\_gen.ps1\")"
     ]
   }
 }

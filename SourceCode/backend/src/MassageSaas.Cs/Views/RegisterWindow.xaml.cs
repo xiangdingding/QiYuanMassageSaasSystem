@@ -49,6 +49,10 @@ public partial class RegisterWindow : Window
         {
             Fail("两次输入的密码不一致"); return;
         }
+        if (AgreeCheck.IsChecked != true)
+        {
+            Fail("请先阅读并勾选同意《用户服务协议》和《隐私协议》"); return;
+        }
 
         var req = new RegisterTenantRequest(
             Name: name,
@@ -85,6 +89,31 @@ public partial class RegisterWindow : Window
     {
         DialogResult = false;
         Close();
+    }
+
+    // 协议正文懒加载并缓存：匿名端点，注册（登录前）即可读取。
+    private MassageSaas.Shared.Settings.PlatformAgreementDto? _agreements;
+
+    private async Task<MassageSaas.Shared.Settings.PlatformAgreementDto?> EnsureAgreementsAsync()
+    {
+        if (_agreements is not null) return _agreements;
+        try { _agreements = await _api.GetPlatformAgreementsAsync(); }
+        catch (Exception ex) { Fail(ErrorReporter.Parse(ex).Item2); }
+        return _agreements;
+    }
+
+    private async void ServiceAgreement_Click(object sender, RoutedEventArgs e)
+    {
+        var a = await EnsureAgreementsAsync();
+        if (a is not null)
+            new TextViewWindow("用户服务协议", a.ServiceAgreement) { Owner = this }.ShowDialog();
+    }
+
+    private async void PrivacyPolicy_Click(object sender, RoutedEventArgs e)
+    {
+        var a = await EnsureAgreementsAsync();
+        if (a is not null)
+            new TextViewWindow("隐私协议", a.PrivacyPolicy) { Owner = this }.ShowDialog();
     }
 
     private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)

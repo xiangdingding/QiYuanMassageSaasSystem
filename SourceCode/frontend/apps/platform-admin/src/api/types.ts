@@ -171,3 +171,14 @@ export interface UpdatePlatformManualRequest {
   bsManualNormal?: string | null;
   bsManualA11y?: string | null;
 }
+
+/** 平台级注册协议：《用户服务协议》+《隐私协议》。平台端维护，注册页只读展示。 */
+export interface PlatformAgreement {
+  serviceAgreement: string;
+  privacyPolicy: string;
+}
+
+export interface UpdatePlatformAgreementRequest {
+  serviceAgreement?: string | null;
+  privacyPolicy?: string | null;
+}

@@ -59,6 +59,17 @@
 
                     <Border DockPanel.Dock="Bottom" Margin="0,16,0,0">
                         <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <CheckBox x:Name="AgreeCheck" VerticalAlignment="Center"
+                                          AutomationProperties.Name="我已阅读并同意用户服务协议和隐私协议" />
+                                <TextBlock VerticalAlignment="Center" Margin="6,0,0,0" FontSize="13"
+                                           Foreground="#5A6470" TextWrapping="Wrap">
+                                    <Run Text="我已阅读并同意" />
+                                    <Hyperlink Click="ServiceAgreement_Click">《用户服务协议》</Hyperlink>
+                                    <Run Text="和" />
+                                    <Hyperlink Click="PrivacyPolicy_Click">《隐私协议》</Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
                             <TextBlock x:Name="ErrorText" Foreground="#D9534F" FontSize="13"
                                        TextWrapping="Wrap" Margin="0,0,0,12" />
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

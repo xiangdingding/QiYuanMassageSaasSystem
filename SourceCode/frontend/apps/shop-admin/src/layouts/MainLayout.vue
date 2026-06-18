@@ -15,9 +15,10 @@
         active-text-color="#ffffff"
       >
         <template v-for="item in visibleMenu" :key="item.path">
-          <el-menu-item :index="item.path" :aria-label="item.title">
+          <el-menu-item :index="item.path" :aria-label="item.title + shortcutAria(item.path)">
             <el-icon v-if="item.icon"><component :is="iconCmp(item.icon)" /></el-icon>
             <span>{{ item.title }}</span>
+            <span v-if="SHORTCUT_LABELS[item.path]" class="menu-shortcut">{{ SHORTCUT_LABELS[item.path] }}</span>
           </el-menu-item>
         </template>
       </el-menu>
@@ -145,10 +146,66 @@ async function openHelp() {
   }
   helpVisible.value = true;
 }
+// 全局菜单导航快捷键，与 CS 桌面端对齐。单一事实源：路径 -> 快捷键标识；
+// 键盘匹配与菜单提示都由它派生。
+// 注意：浏览器保留了 Ctrl+W(关标签)、Ctrl+T(新标签)、F12(开发者工具)，网页无法拦截，
+// 故这三项在 BS 端改用 Alt 组合（Alt+W / Alt+T / Alt+V），其余与 CS 完全一致。
+const SHORTCUT_LABELS: Record<string, string> = {
+  '/dashboard': 'Ctrl+F',
+  '/pos': 'F2',
+  '/appointments': 'F3',
+  '/orders': 'F4',
+  '/rooms': 'F5',
+  '/members': 'F6',
+  '/member-types': 'F7',
+  '/queue': 'F8',
+  '/reports': 'F9',
+  '/day-close': 'F10',
+  '/services': 'F11',
+  '/vouchers': 'Alt+V',
+  '/inventory': 'Ctrl+Q',
+  '/reviews': 'Alt+W',
+  '/complaints': 'Ctrl+E',
+  '/schedules': 'Ctrl+R',
+  '/commissions': 'Alt+T',
+  '/payroll': 'Ctrl+Y',
+  '/staff': 'Ctrl+U',
+  '/stores': 'Ctrl+I',
+  '/subscription': 'Ctrl+P'
+};
+
+function shortcutAria(path: string): string {
+  return SHORTCUT_LABELS[path] ? `，快捷键 ${SHORTCUT_LABELS[path]}` : '';
+}
+
+// 把按键事件匹配到菜单路径；命中返回路径，否则 null。
+// 字母键用 e.code（KeyW 等）匹配，避免 Alt 组合下 e.key 产生特殊字符导致匹配不到。
+function matchShortcut(e: KeyboardEvent): string | null {
+  for (const [path, label] of Object.entries(SHORTCUT_LABELS)) {
+    if (label.startsWith('Ctrl+')) {
+      const code = 'Key' + label.slice(5).toUpperCase();
+      if (e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && e.code === code) return path;
+    } else if (label.startsWith('Alt+')) {
+      const code = 'Key' + label.slice(4).toUpperCase();
+      if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.code === code) return path;
+    } else if (!e.ctrlKey && !e.altKey && !e.metaKey && e.key === label) {
+      return path;
+    }
+  }
+  return null;
+}
+
 function onGlobalKeydown(e: KeyboardEvent) {
   if (e.key === 'F1') {
     e.preventDefault();
     openHelp();
+    return;
+  }
+  const path = matchShortcut(e);
+  // 仅当当前角色可见该菜单时才拦截浏览器默认行为并跳转；不可见则放行浏览器原生快捷键。
+  if (path && visibleMenu.value.some((m) => m.path === path)) {
+    e.preventDefault();
+    if (route.path !== path) router.push(path);
   }
 }
 
@@ -324,6 +381,13 @@ onUnmounted(() => window.removeEventListener('keydown', onGlobalKeydown));
 .menu :deep(.el-menu-item .el-icon) {
   font-size: 16px;
   margin-right: 10px;
+}
+/* 快捷键标识：推到菜单项右侧，弱化显示 */
+.menu :deep(.el-menu-item .menu-shortcut) {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 11px;
+  color: #7c8fa3;
 }
 /* 自定义滚动条更克制 */
 .menu::-webkit-scrollbar { width: 6px; }
