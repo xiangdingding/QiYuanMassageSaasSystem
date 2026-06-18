@@ -12,6 +12,13 @@ const config: CapacitorConfig = {
   },
   ios: {
     contentInset: 'always'
+  },
+  plugins: {
+    // 原生 HTTP：让 webview 里的 fetch/XHR(含 axios) 走原生网络，
+    // 直连 http://IP:端口 时绕过浏览器 CORS 与明文限制，连局域网后端更稳。
+    CapacitorHttp: {
+      enabled: true
+    }
   }
 };
 

@@ -59,6 +59,17 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddAuth(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 
+// CORS：移动端 App（Capacitor webview，origin 为 http(s)://localhost 或 capacitor://localhost）
+// 与跨机访问的 BS 端都是跨域请求。鉴权走 Authorization: Bearer（不依赖 Cookie），
+// 因此用 AllowAnyOrigin 即可，无需 AllowCredentials。
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy => policy
+        .AllowAnyOrigin()
+        .AllowAnyHeader()
+        .AllowAnyMethod());
+});
+
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "db" });
 
@@ -84,7 +95,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// 开发/局域网联调下不强制跳 https：移动端经 http://IP:5139 直连，
+// 否则会被 307 跳到 https 端口、撞上自签证书错误。生产仍强制 https。
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+app.UseCors();
 
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();

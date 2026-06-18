@@ -65,6 +65,19 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      # Android 9+ 默认禁止明文 HTTP，导致 App 连不上 http://IP:端口 的后端
+      # （浏览器是另一应用、策略不同，所以浏览器能连而 App 不能）。
+      # 这里给 <application> 加 usesCleartextTraffic="true"，允许局域网明文直连。
+      - name: Enable cleartext HTTP (Android)
+        working-directory: ${{ env.MOBILE_DIR }}/android
+        run: |
+          MANIFEST=app/src/main/AndroidManifest.xml
+          if ! grep -q 'usesCleartextTraffic' "$MANIFEST"; then
+            sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST"
+          fi
+          echo "---- AndroidManifest application tag ----"
+          grep -n 'usesCleartextTraffic' "$MANIFEST"
+
       - name: Build APK with Gradle
         working-directory: ${{ env.MOBILE_DIR }}/android
         run: |
