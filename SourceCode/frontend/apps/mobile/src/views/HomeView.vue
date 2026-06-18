@@ -144,6 +144,7 @@ const OWNER_ROLES: UserRole[] = ['ShopOwner'];
 
 // 与 BS 端菜单同源、按角色解析。技师走自助宫格；其余角色按 roles 过滤。
 const allNav: NavItem[] = [
+  { key: 'dashboard', title: '数据看板', icon: 'chart-trending-o', path: '/dashboard', roles: LEAD_ROLES },
   { key: 'pos', title: '收银台', icon: 'cart-o', path: '/pos', roles: POS_ROLES },
   { key: 'appointments', title: '预约', icon: 'calendar-o', path: '/appointments', roles: POS_ROLES },
   { key: 'orders', title: '订单流水', icon: 'orders-o', path: '/orders', roles: POS_ROLES },

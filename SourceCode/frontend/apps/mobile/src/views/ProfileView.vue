@@ -21,6 +21,7 @@
     </van-cell-group>
 
     <van-cell-group inset title="设置">
+      <van-cell title="使用帮助" is-link @click="openHelp" />
       <van-cell title="服务器地址" :value="serverDisplay" is-link @click="openServer" />
       <van-cell title="版本" :value="version" />
     </van-cell-group>
@@ -55,6 +56,20 @@
         <van-field v-model="newPwd" type="password" label="新密码" placeholder="至少 6 位" />
       </van-cell-group>
     </van-dialog>
+
+    <!-- 使用帮助 -->
+    <van-popup v-model:show="showHelp" position="bottom" round :style="{ height: '78%' }">
+      <div class="help">
+        <div class="help-top">
+          <div class="help-title">使用帮助</div>
+          <van-checkbox v-model="helpA11y" shape="square" icon-size="18px">无障碍版本</van-checkbox>
+        </div>
+        <pre class="help-text" :class="{ a11y: helpA11y }">{{ helpText }}</pre>
+        <div class="help-actions">
+          <van-button block @click="showHelp = false">关闭</van-button>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>
 
@@ -63,14 +78,14 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   CellGroup as VanCellGroup, Cell as VanCell, Button as VanButton, Popup as VanPopup,
-  Picker as VanPicker, Dialog as VanDialog, Field as VanField,
+  Picker as VanPicker, Dialog as VanDialog, Field as VanField, Checkbox as VanCheckbox,
   showSuccessToast, showFailToast, showConfirmDialog
 } from 'vant';
-import { authApi } from '@/api/modules';
+import { authApi, helpApi } from '@/api/modules';
 import { useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
 import { getApiBase, setApiBase } from '@/api/config';
-import { ROLE_LABELS } from '@/api/types';
+import { ROLE_LABELS, type PlatformManual } from '@/api/types';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -92,6 +107,22 @@ const serverDisplay = computed(() => getApiBase() || '默认 / 代理');
 const showPwd = ref(false);
 const oldPwd = ref('');
 const newPwd = ref('');
+
+// 使用帮助：展示 BS 端说明书，按是否无障碍切换正常/无障碍版本
+const showHelp = ref(false);
+const helpA11y = ref(false);
+const manual = ref<PlatformManual | null>(null);
+const helpText = computed(() => {
+  if (!manual.value) return '加载中…';
+  return helpA11y.value ? manual.value.bsManualA11y : manual.value.bsManualNormal;
+});
+async function openHelp() {
+  helpA11y.value = !!auth.user?.isBlind;
+  if (!manual.value) {
+    try { manual.value = await helpApi.manual(); } catch { /* 加载失败抽屉仍可开 */ }
+  }
+  showHelp.value = true;
+}
 
 function onPickStore({ selectedValues }: { selectedValues: (number | undefined)[] }) {
   const id = selectedValues[0];
@@ -153,4 +184,13 @@ async function onLogout() {
 .logout { padding: 28px 16px; }
 .server-tip { padding: 16px 16px 4px; font-size: 13px; color: #6b7280; line-height: 1.6; }
 .server-tip code { color: var(--qy-brand); }
+.help { display: flex; flex-direction: column; height: 100%; padding: 18px 0 0; }
+.help-top { display: flex; align-items: center; justify-content: space-between; padding: 0 18px 12px; }
+.help-title { font-size: 17px; font-weight: 700; }
+.help-text {
+  flex: 1; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
+  font-family: inherit; font-size: 14px; line-height: 1.8; color: #374151; margin: 0; padding: 0 18px;
+}
+.help-text.a11y { font-size: 17px; line-height: 2; }
+.help-actions { padding: 14px 16px 24px; }
 </style>

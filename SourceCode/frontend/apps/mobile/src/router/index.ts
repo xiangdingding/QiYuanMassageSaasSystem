@@ -18,12 +18,14 @@ const TECH: UserRole[] = ['Technician'];
 
 const routes: RouteRecordRaw[] = [
   { path: '/login', component: () => import('@/views/LoginView.vue'), meta: { public: true, title: '登录' } },
+  { path: '/register', component: () => import('@/views/RegisterView.vue'), meta: { public: true, title: '注册' } },
   {
     path: '/',
     component: () => import('@/layouts/TabLayout.vue'),
     children: [
       { path: '', redirect: () => firstAllowedPath(useAuthStore().role) },
       { path: 'home', component: () => import('@/views/HomeView.vue'), meta: { title: '首页', roles: ALL } },
+      { path: 'dashboard', component: () => import('@/views/DashboardView.vue'), meta: { title: '数据看板', roles: LEADERSHIP } },
       { path: 'members', component: () => import('@/views/MembersView.vue'), meta: { title: '会员', roles: POS } },
       { path: 'queue', component: () => import('@/views/QueueView.vue'), meta: { title: '技师排队', roles: ALL } },
       { path: 'profile', component: () => import('@/views/ProfileView.vue'), meta: { title: '我的', roles: ALL } },

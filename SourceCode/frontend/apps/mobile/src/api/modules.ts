@@ -16,6 +16,8 @@ import type {
   Order,
   OrderListItem,
   PagedResult,
+  PlatformAgreement,
+  PlatformManual,
   PlatformSubscriptionSetting,
   QueueRow,
   Room,
@@ -48,6 +50,37 @@ export const authApi = {
     http().put<UserProfile>('/auth/profile', body).then((r) => r.data),
   changePassword: (body: { oldPassword: string; newPassword: string }) =>
     http().post('/auth/change-password', body)
+};
+
+// 新店自助注册（匿名）：开通 30 天试用。与 BS RegisterView 同源。
+export interface RegisterTenantRequest {
+  name: string;
+  contactPhone: string;
+  contactName?: string | null;
+  ownerPhone: string;
+  ownerPassword: string;
+  ownerRealName?: string | null;
+}
+export interface RegisterTenantResponse {
+  tenantId: number;
+  tenantName: string;
+  ownerPhone: string;
+  expireAt: string;
+  trialDays: number;
+}
+export const tenantsApi = {
+  register: (req: RegisterTenantRequest) =>
+    http().post<RegisterTenantResponse>('/tenants/register', req).then((r) => r.data)
+};
+
+// 平台端维护的用户使用说明书（帮助），本端只读
+export const helpApi = {
+  manual: () => http().get<PlatformManual>('/platform-settings/manual').then((r) => r.data)
+};
+
+// 平台端维护的注册协议（《用户服务协议》《隐私协议》），匿名可读（注册页登录前展示）
+export const agreementsApi = {
+  get: () => http().get<PlatformAgreement>('/platform-settings/agreements').then((r) => r.data)
 };
 
 export const storesApi = {

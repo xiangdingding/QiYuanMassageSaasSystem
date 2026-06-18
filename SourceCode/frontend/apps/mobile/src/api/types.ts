@@ -232,6 +232,20 @@ export interface PlatformSubscriptionSetting {
   contactWechat?: string | null;
 }
 
+/** 平台级用户使用说明书：CS / BS × 正常 / 无障碍 共四份（平台端维护，本端只读，帮助展示）。 */
+export interface PlatformManual {
+  csManualNormal: string;
+  csManualA11y: string;
+  bsManualNormal: string;
+  bsManualA11y: string;
+}
+
+/** 平台级注册协议：《用户服务协议》+《隐私协议》（平台端维护，注册页匿名只读）。 */
+export interface PlatformAgreement {
+  serviceAgreement: string;
+  privacyPolicy: string;
+}
+
 export interface OrderRoomCharge {
   sessionId: number;
   roomId: number;

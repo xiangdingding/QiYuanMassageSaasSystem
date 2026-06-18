@@ -31,6 +31,7 @@
           <van-button round block type="primary" native-type="submit" :loading="loading">
             登录
           </van-button>
+          <p class="reg-link">没有账号？<a @click="$router.push('/register')">注册开通（免费试用 30 天）</a></p>
         </div>
       </van-form>
 
@@ -146,6 +147,8 @@ function onSaveServer(action: string) {
   padding: 30px 0 0;
 }
 .login-actions { padding: 24px 16px 12px; }
+.reg-link { text-align: center; margin: 16px 0 0; font-size: 13px; color: #98a2b3; }
+.reg-link a { color: var(--qy-brand); }
 .login-foot {
   text-align: center;
   color: #98a2b3;
