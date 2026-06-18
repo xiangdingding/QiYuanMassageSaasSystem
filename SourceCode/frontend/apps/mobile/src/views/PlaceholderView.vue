@@ -18,14 +18,7 @@ import { NavBar as VanNavBar, Empty as VanEmpty, Button as VanButton } from 'van
 
 const route = useRoute();
 const TITLES: Record<string, string> = {
-  pos: '收银台',
-  appointments: '预约管理',
-  orders: '订单流水',
-  rooms: '房间管理',
-  reports: '日报与业绩',
-  reviews: '服务评价',
-  performance: '我的业绩',
-  payroll: '我的工资'
+  pos: '收银台'
 };
 const title = computed(() => TITLES[String(route.params.key)] || '功能');
 </script>

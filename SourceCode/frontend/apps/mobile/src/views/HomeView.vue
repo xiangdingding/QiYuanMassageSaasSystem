@@ -87,9 +87,9 @@ import {
   showSuccessToast
 } from 'vant';
 import { reportsApi, subscriptionsApi, queueApi } from '@/api/modules';
-import { useAuthStore } from '@/stores/auth';
+import { canSee, useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
-import { ROLE_LABELS, type DailyReport, type MyQueue, type SubscriptionStatus } from '@/api/types';
+import { ROLE_LABELS, type DailyReport, type MyQueue, type SubscriptionStatus, type UserRole } from '@/api/types';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -137,24 +137,44 @@ const subWarn = computed(() => {
   return '';
 });
 
-interface NavItem { key: string; title: string; icon: string; path?: string; }
+interface NavItem { key: string; title: string; icon: string; path?: string; roles?: UserRole[]; }
+const POS_ROLES: UserRole[] = ['ShopOwner', 'StoreManager', 'Cashier'];
+const LEAD_ROLES: UserRole[] = ['ShopOwner', 'StoreManager'];
+const OWNER_ROLES: UserRole[] = ['ShopOwner'];
+
+// 与 BS 端菜单同源、按角色解析。技师走自助宫格；其余角色按 roles 过滤。
 const allNav: NavItem[] = [
-  { key: 'members', title: '会员', icon: 'friends-o', path: '/members' },
+  { key: 'pos', title: '收银台', icon: 'cart-o', path: '/pos', roles: POS_ROLES },
+  { key: 'appointments', title: '预约', icon: 'calendar-o', path: '/appointments', roles: POS_ROLES },
+  { key: 'orders', title: '订单流水', icon: 'orders-o', path: '/orders', roles: POS_ROLES },
+  { key: 'rooms', title: '房间', icon: 'home-o', path: '/rooms', roles: POS_ROLES },
+  { key: 'members', title: '会员', icon: 'friends-o', path: '/members', roles: POS_ROLES },
+  { key: 'member-types', title: '会员类型', icon: 'card', path: '/member-types', roles: LEAD_ROLES },
   { key: 'queue', title: '技师排队', icon: 'exchange', path: '/queue' },
-  { key: 'pos', title: '收银台', icon: 'cart-o' },
-  { key: 'appointments', title: '预约', icon: 'calendar-o' },
-  { key: 'orders', title: '订单流水', icon: 'orders-o' },
-  { key: 'rooms', title: '房间', icon: 'home-o' },
-  { key: 'reports', title: '报表', icon: 'bar-chart-o' },
-  { key: 'reviews', title: '服务评价', icon: 'star-o' }
+  { key: 'reports', title: '报表', icon: 'bar-chart-o', path: '/reports', roles: POS_ROLES },
+  { key: 'day-close', title: '日结交班', icon: 'balance-o', path: '/day-close', roles: POS_ROLES },
+  { key: 'vouchers', title: '优惠券', icon: 'coupon-o', path: '/vouchers', roles: POS_ROLES },
+  { key: 'inventory', title: '物耗库存', icon: 'goods-collect-o', path: '/inventory', roles: POS_ROLES },
+  { key: 'reviews', title: '服务评价', icon: 'star-o', path: '/reviews', roles: POS_ROLES },
+  { key: 'complaints', title: '投诉处理', icon: 'warning-o', path: '/complaints', roles: POS_ROLES },
+  { key: 'services', title: '服务项目', icon: 'shopping-cart-o', path: '/services', roles: LEAD_ROLES },
+  { key: 'staff', title: '员工管理', icon: 'manager-o', path: '/staff', roles: LEAD_ROLES },
+  { key: 'schedules', title: '排班请假', icon: 'clock-o', path: '/schedules', roles: LEAD_ROLES },
+  { key: 'commissions', title: '提成规则', icon: 'gold-coin-o', path: '/commissions', roles: LEAD_ROLES },
+  { key: 'payroll', title: '工资结算', icon: 'balance-o', path: '/payroll', roles: LEAD_ROLES },
+  { key: 'stores', title: '门店管理', icon: 'shop-o', path: '/stores', roles: OWNER_ROLES },
+  { key: 'subscription', title: '服务订阅', icon: 'vip-card-o', path: '/subscription', roles: OWNER_ROLES }
 ];
 const techNav: NavItem[] = [
   { key: 'queue', title: '技师排队', icon: 'exchange', path: '/queue' },
-  { key: 'performance', title: '我的业绩', icon: 'gold-coin-o' },
-  { key: 'reviews', title: '我的评价', icon: 'star-o' },
-  { key: 'payroll', title: '我的工资', icon: 'balance-o' }
+  { key: 'performance', title: '我的业绩', icon: 'gold-coin-o', path: '/me/performance' },
+  { key: 'reviews', title: '我的评价', icon: 'star-o', path: '/me/reviews' },
+  { key: 'payroll', title: '我的工资', icon: 'balance-o', path: '/me/payroll' }
 ];
-const navItems = computed(() => (auth.isTechnician ? techNav : allNav));
+const navItems = computed(() => {
+  if (auth.isTechnician) return techNav;
+  return allNav.filter((n) => canSee(n.roles, auth.role));
+});
 
 const storeColumns = computed(() =>
   appStore.stores.map((s) => ({ text: s.name, value: s.id }))
