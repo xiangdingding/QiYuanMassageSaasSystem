@@ -194,6 +194,9 @@ export interface TechnicianQuality {
   technicianId: number; technicianName: string; employeeNo: number | null;
   roundCount: number; complaintCount: number; complaintRate: number;
 }
+export interface ServiceTrendMonth { year: number; month: number; rounds: number; }
+export interface ServiceTrend { serviceId: number; serviceName: string; totalRounds: number; months: ServiceTrendMonth[]; }
+export interface ServicePopularityTrend { months: number; services: ServiceTrend[]; }
 
 /** 技师自助「我的业绩」：/reports/me/performance（技师本人可访问，无需 ShopStaff）。 */
 export interface MyPerformance {
@@ -222,6 +225,8 @@ export const reportsApi = {
     http().get<MemberAnalysis>('/reports/member-analysis', { params: { storeId } }).then((r) => r.data),
   technicianQuality: (storeId: number, from: string, to: string) =>
     http().get<TechnicianQuality[]>('/reports/technician-quality', { params: { storeId, from, to } }).then((r) => r.data),
+  serviceTrend: (storeId: number, months: number) =>
+    http().get<ServicePopularityTrend>('/reports/service-trend', { params: { storeId, months } }).then((r) => r.data),
   myPerformance: () => http().get<MyPerformance>('/reports/me/performance').then((r) => r.data)
 };
 
@@ -382,6 +387,15 @@ export const appointmentsApi = {
     partySize: number;
     remark?: string | null;
   }) => http().post<Appointment>('/appointments', body).then((r) => r.data),
+  update: (id: number, body: {
+    serviceId?: number | null;
+    preferredTechnicianId?: number | null;
+    customerName: string;
+    customerPhone: string;
+    expectedArriveAt: string;
+    partySize: number;
+    remark?: string | null;
+  }) => http().put<Appointment>(`/appointments/${id}`, body).then((r) => r.data),
   confirm: (id: number, remark?: string | null) =>
     http().post<Appointment>(`/appointments/${id}/confirm`, { remark }).then((r) => r.data),
   arrive: (id: number) => http().post<Appointment>(`/appointments/${id}/arrive`).then((r) => r.data),

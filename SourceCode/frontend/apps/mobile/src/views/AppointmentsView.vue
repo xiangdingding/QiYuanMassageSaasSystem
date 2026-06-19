@@ -81,9 +81,10 @@ async function cancel(a: Appointment) {
   catch { /* */ } finally { acting.value = false; }
 }
 
-// ------- 新增预约 -------
+// ------- 新增 / 修改 / 再次预约 -------
 const showAdd = ref(false);
 const submitting = ref(false);
+const editingId = ref<number | null>(null); // 非空 = 修改模式，提交走 update
 const services = ref<ServiceItem[]>([]);
 const technicians = ref<Staff[]>([]);
 const form = ref({
@@ -95,6 +96,7 @@ const form = ref({
   preferredTechnicianId: null as number | null,
   remark: ''
 });
+const formTitle = () => (editingId.value ? '修改预约' : '新增预约');
 
 const showServicePicker = ref(false);
 const showTechPicker = ref(false);
@@ -107,9 +109,7 @@ const techName = () => {
   return t ? (t.realName || t.username) : '不指定';
 };
 
-async function openAdd() {
-  form.value = { customerName: '', customerPhone: '', expectedArriveAt: defaultArrive(), partySize: 1, serviceId: null, preferredTechnicianId: null, remark: '' };
-  showAdd.value = true;
+async function ensureLookups() {
   if (!services.value.length) services.value = await servicesApi.list().catch(() => []);
   if (!technicians.value.length && appStore.activeStoreId) {
     technicians.value = await staffApi.list({ role: 'Technician', storeId: appStore.activeStoreId, pageSize: 200 })
@@ -117,10 +117,54 @@ async function openAdd() {
   }
 }
 
+async function openAdd() {
+  editingId.value = null;
+  form.value = { customerName: '', customerPhone: '', expectedArriveAt: defaultArrive(), partySize: 1, serviceId: null, preferredTechnicianId: null, remark: '' };
+  showAdd.value = true;
+  await ensureLookups();
+}
+
+// 修改未确认（Pending）的预约：信息全数预填，到店时间保留原值
+async function openEdit(a: Appointment) {
+  if (a.status !== 'Pending') { showToast('仅未确认的预约可修改'); return; }
+  editingId.value = a.id;
+  form.value = {
+    customerName: a.customerName,
+    customerPhone: a.customerPhone,
+    expectedArriveAt: toLocalInput(a.expectedArriveAt),
+    partySize: a.partySize || 1,
+    serviceId: a.serviceId ?? null,
+    preferredTechnicianId: a.preferredTechnicianId ?? null,
+    remark: a.remark ?? ''
+  };
+  showAdd.value = true;
+  await ensureLookups();
+}
+
+// 再次预约：基于已取消单，复用顾客信息，到店时间给个默认值由前台再调
+async function openRebook(a: Appointment) {
+  editingId.value = null;
+  form.value = {
+    customerName: a.customerName,
+    customerPhone: a.customerPhone,
+    expectedArriveAt: defaultArrive(),
+    partySize: a.partySize || 1,
+    serviceId: a.serviceId ?? null,
+    preferredTechnicianId: a.preferredTechnicianId ?? null,
+    remark: a.remark ?? ''
+  };
+  showAdd.value = true;
+  await ensureLookups();
+}
+
 function defaultArrive(): string {
   const d = new Date(Date.now() + 60 * 60 * 1000);
   d.setMinutes(0, 0, 0);
-  // 转本地 datetime-local 格式 yyyy-MM-ddTHH:mm
+  return toLocalInput(d.toISOString());
+}
+// ISO 时间 → 本地 datetime-local 格式 yyyy-MM-ddTHH:mm
+function toLocalInput(iso: string): string {
+  const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
@@ -140,20 +184,25 @@ async function submit() {
   if (!form.value.customerPhone.trim()) { showToast('请填写联系电话'); return; }
   if (!form.value.expectedArriveAt) { showToast('请选择到店时间'); return; }
   submitting.value = true;
+  const body = {
+    customerName: form.value.customerName.trim(),
+    customerPhone: form.value.customerPhone.trim(),
+    expectedArriveAt: new Date(form.value.expectedArriveAt).toISOString(),
+    partySize: form.value.partySize,
+    serviceId: form.value.serviceId,
+    preferredTechnicianId: form.value.preferredTechnicianId,
+    remark: form.value.remark.trim() || null
+  };
   try {
-    await appointmentsApi.create({
-      storeId: appStore.activeStoreId,
-      customerName: form.value.customerName.trim(),
-      customerPhone: form.value.customerPhone.trim(),
-      expectedArriveAt: new Date(form.value.expectedArriveAt).toISOString(),
-      partySize: form.value.partySize,
-      serviceId: form.value.serviceId,
-      preferredTechnicianId: form.value.preferredTechnicianId,
-      remark: form.value.remark.trim() || null
-    });
-    showSuccessToast('已登记，待确认');
+    if (editingId.value) {
+      await appointmentsApi.update(editingId.value, body);
+      showSuccessToast('已保存修改');
+    } else {
+      await appointmentsApi.create({ storeId: appStore.activeStoreId, ...body });
+      showSuccessToast('已登记，待确认');
+      tabIndex.value = 0;
+    }
     showAdd.value = false;
-    tabIndex.value = 0;
     await load();
   } catch {
     /* 拦截器已提示 */
@@ -196,8 +245,12 @@ onMounted(async () => {
 
         <div class="ap-actions" v-if="a.status === 'Pending' || a.status === 'Confirmed'">
           <van-button v-if="a.status === 'Pending'" size="small" type="primary" :loading="acting" @click="confirm(a)">确认</van-button>
+          <van-button v-if="a.status === 'Pending'" size="small" plain @click="openEdit(a)">修改</van-button>
           <van-button size="small" type="success" :loading="acting" @click="arrive(a)">到店</van-button>
           <van-button size="small" :loading="acting" @click="cancel(a)">取消</van-button>
+        </div>
+        <div class="ap-actions" v-else-if="a.status === 'Cancelled' || a.status === 'NoShow'">
+          <van-button size="small" plain @click="openRebook(a)">再次预约</van-button>
         </div>
       </div>
     </van-pull-refresh>
@@ -205,7 +258,7 @@ onMounted(async () => {
     <!-- 新增预约 -->
     <van-popup v-model:show="showAdd" position="bottom" round :style="{ maxHeight: '90%' }">
       <div class="add-form">
-        <div class="af-title">新增预约</div>
+        <div class="af-title">{{ formTitle() }}</div>
         <van-form @submit="submit">
           <van-cell-group inset>
             <van-field v-model="form.customerName" label="顾客姓名" placeholder="必填" required />
@@ -223,7 +276,7 @@ onMounted(async () => {
             <van-field v-model="form.remark" label="备注" type="textarea" rows="2" autosize placeholder="选填" />
           </van-cell-group>
           <div class="af-submit">
-            <van-button round block type="primary" native-type="submit" :loading="submitting">登记预约</van-button>
+            <van-button round block type="primary" native-type="submit" :loading="submitting">{{ editingId ? '保存修改' : '登记预约' }}</van-button>
           </div>
         </van-form>
       </div>

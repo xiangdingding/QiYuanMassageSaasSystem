@@ -11,7 +11,8 @@ import {
 import {
   reportsApi,
   type MonthlyReport, type YearlyReport, type ServicePopularity,
-  type CustomerFlowPoint, type MemberAnalysis, type TechnicianQuality
+  type CustomerFlowPoint, type MemberAnalysis, type TechnicianQuality,
+  type ServicePopularityTrend
 } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
 import type { DailyReport, TechnicianPerformance } from '@/api/types';
@@ -30,6 +31,8 @@ const popularity = ref<ServicePopularity[]>([]);
 const flow = ref<CustomerFlowPoint[]>([]);
 const member = ref<MemberAnalysis | null>(null);
 const quality = ref<TechnicianQuality[]>([]);
+const trend = ref<ServicePopularityTrend | null>(null);
+const trendMonths = ref(6);
 
 function fmt(n?: number | null): string {
   return (n ?? 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -65,6 +68,7 @@ async function load() {
       case 5: flow.value = await reportsApi.customerFlow(sid, from, to); break;
       case 6: member.value = await reportsApi.memberAnalysis(sid); break;
       case 7: quality.value = await reportsApi.technicianQuality(sid, from, to); break;
+      case 8: trend.value = await reportsApi.serviceTrend(sid, trendMonths.value); break;
     }
   } catch {
     /* 拦截器已提示 */
@@ -72,6 +76,12 @@ async function load() {
     loading.value = false;
     refreshing.value = false;
   }
+}
+
+function setTrendMonths(m: number) {
+  if (trendMonths.value === m) return;
+  trendMonths.value = m;
+  load();
 }
 
 watch(tabIndex, load);
@@ -93,6 +103,7 @@ onMounted(async () => {
       <van-tab title="客流" />
       <van-tab title="会员" />
       <van-tab title="技师质量" />
+      <van-tab title="服务趋势" />
     </van-tabs>
 
     <van-pull-refresh v-model="refreshing" @refresh="load">
@@ -242,7 +253,7 @@ onMounted(async () => {
       </template>
 
       <!-- 技师质量 -->
-      <template v-else>
+      <template v-else-if="tabIndex === 7">
         <van-empty v-if="quality.length === 0" description="本月暂无质量数据" />
         <div v-for="t in quality" :key="t.technicianId" class="perf-item">
           <div class="pf-mid">
@@ -252,6 +263,30 @@ onMounted(async () => {
           <div class="pf-right">
             <b :class="t.complaintRate > 5 ? 'bad' : 'good'">{{ t.complaintRate }}%</b>
             <span>投诉率</span>
+          </div>
+        </div>
+      </template>
+
+      <!-- 服务趋势 -->
+      <template v-else>
+        <div class="trend-bar">
+          <span
+            v-for="m in [6, 12]" :key="m"
+            class="trend-seg" :class="{ on: trendMonths === m }"
+            @click="setTrendMonths(m)"
+          >近 {{ m }} 个月</span>
+        </div>
+        <van-empty v-if="!trend || trend.services.length === 0" description="暂无服务趋势数据" />
+        <div v-for="s in trend?.services ?? []" :key="s.serviceId" class="trend-item">
+          <div class="ti-head">
+            <span class="ti-name">{{ s.serviceName }}</span>
+            <span class="ti-total">合计 {{ s.totalRounds }} 钟</span>
+          </div>
+          <div class="ti-months">
+            <div v-for="(mo, i) in s.months" :key="i" class="ti-mo">
+              <b>{{ mo.rounds }}</b>
+              <span>{{ mo.year }}-{{ String(mo.month).padStart(2, '0') }}</span>
+            </div>
           </div>
         </div>
       </template>
@@ -284,4 +319,15 @@ onMounted(async () => {
 .pf-right b.good { color: #2d6a4f; }
 .pf-right b.bad { color: #d9534f; }
 .pf-right span { font-size: 12px; color: #98a2b3; }
+.trend-bar { display: flex; gap: 8px; padding: 12px 12px 4px; }
+.trend-seg { padding: 6px 14px; border-radius: 16px; background: #f2f4f7; color: #475467; font-size: 13px; }
+.trend-seg.on { background: var(--qy-brand); color: #fff; }
+.trend-item { background: #fff; margin: 8px 12px; padding: 14px; border-radius: 12px; }
+.ti-head { display: flex; align-items: baseline; justify-content: space-between; }
+.ti-name { font-size: 15px; font-weight: 600; }
+.ti-total { color: var(--qy-brand); font-size: 13px; font-weight: 600; }
+.ti-months { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; }
+.ti-mo { flex: 0 0 auto; min-width: 52px; background: #f5f7f9; border-radius: 8px; padding: 8px 4px; text-align: center; }
+.ti-mo b { display: block; font-size: 15px; color: #16324a; }
+.ti-mo span { font-size: 11px; color: #98a2b3; }
 </style>
