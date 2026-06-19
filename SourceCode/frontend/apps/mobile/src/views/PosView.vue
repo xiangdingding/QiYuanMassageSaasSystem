@@ -70,9 +70,13 @@ const selectedBalance = computed(() =>
 );
 
 function isCardEligible(card: Member): boolean {
-  if (card.memberTypeKind !== 'CountBased') return true;
-  if (card.serviceItemId == null) return false;
-  return cart.some((c) => c.kind === 'service' && c.serviceId === card.serviceItemId);
+  // 次卡按剩余次数核销，余额不参与；只看绑定服务是否命中购物车
+  if (card.memberTypeKind === 'CountBased') {
+    if (card.serviceItemId == null) return false;
+    return cart.some((c) => c.kind === 'service' && c.serviceId === card.serviceItemId);
+  }
+  // 充值卡 / 普通卡按余额结算：余额为 0（或负）则不可用，默认不勾选、不可选
+  return card.balance > 0;
 }
 function toggleCard(id: number, checked: boolean) {
   const idx = selectedCardIds.value.indexOf(id);
@@ -508,6 +512,7 @@ onMounted(async () => {
               <van-tag plain :type="c.memberTypeKind === 'CountBased' ? 'success' : 'warning'">{{ c.memberTypeName || '普通' }}</van-tag>
               <van-tag v-if="!c.isActive" type="default">已关闭</van-tag>
               <van-tag v-else-if="c.memberTypeKind === 'CountBased' && !isCardEligible(c)" type="danger">无匹配项目</van-tag>
+              <van-tag v-else-if="c.memberTypeKind !== 'CountBased' && c.balance <= 0" type="danger">余额为0</van-tag>
             </div>
             <div class="mc-line2">
               余额 ¥{{ fmt(c.balance) }}

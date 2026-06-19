@@ -176,6 +176,9 @@
                   <el-tag v-else-if="c.memberTypeKind === 'CountBased' && !isCardEligible(c)" size="small" type="danger" style="margin-right:6px">
                     无匹配项目
                   </el-tag>
+                  <el-tag v-else-if="c.memberTypeKind !== 'CountBased' && c.balance <= 0" size="small" type="danger" style="margin-right:6px">
+                    余额为0
+                  </el-tag>
                   <span class="card-bal">余额 ¥{{ c.balance.toFixed(2) }}</span>
                   <span v-if="c.memberTypeKind === 'CountBased' && c.remainCount != null" class="muted">
                     · 剩 {{ c.remainCount }} 次
@@ -682,9 +685,13 @@ function toggleCard(id: number, checked: boolean | string | number) {
 /// 次卡只有绑定的服务项目出现在购物车里才能结算；其它卡（充值卡 / 无类型）不受限。
 /// roomCharge 不参与次卡匹配（次卡不可能绑定到虚拟的"计时房费"）
 function isCardEligible(card: Member): boolean {
-  if (card.memberTypeKind !== 'CountBased') return true;
-  if (card.serviceItemId == null) return false;
-  return cart.some((c) => c.kind === 'service' && (c as ServiceCartItem).serviceId === card.serviceItemId);
+  // 次卡（计次）按剩余次数核销，余额不参与；只看是否有绑定服务命中购物车
+  if (card.memberTypeKind === 'CountBased') {
+    if (card.serviceItemId == null) return false;
+    return cart.some((c) => c.kind === 'service' && (c as ServiceCartItem).serviceId === card.serviceItemId);
+  }
+  // 充值卡 / 普通卡按余额结算：余额为 0（或负）则不可用，默认不勾选、不可选
+  return card.balance > 0;
 }
 
 function cardAriaLabel(c: Member): string {
@@ -693,6 +700,8 @@ function cardAriaLabel(c: Member): string {
   if (!c.isActive) parts.push('已关闭');
   else if (c.memberTypeKind === 'CountBased' && !isCardEligible(c))
     parts.push(c.serviceItemName ? `无匹配项目，需添加 ${c.serviceItemName}` : '无绑定服务，不可结算');
+  else if (c.memberTypeKind !== 'CountBased' && c.balance <= 0)
+    parts.push('余额为 0，不可用');
   parts.push(`开卡 ${posCardStart(c)}`);
   parts.push(c.cardExpiresAt
     ? `有效期至 ${fmtDate(c.cardExpiresAt)}${c.cardDaysRemaining != null ? `，还有 ${c.cardDaysRemaining} 天` : ''}`

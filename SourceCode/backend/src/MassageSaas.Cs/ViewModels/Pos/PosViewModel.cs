@@ -236,8 +236,11 @@ public partial class PosViewModel : ObservableObject
         var dropped = false;
         foreach (var card in MemberCards)
         {
-            var eligible = !card.IsCountBased
-                || (card.ServiceItemId is long sid && Cart.Any(c => c.ServiceId == sid));
+            // 次卡按剩余次数核销，余额不参与；只看绑定服务是否命中购物车。
+            // 充值卡 / 普通卡按余额结算：余额为 0（或负）则不可用，默认不勾选、不可选。
+            var eligible = card.IsCountBased
+                ? (card.ServiceItemId is long sid && Cart.Any(c => c.ServiceId == sid))
+                : card.Balance > 0m;
             card.IsEligible = eligible;
             if (!eligible && card.IsSelected)
             {

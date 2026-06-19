@@ -45,7 +45,7 @@ public partial class PosMemberCardViewModel : ObservableObject
     public string RemainText =>
         IsCountBased && Member.RemainCount is int n ? $"· 剩 {n} 次" : string.Empty;
 
-    /// <summary>不可勾选时的原因提示（已关闭 / 次卡无匹配项目）。</summary>
+    /// <summary>不可勾选时的原因提示（已关闭 / 次卡无匹配项目 / 充值卡余额为0）。</summary>
     public string EligibilityHint
     {
         get
@@ -53,6 +53,7 @@ public partial class PosMemberCardViewModel : ObservableObject
             if (!Member.IsActive) return "已关闭";
             if (IsCountBased && !IsEligible)
                 return string.IsNullOrEmpty(Member.ServiceItemName) ? "无绑定服务" : "无匹配项目";
+            if (!IsCountBased && Member.Balance <= 0m) return "余额为0";
             return string.Empty;
         }
     }
