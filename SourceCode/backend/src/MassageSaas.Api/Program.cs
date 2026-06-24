@@ -89,15 +89,20 @@ if (app.Configuration.GetValue("Database:RunMigrationsOnStartup", true))
 
 app.UseSerilogRequestLogging();
 
-if (app.Environment.IsDevelopment())
+// Swagger：开发环境默认开启；生产（IIS）可通过 Swagger:Enabled=true 打开，
+// 方便部署后用浏览器分别验证 http / https 两个地址是否都通。
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue("Swagger:Enabled", false))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// 开发/局域网联调下不强制跳 https：移动端经 http://IP:5139 直连，
-// 否则会被 307 跳到 https 端口、撞上自签证书错误。生产仍强制 https。
-if (!app.Environment.IsDevelopment())
+// IIS 部署下同一站点同时绑定 http 与 https，两种协议都要可访问：
+// shop-admin（B/S 租户端）走 http、移动端 mobile / CS 端走 https。
+// 因此默认【不】强制跳转 https——一旦强制，http 请求会被 307 重定向，shop-admin 即不可用。
+// 局域网联调同理（移动端经 http://IP 直连会撞自签证书）。
+// 如确需全站强制 https，把配置 Https:ForceRedirect 设为 true 即可。
+if (app.Configuration.GetValue("Https:ForceRedirect", false))
 {
     app.UseHttpsRedirection();
 }
