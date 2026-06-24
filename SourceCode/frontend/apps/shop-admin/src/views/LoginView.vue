@@ -41,6 +41,10 @@
           还没有账号？<router-link to="/register">免费注册（30 天试用）</router-link>
         </div>
       </el-form>
+      <p class="trust-note" role="note">
+        <span class="trust-icon" aria-hidden="true">🛡️</span>
+        本系统由阿里云提供数据存储、备份均由阿里巴巴（中国）提供，更值得托付！
+      </p>
     </el-card>
   </div>
 </template>
@@ -136,5 +140,25 @@ async function submit() {
 .footer-link a {
   color: var(--el-color-primary);
   text-decoration: none;
+}
+.trust-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  margin: 20px 0 4px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: #c45508;
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 8px;
+}
+.trust-icon {
+  font-size: 16px;
+  flex-shrink: 0;
 }
 </style>
