@@ -106,7 +106,12 @@ async function submit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+  /* 水疗/按摩主题背景图，渐变作为加载前/兜底底色 */
+  background-color: #2d6a4f;
+  background-image: url('@/assets/login-bg.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   position: relative;
 }
 .a11y-bar {
@@ -124,6 +129,11 @@ async function submit() {
 .login-card {
   width: 380px;
   padding: 16px 8px;
+  border: none;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 18px 48px rgba(15, 51, 36, 0.32);
 }
 .login-card h1 { margin: 0; text-align: center; font-size: 22px; }
 .subtitle {
@@ -149,12 +159,12 @@ async function submit() {
   text-align: center;
   margin: 20px 0 4px;
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.6;
-  color: #c45508;
-  background: #fff7e6;
-  border: 1px solid #ffd591;
+  color: #1b5e3f;
+  background: linear-gradient(135deg, #eaf6ef 0%, #d8f3dc 100%);
+  border: 1px solid #b7e4c7;
   border-radius: 8px;
 }
 .trust-icon {

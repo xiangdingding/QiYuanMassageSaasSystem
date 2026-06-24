@@ -3,7 +3,7 @@
     <el-card class="register-card">
       <h1>注册按摩店账号</h1>
       <p class="subtitle">免费试用 30 天，无需付费即可体验全部功能。试用结束前联系平台续费即可转成正式用户</p>
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="100px" @submit.prevent>
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="110px" @submit.prevent>
         <el-form-item label="店铺名" prop="name">
           <el-input v-model="form.name" placeholder="如：齐源按摩中心" />
         </el-form-item>
@@ -163,17 +163,31 @@ async function submit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+  /* 与登录页一致的水疗/按摩主题背景图，渐变作为加载前/兜底底色 */
+  background-color: #2d6a4f;
+  background-image: url('@/assets/login-bg.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   padding: 24px 0;
 }
 .register-card {
   width: 460px;
   padding: 16px 8px;
+  border: none;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 18px 48px rgba(15, 51, 36, 0.32);
 }
 .register-card h1 {
   margin: 0;
   text-align: center;
   font-size: 22px;
+}
+/* 表单标签不换行（如「登录手机号」） */
+.register-card :deep(.el-form-item__label) {
+  white-space: nowrap;
 }
 .subtitle {
   text-align: center;
@@ -221,12 +235,12 @@ async function submit() {
   text-align: center;
   margin: 20px 0 4px;
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.6;
-  color: #c45508;
-  background: #fff7e6;
-  border: 1px solid #ffd591;
+  color: #1b5e3f;
+  background: linear-gradient(135deg, #eaf6ef 0%, #d8f3dc 100%);
+  border: 1px solid #b7e4c7;
   border-radius: 8px;
 }
 .trust-icon {
