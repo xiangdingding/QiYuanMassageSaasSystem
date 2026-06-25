@@ -1,0 +1,24 @@
+{
+  "name": "website",
+  "private": true,
+  "version": "0.1.0",
+  "description": "齐源按摩 SaaS 系统官网（大气落地页 + 业务咨询）",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "axios": "^1.7.9",
+    "element-plus": "^2.9.1",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vue-tsc": "^2.1.10"
+  }
+}
