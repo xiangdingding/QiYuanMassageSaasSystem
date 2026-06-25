@@ -14,6 +14,10 @@
     <Version>1.0.0</Version>
     <!-- 应用图标（exe 图标 / 任务栏图标），托盘也从中加载 -->
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <Title>齐源按摩门店SaaS系统</Title>
+    <Company />
+    <Authors>天津齐源科技有限公司</Authors>
+    <Product></Product>
   </PropertyGroup>
 
   <ItemGroup>

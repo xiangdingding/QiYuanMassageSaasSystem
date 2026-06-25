@@ -25,6 +25,7 @@
 param(
   [switch]$Full,      # 打完整自包含包（首次部署 / 升级运行时 / 第三方依赖变动时用）
   [switch]$WithSql,   # 同时生成幂等迁移 SQL 到 发布包
+  [string]$SqlFrom = '', # 生产已部署的最后一个迁移名；只生成它之后的增量(只含本次需更新的表)。留空=全量幂等
   [switch]$NoZip
 )
 
@@ -68,8 +69,17 @@ if ($WithSql) {
   Push-Location $apiDir
   try {
     dotnet tool restore | Out-Null
-    dotnet ef migrations script --idempotent `
-      --project ../MassageSaas.Infrastructure --startup-project . -o $sqlOut
+    # 指定 -SqlFrom 时只生成该迁移之后的增量（只含本次需更新的表）；否则全量幂等。
+    # 两种都带 --idempotent（IF NOT EXISTS 守卫），可重复执行。
+    if ($SqlFrom) {
+      Write-Host "    （增量：仅 $SqlFrom 之后的迁移）" -ForegroundColor DarkGray
+      dotnet ef migrations script $SqlFrom --idempotent `
+        --project ../MassageSaas.Infrastructure --startup-project . -o $sqlOut
+    }
+    else {
+      dotnet ef migrations script --idempotent `
+        --project ../MassageSaas.Infrastructure --startup-project . -o $sqlOut
+    }
     if ($LASTEXITCODE -ne 0) { throw "dotnet ef 生成 SQL 失败（exit $LASTEXITCODE）" }
     Write-Host "==> 迁移 SQL：$sqlOut" -ForegroundColor Green
   } finally { Pop-Location }
