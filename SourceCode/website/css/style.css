@@ -173,6 +173,25 @@ p { margin: 0; }
 .product-card[data-accent="teal"] .product-icon svg { stroke: #0ea5a4; }
 .product-card h3 { font-size: 20px; margin-bottom: 10px; }
 .product-card > p { color: var(--muted); font-size: 15px; }
+
+/* ===== 整卡可点击跳转（覆盖式链接） ===== */
+.product-card--link { cursor: pointer; }
+/* 覆盖整卡的透明链接：盖住图标/标题/描述/特性区，点这些区域即跳转 */
+.card-link {
+  position: absolute; inset: 0; z-index: 2;
+  border-radius: inherit; text-decoration: none;
+}
+/* 卡内接入按钮抬到链接之上，保持各自独立可点 */
+.product-card--link .product-access { position: relative; z-index: 3; }
+/* 右上角“进入官网 ↗”提示，默认淡显、悬停高亮；不拦截点击 */
+.card-go {
+  position: absolute; top: 16px; right: 18px; z-index: 3; pointer-events: none;
+  font-size: 12.5px; font-weight: 600; color: var(--brand);
+  background: rgba(14, 122, 107, .1); padding: 4px 10px; border-radius: 999px;
+  opacity: .85; transition: .2s ease;
+}
+.product-card--link:hover .card-go { opacity: 1; transform: translateX(2px); }
+.product-card--link:hover h3 { color: var(--brand); }
 .product-metric {
   display: inline-flex; align-items: baseline; gap: 7px;
   margin: 0 0 12px !important; padding: 5px 13px; border-radius: 999px;
@@ -262,7 +281,7 @@ p { margin: 0; }
 .contact-card {
   background: linear-gradient(135deg, #0e7a6b, #0c5f54 55%, #114b66);
   color: #fff; border-radius: var(--radius-lg); padding: 52px 48px;
-  display: grid; grid-template-columns: 1.3fr .7fr; gap: 40px; align-items: center;
+  display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px; align-items: center;
   box-shadow: var(--shadow); position: relative; overflow: hidden;
 }
 .contact-card::after { content: ""; position: absolute; right: -60px; top: -60px; width: 260px; height: 260px; border-radius: 50%; background: rgba(255,255,255,.08); }
@@ -273,7 +292,30 @@ p { margin: 0; }
 .contact-phone a { font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: .02em; color: #fff; }
 .contact-actions { display: flex; gap: 14px; flex-wrap: wrap; }
 .contact-actions .btn-primary { background: #fff; color: var(--brand); }
-.contact-right { position: relative; z-index: 1; }
+.contact-right { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 18px; }
+
+/* 业务咨询窗口（与齐源按摩 SaaS 子站一致：提交 /api/consultations） */
+.consult-form { background: #fff; border-radius: var(--radius); padding: 24px 22px; color: var(--ink); text-align: left; box-shadow: 0 18px 40px -20px rgba(0,0,0,.4); }
+.consult-form h3 { font-size: 19px; font-weight: 800; color: var(--ink); margin-bottom: 4px; }
+.consult-tip { font-size: 13px; color: var(--ink-soft, #5b6b7a); margin-bottom: 16px; }
+.consult-field { margin-bottom: 14px; }
+.consult-field label { display: block; font-size: 13.5px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+.consult-field .opt { font-weight: 400; color: #93a2b0; }
+.consult-field .req { color: #e2483a; margin-left: 3px; }
+.consult-field input,
+.consult-field textarea {
+  width: 100%; box-sizing: border-box; font: inherit; color: var(--ink);
+  padding: 11px 13px; border: 1px solid var(--line); border-radius: 11px;
+  background: #fbfdfd; transition: border-color .18s, box-shadow .18s; resize: vertical;
+}
+.consult-field input:focus,
+.consult-field textarea:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(14,122,107,.14); background: #fff; }
+.consult-field textarea { min-height: 76px; line-height: 1.6; }
+.btn-block { width: 100%; justify-content: center; }
+.consult-status { margin-top: 12px; font-size: 13.5px; line-height: 1.6; min-height: 1.2em; }
+.consult-status.is-success { color: #0e7a6b; font-weight: 600; }
+.consult-status.is-error { color: #e2483a; font-weight: 600; }
+
 .wechat-card { background: rgba(255, 255, 255, .12); border: 1px solid rgba(255,255,255,.25); border-radius: var(--radius); padding: 24px; text-align: center; }
 .wechat-qr { width: 130px; height: 130px; margin: 0 auto 14px; background: #fff; border-radius: 14px; display: grid; place-items: center; color: var(--brand); }
 .wechat-qr svg { width: 84px; height: 84px; fill: currentColor; }

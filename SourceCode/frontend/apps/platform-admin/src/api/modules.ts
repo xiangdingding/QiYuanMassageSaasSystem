@@ -1,5 +1,6 @@
 import { http } from './http';
 import type {
+  Consultation,
   CreateTenantRequest,
   LoginRequest,
   LoginResponse,
@@ -11,6 +12,7 @@ import type {
   PlatformManual,
   PlatformRevenue,
   PlatformSubscriptionSetting,
+  ProcessConsultationRequest,
   UpdatePlatformAgreementRequest,
   UpdatePlatformManualRequest,
   TenantDetail,
@@ -62,6 +64,22 @@ export const subscriptionsApi = {
     http().post('/subscriptions/activate-offline', req).then((r) => r.data),
   history: (tenantId: number) =>
     http().get(`/subscriptions/history`, { params: { tenantId } }).then((r) => r.data)
+};
+
+export interface ConsultationQuery {
+  page?: number;
+  pageSize?: number;
+  status?: string;
+  keyword?: string;
+}
+
+export const consultationsApi = {
+  list: (q: ConsultationQuery) =>
+    http().get<PagedResult<Consultation>>('/consultations', { params: q }).then((r) => r.data),
+  pendingCount: () =>
+    http().get<{ count: number }>('/consultations/pending-count').then((r) => r.data.count),
+  process: (id: number, body: ProcessConsultationRequest) =>
+    http().put<Consultation>(`/consultations/${id}/process`, body).then((r) => r.data)
 };
 
 export const platformSettingsApi = {

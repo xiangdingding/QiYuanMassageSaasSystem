@@ -108,6 +108,67 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.ToTable("appointments", (string)null);
                 });
 
+            modelBuilder.Entity("MassageSaas.Domain.Entities.BusinessConsultation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ContactName")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<string>("ProcessNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<long?>("ProcessedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Source")
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SubmitIp")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcessedByUserId");
+
+                    b.HasIndex("Status", "CreatedAt");
+
+                    b.ToTable("business_consultations", (string)null);
+                });
+
             modelBuilder.Entity("MassageSaas.Domain.Entities.CommissionRule", b =>
                 {
                     b.Property<long>("Id")
@@ -2539,6 +2600,16 @@ namespace MassageSaas.Infrastructure.Migrations
                     b.Navigation("Store");
 
                     b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("MassageSaas.Domain.Entities.BusinessConsultation", b =>
+                {
+                    b.HasOne("MassageSaas.Domain.Entities.User", "ProcessedByUser")
+                        .WithMany()
+                        .HasForeignKey("ProcessedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ProcessedByUser");
                 });
 
             modelBuilder.Entity("MassageSaas.Domain.Entities.CommissionRule", b =>

@@ -182,3 +182,25 @@ export interface UpdatePlatformAgreementRequest {
   serviceAgreement?: string | null;
   privacyPolicy?: string | null;
 }
+
+/** 官网业务咨询处理状态 */
+export type ConsultationStatus = 'Pending' | 'Processing' | 'Done' | 'Invalid';
+
+/** 官网访客提交的业务咨询（平台端查看与处理） */
+export interface Consultation {
+  id: number;
+  contactName?: string | null;
+  phone: string;
+  content: string;
+  source?: string | null;
+  status: ConsultationStatus;
+  processNote?: string | null;
+  processedByName?: string | null;
+  processedAt?: string | null;
+  createdAt: string;
+}
+
+export interface ProcessConsultationRequest {
+  status: ConsultationStatus;
+  processNote?: string | null;
+}

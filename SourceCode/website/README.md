@@ -63,6 +63,20 @@ python -m http.server 8080
 （PC / 移动端下载前缀均为 `https://dl.qiyuan-tech.com/`。）把每个 `href` 改成真实地址即可；
 移动端如为微信小程序，可把链接改为引导文案或二维码。
 
+### 业务咨询窗口（对接后端 · 与齐源按摩 SaaS 子站同接口）
+
+「联系我们」区右侧的 **业务咨询窗口** 表单，提交后调用与齐源按摩 SaaS 子网站
+（`frontend/apps/website`）**完全相同的后端接口**：`POST /api/consultations`，
+请求体 `{ contactName?, phone, content, source }`。平台端在「业务咨询」菜单查看处理。
+
+- **同域部署**（官网与后端在同一域名、由 Nginx 把 `/api` 反代到后端）：无需改动，默认走相对 `/api/consultations`。
+- **跨域部署**（官网为独立静态站、与后端不同域）：在 `index.html` 的 `<script src="js/main.js">`
+  **之前**插入一行，指定后端地址即可（后端 CORS 已 `AllowAnyOrigin`，支持跨域提交）：
+
+  ```html
+  <script>window.QIYUAN_API_BASE = 'https://你的后端域名/api';</script>
+  ```
+
 ### 其它占位
 
 - 首屏「78W+ 累计服务门店」与各产品「使用门店」数字为宣传占位，按实际数据修改即可。

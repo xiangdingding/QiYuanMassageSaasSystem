@@ -22,6 +22,12 @@
           <el-icon><OfficeBuilding /></el-icon>
           <span>按摩店租户</span>
         </el-menu-item>
+        <el-menu-item index="/consultations">
+          <el-icon><ChatDotRound /></el-icon>
+          <el-badge :value="pendingConsults" :hidden="pendingConsults === 0" :max="99" class="nav-badge">
+            <span>业务咨询</span>
+          </el-badge>
+        </el-menu-item>
         <el-menu-item index="/plans">
           <el-icon><Goods /></el-icon>
           <span>套餐管理</span>
@@ -55,9 +61,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
+  ChatDotRound,
   DataAnalysis,
   Goods,
   OfficeBuilding,
@@ -66,12 +73,23 @@ import {
   UserFilled
 } from '@element-plus/icons-vue';
 import { useAuthStore } from '@/stores/auth';
+import { consultationsApi } from '@/api/modules';
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 
 const pageTitle = computed(() => (route.meta.title as string) ?? '');
+
+// 菜单红点：未处理业务咨询数。进入页面、离开咨询页时刷新。
+const pendingConsults = ref(0);
+async function refreshPending() {
+  pendingConsults.value = await consultationsApi.pendingCount().catch(() => 0);
+}
+onMounted(refreshPending);
+watch(() => route.path, (p, prev) => {
+  if (prev === '/consultations' || p === '/consultations') refreshPending();
+});
 
 function onCommand(cmd: string) {
   if (cmd === 'logout') {
@@ -101,6 +119,10 @@ function onCommand(cmd: string) {
 }
 .menu {
   border-right: none;
+}
+/* 业务咨询菜单的未处理红点：贴在文字右侧 */
+.nav-badge :deep(.el-badge__content) {
+  transform: translate(14px, -6px);
 }
 .header {
   display: flex;

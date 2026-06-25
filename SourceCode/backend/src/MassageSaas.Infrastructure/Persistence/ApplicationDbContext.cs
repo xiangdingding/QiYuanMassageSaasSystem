@@ -53,6 +53,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<StaffTransfer> StaffTransfers => Set<StaffTransfer>();
     public DbSet<TimedRoomSession> TimedRoomSessions => Set<TimedRoomSession>();
     public DbSet<PlatformSetting> PlatformSettings => Set<PlatformSetting>();
+    public DbSet<BusinessConsultation> BusinessConsultations => Set<BusinessConsultation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

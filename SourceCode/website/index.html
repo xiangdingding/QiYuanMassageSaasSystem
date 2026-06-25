@@ -103,7 +103,10 @@
         </div>
 
         <div class="product-grid">
-          <article class="product-card reveal" data-accent="green">
+          <article class="product-card product-card--link reveal" data-accent="green">
+            <!-- 覆盖整卡的跳转链接：点击卡片任意空白处进入官网；卡内的接入按钮通过更高层级保持各自可点 -->
+            <a class="card-link" href="http://massage.qiyuanrj.com" target="_blank" rel="noopener" aria-label="齐源按摩 SaaS 系统 · 进入官网"></a>
+            <span class="card-go" aria-hidden="true">进入官网 ↗</span>
             <div class="product-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M4 13c2-4 4-6 8-6s6 2 8 6M7 13a2 2 0 1 0 4 0 2 2 0 0 0-4 0m6 0a2 2 0 1 0 4 0 2 2 0 0 0-4 0M3 17h18"/></svg>
             </div>
@@ -326,6 +329,29 @@
             </div>
           </div>
           <div class="contact-right">
+            <form class="consult-form" id="consultForm" novalidate aria-labelledby="consultTitle">
+              <h3 id="consultTitle">业务咨询窗口</h3>
+              <p class="consult-tip">留下电话与需求，我们会尽快与您联系。</p>
+              <div class="consult-field">
+                <label for="consultName">称呼<span class="opt">（选填）</span></label>
+                <input type="text" id="consultName" name="contactName" maxlength="32"
+                       autocomplete="name" placeholder="怎么称呼您" />
+              </div>
+              <div class="consult-field">
+                <label for="consultPhone">联系电话<span class="req" aria-hidden="true">*</span></label>
+                <input type="tel" id="consultPhone" name="phone" required aria-required="true"
+                       maxlength="32" autocomplete="tel" inputmode="tel"
+                       placeholder="请输入手机号 / 座机" />
+              </div>
+              <div class="consult-field">
+                <label for="consultContent">咨询内容<span class="req" aria-hidden="true">*</span></label>
+                <textarea id="consultContent" name="content" required aria-required="true"
+                          maxlength="2000" rows="3"
+                          placeholder="想了解的产品或定制需求，可简单描述"></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block" id="consultSubmit">提交咨询</button>
+              <p class="consult-status" id="consultStatus" role="status" aria-live="polite"></p>
+            </form>
             <div class="wechat-card">
               <div class="wechat-qr" aria-hidden="true">
                 <svg viewBox="0 0 100 100"><path d="M30 22a14 14 0 0 0-13 20l-3 8 8-3a14 14 0 0 0 6 1 11 11 0 0 1-1-5 13 13 0 0 1 13-13 14 14 0 0 0-14-8z"/><path d="M58 40a18 18 0 0 0-18 18 18 18 0 0 0 25 16l10 4-3-9a18 18 0 0 0 4-11 18 18 0 0 0-18-18z" fill="none" stroke-width="4" stroke="currentColor"/></svg>
@@ -372,6 +398,9 @@
     <span>电话咨询</span>
   </a>
 
+  <!-- 业务咨询窗口的后端接口地址（直接走 API 域名，后端 CORS 已 AllowAnyOrigin）。
+       换 API 域名只改这一行即可；末尾 /api 不要去掉。 -->
+  <script>window.QIYUAN_API_BASE = 'https://api.massage.qiyuanrj.com/api';</script>
   <script src="js/main.js"></script>
 </body>
 </html>

@@ -11,10 +11,12 @@
     "dev:platform": "npm -w platform-admin run dev",
     "dev:shop": "npm -w shop-admin run dev",
     "dev:mobile": "npm -w shop-mobile run dev",
+    "dev:website": "npm -w website run dev",
     "build:platform": "npm -w platform-admin run build",
     "build:shop": "npm -w shop-admin run build",
     "build:mobile": "npm -w shop-mobile run build",
-    "build:all": "npm run build:platform && npm run build:shop && npm run build:mobile"
+    "build:website": "npm -w website run build",
+    "build:all": "npm run build:platform && npm run build:shop && npm run build:mobile && npm run build:website"
   },
   "engines": {
     "node": ">=20"

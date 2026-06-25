@@ -638,3 +638,21 @@ public class CommissionRuleConfiguration : IEntityTypeConfiguration<CommissionRu
         b.HasIndex(x => new { x.TenantId, x.ServiceId, x.TechnicianId, x.AssignmentSource });
     }
 }
+
+public class BusinessConsultationConfiguration : IEntityTypeConfiguration<BusinessConsultation>
+{
+    public void Configure(EntityTypeBuilder<BusinessConsultation> b)
+    {
+        b.ToTable("business_consultations");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.ContactName).HasMaxLength(64);
+        b.Property(x => x.Phone).HasMaxLength(32).IsRequired();
+        b.Property(x => x.Content).HasMaxLength(2000).IsRequired();
+        b.Property(x => x.Source).HasMaxLength(32);
+        b.Property(x => x.SubmitIp).HasMaxLength(64);
+        b.Property(x => x.ProcessNote).HasMaxLength(1000);
+        // 平台级数据，无 TenantId；处理人指向平台账号，删除账号不连带删咨询
+        b.HasOne(x => x.ProcessedByUser).WithMany().HasForeignKey(x => x.ProcessedByUserId).OnDelete(DeleteBehavior.SetNull);
+        b.HasIndex(x => new { x.Status, x.CreatedAt });
+    }
+}

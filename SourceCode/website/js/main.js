@@ -50,4 +50,55 @@
   } else {
     revealEls.forEach(function (el) { el.classList.add('visible'); });
   }
+
+  // 业务咨询窗口：与齐源按摩 SaaS 子网站调用同一后端接口 POST /api/consultations。
+  // 子网站同源走相对 /api（部署处反代到后端）；本站为独立静态站，如与后端不同域，
+  // 在页面里设置 window.QIYUAN_API_BASE = 'https://你的后端域名/api' 即可覆盖。
+  var API_BASE = (window.QIYUAN_API_BASE || '/api').replace(/\/+$/, '');
+  var form = document.getElementById('consultForm');
+  if (form) {
+    var statusEl = document.getElementById('consultStatus');
+    var submitBtn = document.getElementById('consultSubmit');
+    var setStatus = function (msg, type) {
+      if (!statusEl) return;
+      statusEl.textContent = msg || '';
+      statusEl.className = 'consult-status' + (type ? ' is-' + type : '');
+    };
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var phone = (form.phone.value || '').trim();
+      var content = (form.content.value || '').trim();
+      if (!phone) { setStatus('请填写联系电话', 'error'); form.phone.focus(); return; }
+      if (phone.length < 5 || phone.length > 32) { setStatus('请输入正确的联系电话', 'error'); form.phone.focus(); return; }
+      if (!content) { setStatus('请填写咨询内容', 'error'); form.content.focus(); return; }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = '提交中…';
+      setStatus('', '');
+
+      fetch(API_BASE + '/consultations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contactName: (form.contactName.value || '').trim() || null,
+          phone: phone,
+          content: content,
+          source: 'website:company'
+        })
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok) throw new Error((data && data.message) || '提交失败');
+          return data;
+        });
+      }).then(function (data) {
+        setStatus((data && data.message) || '提交成功，我们会尽快与您联系', 'success');
+        form.reset();
+      }).catch(function () {
+        setStatus('提交失败，请稍后重试或直接电话联系我们', 'error');
+      }).finally(function () {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '提交咨询';
+      });
+    });
+  }
 })();

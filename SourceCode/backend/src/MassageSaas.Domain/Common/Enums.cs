@@ -249,6 +249,18 @@ public enum ComplaintStatus
     Cancelled = 90
 }
 
+/// <summary>
+/// 官网业务咨询处理状态：访客提交后为 Pending；平台客服跟进中 Processing；
+/// 完成签约/解答后 Done；无效/骚扰/重复可置 Invalid。
+/// </summary>
+public enum ConsultationStatus
+{
+    Pending = 0,      // 待处理
+    Processing = 10,  // 跟进中
+    Done = 20,        // 已完成
+    Invalid = 90      // 无效/作废
+}
+
 /// <summary>投诉解决方式：改派/退款/口头道歉/不予处理。配合 ServiceComplaint.Resolution 字段。</summary>
 public enum ComplaintResolution
 {
