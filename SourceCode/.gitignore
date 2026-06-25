@@ -54,6 +54,8 @@ project.private.config.json
 publish/
 *.pfx
 *.nupkg
+# 发布产物（增量包/完整包 zip、迁移 SQL）由脚本生成，不入库
+发布包/
 
 # ---- 其它 ----
 TestResults/

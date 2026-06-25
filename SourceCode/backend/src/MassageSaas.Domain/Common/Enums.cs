@@ -291,3 +291,12 @@ public enum TimedRoomSessionStatus
     Settled = 10,
     Cancelled = 90
 }
+
+/// <summary>客户端平台：用于应用版本/升级管理（CS 桌面端、安卓移动端）。</summary>
+public enum AppPlatform
+{
+    /// <summary>CS 桌面端（WPF，Windows 安装包 setup.exe）。</summary>
+    Cs = 0,
+    /// <summary>移动端安卓 App（Capacitor APK）。</summary>
+    Android = 10
+}

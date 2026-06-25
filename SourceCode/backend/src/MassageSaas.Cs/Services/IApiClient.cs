@@ -1,4 +1,5 @@
 using MassageSaas.Shared.Appointments;
+using MassageSaas.Shared.AppVersions;
 using MassageSaas.Shared.Auth;
 using MassageSaas.Shared.Commissions;
 using MassageSaas.Shared.Common;
@@ -31,6 +32,10 @@ public interface IApiClient
 {
     [Post("/auth/login")]
     Task<LoginResponse> LoginAsync([Body] LoginRequest req);
+
+    /// <summary>启动检测客户端升级（匿名）：传平台与当前版本，返回是否有更新/是否强制。</summary>
+    [Get("/app-versions/check")]
+    Task<AppVersionCheckResult> CheckAppVersionAsync([Query] string platform, [Query] string? version, CancellationToken ct = default);
 
     /// <summary>按摩店自助注册（公开匿名端点）：成功后获 30 天试用，返回店主登录手机号。</summary>
     [Post("/tenants/register")]

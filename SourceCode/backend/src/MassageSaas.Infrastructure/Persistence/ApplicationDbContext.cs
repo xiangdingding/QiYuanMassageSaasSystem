@@ -54,6 +54,7 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<TimedRoomSession> TimedRoomSessions => Set<TimedRoomSession>();
     public DbSet<PlatformSetting> PlatformSettings => Set<PlatformSetting>();
     public DbSet<BusinessConsultation> BusinessConsultations => Set<BusinessConsultation>();
+    public DbSet<AppVersion> AppVersions => Set<AppVersion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

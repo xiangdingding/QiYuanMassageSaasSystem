@@ -204,3 +204,34 @@ export interface ProcessConsultationRequest {
   status: ConsultationStatus;
   processNote?: string | null;
 }
+
+/** 客户端平台：CS 桌面端 / 安卓移动端 */
+export type AppPlatform = 'Cs' | 'Android';
+
+/** 客户端应用版本发布 */
+export interface AppVersion {
+  id: number;
+  platform: AppPlatform;
+  version: string;
+  minSupportedVersion?: string | null;
+  downloadUrl: string;
+  changelog?: string | null;
+  fileSizeBytes?: number | null;
+  sha256?: string | null;
+  isActive: boolean;
+  publishedByName?: string | null;
+  createdAt: string;
+}
+
+export interface CreateAppVersionRequest {
+  platform: AppPlatform;
+  version: string;
+  minSupportedVersion?: string | null;
+  downloadUrl: string;
+  changelog?: string | null;
+  fileSizeBytes?: number | null;
+  sha256?: string | null;
+  isActive: boolean;
+}
+
+export type UpdateAppVersionRequest = Omit<CreateAppVersionRequest, 'platform'>;

@@ -10,6 +10,8 @@
     <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>MassageSaas.Cs</RootNamespace>
     <AssemblyName>MassageSaas.Cs</AssemblyName>
+    <!-- 应用版本：升级检测据此与平台端发布的最新版本比较（点分语义化，发版时改这里） -->
+    <Version>1.0.0</Version>
     <!-- 应用图标（exe 图标 / 任务栏图标），托盘也从中加载 -->
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>

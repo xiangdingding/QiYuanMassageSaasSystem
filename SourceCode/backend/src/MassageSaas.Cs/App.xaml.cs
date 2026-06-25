@@ -96,6 +96,8 @@ public partial class App : Application
                     .ConfigureHttpClient(c => c.BaseAddress = new Uri(settings.ApiBaseUrl))
                     .AddHttpMessageHandler<AuthMessageHandler>();
 
+                services.AddSingleton<UpdateService>();
+
                 services.AddSingleton<MainViewModel>();
                 services.AddTransient<LoginViewModel>();
                 services.AddTransient<DashboardViewModel>();
@@ -129,11 +131,41 @@ public partial class App : Application
         prefs.Changed += ApplyA11yTheme;
         ApplyA11yTheme(prefs.A11yMode);
 
+        // 启动时检测客户端升级：强制更新未完成会退出应用，此处直接 return 不再进主流程
+        if (!await CheckForUpdatesAsync())
+            return;
+
         var session = Resolve<SessionService>();
         if (session.IsAuthenticated)
             ShowMain();
         else
             ShowLogin();
+    }
+
+    /// <summary>
+    /// 启动检测升级：有更新则弹 <see cref="UpdateWindow"/>。返回是否继续进入应用：
+    /// 强制更新时窗口已触发退出/安装，返回 false；非强制或无更新返回 true。检测失败不阻断启动。
+    /// </summary>
+    private static async Task<bool> CheckForUpdatesAsync()
+    {
+        try
+        {
+            var svc = Resolve<UpdateService>();
+            var result = await svc.CheckAsync();
+            if (!result.HasUpdate)
+                return true;
+
+            var dlg = new UpdateWindow(svc, result);
+            dlg.ShowDialog();
+
+            // 强制更新：用户要么已进入安装（应用将退出），要么点了退出 → 不继续进主流程
+            return !result.ForceUpdate;
+        }
+        catch
+        {
+            // 检测失败（网络/接口异常）不应阻断启动
+            return true;
+        }
     }
 
     /// <summary>合并/卸载无障碍主题 ResourceDictionary。Dispatcher 包一层以兼容非 UI 线程触发。</summary>

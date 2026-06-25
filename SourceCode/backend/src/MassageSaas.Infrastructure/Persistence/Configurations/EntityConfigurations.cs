@@ -656,3 +656,21 @@ public class BusinessConsultationConfiguration : IEntityTypeConfiguration<Busine
         b.HasIndex(x => new { x.Status, x.CreatedAt });
     }
 }
+
+public class AppVersionConfiguration : IEntityTypeConfiguration<AppVersion>
+{
+    public void Configure(EntityTypeBuilder<AppVersion> b)
+    {
+        b.ToTable("app_versions");
+        b.HasKey(x => x.Id);
+        b.Property(x => x.Version).HasMaxLength(32).IsRequired();
+        b.Property(x => x.MinSupportedVersion).HasMaxLength(32);
+        b.Property(x => x.DownloadUrl).HasMaxLength(512).IsRequired();
+        b.Property(x => x.Changelog).HasMaxLength(4000);
+        b.Property(x => x.Sha256).HasMaxLength(64);
+        // 平台级数据，无 TenantId；发布人指向平台账号，删除账号不连带删版本
+        b.HasOne(x => x.PublishedByUser).WithMany().HasForeignKey(x => x.PublishedByUserId).OnDelete(DeleteBehavior.SetNull);
+        // 检测按平台筛启用版本，取版本号最大者
+        b.HasIndex(x => new { x.Platform, x.IsActive });
+    }
+}

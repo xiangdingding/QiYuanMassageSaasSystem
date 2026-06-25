@@ -1,5 +1,8 @@
 import { http } from './http';
 import type {
+  AppVersion,
+  CreateAppVersionRequest,
+  UpdateAppVersionRequest,
   Consultation,
   CreateTenantRequest,
   LoginRequest,
@@ -80,6 +83,16 @@ export const consultationsApi = {
     http().get<{ count: number }>('/consultations/pending-count').then((r) => r.data.count),
   process: (id: number, body: ProcessConsultationRequest) =>
     http().put<Consultation>(`/consultations/${id}/process`, body).then((r) => r.data)
+};
+
+export const appVersionsApi = {
+  list: (platform?: string) =>
+    http().get<AppVersion[]>('/app-versions', { params: platform ? { platform } : {} }).then((r) => r.data),
+  create: (body: CreateAppVersionRequest) =>
+    http().post<AppVersion>('/app-versions', body).then((r) => r.data),
+  update: (id: number, body: UpdateAppVersionRequest) =>
+    http().put<AppVersion>(`/app-versions/${id}`, body).then((r) => r.data),
+  remove: (id: number) => http().delete(`/app-versions/${id}`).then((r) => r.data)
 };
 
 export const platformSettingsApi = {

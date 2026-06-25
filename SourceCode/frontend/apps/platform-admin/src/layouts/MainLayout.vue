@@ -32,6 +32,10 @@
           <el-icon><Goods /></el-icon>
           <span>套餐管理</span>
         </el-menu-item>
+        <el-menu-item index="/app-versions">
+          <el-icon><Upload /></el-icon>
+          <span>客户端版本发布</span>
+        </el-menu-item>
         <el-menu-item index="/settings">
           <el-icon><Setting /></el-icon>
           <span>订阅与手册配置</span>
@@ -70,6 +74,7 @@ import {
   OfficeBuilding,
   Setting,
   TrendCharts,
+  Upload,
   UserFilled
 } from '@element-plus/icons-vue';
 import { useAuthStore } from '@/stores/auth';
