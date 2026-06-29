@@ -364,6 +364,58 @@
           </el-table>
         </el-card>
       </el-tab-pane>
+
+      <el-tab-pane label="收益导出" name="export">
+        <el-card shadow="never">
+          <div class="export-intro">
+            导出当前门店的收益报表（汇总）与收益明细（逐笔），支持按年 / 按月 / 自定义日期区间。
+          </div>
+          <el-form label-width="90px" style="margin-top: 16px; max-width: 640px">
+            <el-form-item label="统计周期">
+              <el-radio-group v-model="exportMode">
+                <el-radio-button value="month">按月</el-radio-button>
+                <el-radio-button value="year">按年</el-radio-button>
+                <el-radio-button value="range">日期区间</el-radio-button>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item v-if="exportMode === 'month'" label="选择月份">
+              <el-date-picker
+                v-model="exportMonth"
+                type="month"
+                placeholder="选择月份"
+                format="YYYY-MM"
+                value-format="YYYY-MM"
+                :clearable="false"
+              />
+            </el-form-item>
+            <el-form-item v-else-if="exportMode === 'year'" label="选择年份">
+              <el-date-picker
+                v-model="exportYear"
+                type="year"
+                placeholder="选择年份"
+                format="YYYY"
+                value-format="YYYY"
+                :clearable="false"
+              />
+            </el-form-item>
+            <el-form-item v-else label="日期区间">
+              <el-date-picker
+                v-model="exportRange"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+              />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" :loading="exporting" @click="doExport(false)">导出收益报表</el-button>
+              <el-button :loading="exporting" @click="doExport(true)">导出收益明细</el-button>
+            </el-form-item>
+          </el-form>
+        </el-card>
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -376,7 +428,8 @@ import {
   reportsApi,
   type MonthlyReport, type YearlyReport,
   type ServicePopularity, type CustomerFlowPoint,
-  type MemberAnalysis, type ServicePopularityTrend, type TechnicianQuality
+  type MemberAnalysis, type ServicePopularityTrend, type TechnicianQuality,
+  type RevenueExportQuery
 } from '@/api/modules';
 import { useAppStore } from '@/stores/app';
 import type { DailyReport, TechnicianPerformance } from '@/api/types';
@@ -384,7 +437,7 @@ import type { DailyReport, TechnicianPerformance } from '@/api/types';
 const appStore = useAppStore();
 const tab = ref<
   'daily' | 'performance' | 'monthly' | 'yearly' | 'popularity' | 'flow'
-  | 'memberAnalysis' | 'serviceTrend' | 'quality'
+  | 'memberAnalysis' | 'serviceTrend' | 'quality' | 'export'
 >('daily');
 
 const dailyDate = ref(dayjs().format('YYYY-MM-DD'));
@@ -432,6 +485,74 @@ const qualityLoading = ref(false);
 
 function formatDate(s: string) { return dayjs(s).format('YYYY-MM-DD'); }
 function formatMonth(s: string) { return dayjs(s).format('YYYY-MM'); }
+
+// ---- 收益导出 ----
+const exportMode = ref<'month' | 'year' | 'range'>('month');
+const exportMonth = ref(dayjs().format('YYYY-MM'));
+const exportYear = ref(dayjs().format('YYYY'));
+const exportRange = ref<[string, string]>([
+  dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
+  dayjs().format('YYYY-MM-DD')
+]);
+const exporting = ref(false);
+
+function buildExportQuery(): RevenueExportQuery | null {
+  if (exportMode.value === 'year') {
+    return { mode: 'year', year: Number(exportYear.value) };
+  }
+  if (exportMode.value === 'range') {
+    if (!exportRange.value || exportRange.value.length !== 2) {
+      ElMessage.warning('请选择日期区间');
+      return null;
+    }
+    const [from, to] = exportRange.value;
+    // 与现有区间报表一致：to 取次日 0 点（开区间）
+    return {
+      mode: 'range',
+      from: `${from}T00:00:00Z`,
+      to: `${dayjs(to).add(1, 'day').format('YYYY-MM-DD')}T00:00:00Z`
+    };
+  }
+  const [y, m] = exportMonth.value.split('-').map(Number);
+  return { mode: 'month', year: y, month: m };
+}
+
+function filenameFromDisposition(cd: string | undefined, fallback: string): string {
+  if (!cd) return fallback;
+  const star = /filename\*=UTF-8''([^;]+)/i.exec(cd);
+  if (star) return decodeURIComponent(star[1]);
+  const plain = /filename="?([^";]+)"?/i.exec(cd);
+  return plain ? decodeURIComponent(plain[1]) : fallback;
+}
+
+async function doExport(detail: boolean) {
+  if (!appStore.activeStoreId) return;
+  const q = buildExportQuery();
+  if (!q) return;
+  exporting.value = true;
+  try {
+    const resp = detail
+      ? await reportsApi.exportRevenueDetail(appStore.activeStoreId, q)
+      : await reportsApi.exportRevenue(appStore.activeStoreId, q);
+    const name = filenameFromDisposition(
+      resp.headers['content-disposition'] as string | undefined,
+      `${detail ? '收益明细' : '收益报表'}.xlsx`
+    );
+    const url = URL.createObjectURL(resp.data as Blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    ElMessage.success('已开始下载');
+  } catch {
+    ElMessage.error('导出失败');
+  } finally {
+    exporting.value = false;
+  }
+}
 
 const trendMonthHeaders = computed(() => {
   const first = serviceTrend.value?.services[0];
@@ -558,4 +679,5 @@ onMounted(async () => {
 .m-label { color: var(--el-text-color-secondary); font-size: 13px; }
 .m-value { font-size: 24px; font-weight: 700; margin: 6px 0; color: #2d6a4f; }
 .m-sub { color: var(--el-text-color-secondary); font-size: 12px; }
+.export-intro { color: var(--el-text-color-secondary); font-size: 13px; }
 </style>

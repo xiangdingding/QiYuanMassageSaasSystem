@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MassageSaas.Cs.Services;
 using MassageSaas.Shared.Reports;
+using Microsoft.Win32;
 
 namespace MassageSaas.Cs.ViewModels;
 
@@ -165,5 +168,82 @@ public partial class ReportsViewModel : ObservableObject
                 await _api.GetTechnicianQualityAsync(sid, RangeFrom, RangeTo));
         }
         catch (Exception ex) { ErrorReporter.Show(ex); }
+    }
+
+    // ==================== 收益导出 ====================
+    /// <summary>导出周期口径：month=按月 / year=按年 / range=日期区间。</summary>
+    [ObservableProperty] private string exportMode = "month";
+    [ObservableProperty] private DateTime exportYear = DateTime.Today;
+    [ObservableProperty] private DateTime exportMonth = DateTime.Today;
+    [ObservableProperty] private DateTime exportFrom = DateTime.Today.AddDays(-30);
+    [ObservableProperty] private DateTime exportTo = DateTime.Today;
+
+    /// <summary>三个口径各自的输入区可见性（绑 Visibility 用 bool→Visibility 转换器）。</summary>
+    public bool IsMonthMode => ExportMode == "month";
+    public bool IsYearMode => ExportMode == "year";
+    public bool IsRangeMode => ExportMode == "range";
+
+    partial void OnExportModeChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsMonthMode));
+        OnPropertyChanged(nameof(IsYearMode));
+        OnPropertyChanged(nameof(IsRangeMode));
+    }
+
+    /// <summary>按当前口径拼出后端导出接口参数。区间口径与现有区间报表一致：to 取次日 0 点（开区间）。</summary>
+    private (string Mode, int? Year, int? Month, DateTime? From, DateTime? To) BuildExportArgs() => ExportMode switch
+    {
+        "year" => ("year", ExportYear.Year, null, null, null),
+        "range" => ("range", null, null,
+            DateTime.SpecifyKind(ExportFrom.Date, DateTimeKind.Utc),
+            DateTime.SpecifyKind(ExportTo.Date.AddDays(1), DateTimeKind.Utc)),
+        _ => ("month", ExportMonth.Year, ExportMonth.Month, null, null)
+    };
+
+    private string ExportLabel() => ExportMode switch
+    {
+        "year" => $"{ExportYear:yyyy}年",
+        "range" => $"{ExportFrom:yyyy-MM-dd}_{ExportTo:yyyy-MM-dd}",
+        _ => $"{ExportMonth:yyyy年MM月}"
+    };
+
+    [RelayCommand]
+    private Task ExportRevenueReportAsync() => DoExportAsync(detail: false);
+
+    [RelayCommand]
+    private Task ExportRevenueDetailAsync() => DoExportAsync(detail: true);
+
+    private async Task DoExportAsync(bool detail)
+    {
+        if (_context.ActiveStoreId is not long sid) return;
+        var (mode, year, month, from, to) = BuildExportArgs();
+        IsBusy = true;
+        try
+        {
+            using var resp = detail
+                ? await _api.ExportRevenueDetailAsync(sid, mode, year, month, from, to)
+                : await _api.ExportRevenueReportAsync(sid, mode, year, month, from, to);
+            if (!resp.IsSuccessStatusCode)
+            {
+                ErrorReporter.Show(new Exception($"导出失败（HTTP {(int)resp.StatusCode}）"));
+                return;
+            }
+            var bytes = await resp.Content.ReadAsByteArrayAsync();
+            var dlg = new SaveFileDialog
+            {
+                FileName = $"{(detail ? "收益明细" : "收益报表")}_{ExportLabel()}.xlsx",
+                Filter = "Excel 工作簿 (*.xlsx)|*.xlsx",
+                DefaultExt = ".xlsx"
+            };
+            if (dlg.ShowDialog() == true)
+            {
+                await File.WriteAllBytesAsync(dlg.FileName, bytes);
+                // 落盘后用系统默认程序打开
+                try { Process.Start(new ProcessStartInfo(dlg.FileName) { UseShellExecute = true }); }
+                catch { /* 没装 Excel 等关联程序时忽略 */ }
+            }
+        }
+        catch (Exception ex) { ErrorReporter.Show(ex); }
+        finally { IsBusy = false; }
     }
 }

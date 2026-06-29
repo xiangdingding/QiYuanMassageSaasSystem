@@ -1,3 +1,4 @@
+using System.Net.Http;
 using MassageSaas.Shared.Appointments;
 using MassageSaas.Shared.AppVersions;
 using MassageSaas.Shared.Auth;
@@ -265,6 +266,20 @@ public interface IApiClient
     [Get("/reports/technician-quality")]
     Task<List<TechnicianQualityDto>> GetTechnicianQualityAsync(
         [Query] long storeId, [Query] DateTime from, [Query] DateTime to);
+
+    /// <summary>收益报表 Excel 导出。mode=year|month|range；返回 .xlsx 字节流。</summary>
+    [Get("/reports/revenue/export")]
+    Task<HttpResponseMessage> ExportRevenueReportAsync(
+        [Query] long storeId, [Query] string mode,
+        [Query] int? year, [Query] int? month,
+        [Query] DateTime? from, [Query] DateTime? to);
+
+    /// <summary>收益明细 Excel 导出。mode=year|month|range；返回 .xlsx 字节流。</summary>
+    [Get("/reports/revenue-detail/export")]
+    Task<HttpResponseMessage> ExportRevenueDetailAsync(
+        [Query] long storeId, [Query] string mode,
+        [Query] int? year, [Query] int? month,
+        [Query] DateTime? from, [Query] DateTime? to);
 
     [Get("/subscriptions/me")]
     Task<TenantSubscriptionStatusDto> GetMySubscriptionAsync();

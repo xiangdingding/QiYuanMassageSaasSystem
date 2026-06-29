@@ -92,7 +92,8 @@ public partial class MainWindow : Window
             "已最小化到托盘，双击图标可重新打开；右键可退出。", Forms.ToolTipIcon.Info);
     }
 
-    private void RestoreFromTray()
+    /// <summary>从托盘/最小化恢复并抢到最前。也供单实例二次启动时由 App 调用。</summary>
+    public void RestoreFromTray()
     {
         Show();
         ShowInTaskbar = true;

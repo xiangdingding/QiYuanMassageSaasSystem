@@ -1,3 +1,4 @@
+using MassageSaas.Api.Reports;
 using MassageSaas.Application.Abstractions;
 using MassageSaas.Domain.Common;
 using MassageSaas.Infrastructure.Persistence;
@@ -508,5 +509,271 @@ public class ReportsController : ControllerBase
             .ToList();
 
         return Ok(result);
+    }
+
+    // ==================== 收益导出（Excel） ====================
+    // 两个端点都支持三种周期口径：mode=year（按年，走切日月窗合并）/ month（按月，走切日月窗）
+    // / range（自定义日期区间，用前端给的 from/to 开区间，与现有区间报表一致）。
+
+    private const string XlsxContentType =
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+    private static DateTime ToBeijing(DateTime utc) =>
+        DateTime.SpecifyKind(utc, DateTimeKind.Utc).AddHours(8);
+
+    private static string PayMethodLabel(PayMethod m) => m switch
+    {
+        PayMethod.Cash => "现金",
+        PayMethod.MemberCard => "会员卡",
+        PayMethod.Wechat => "微信",
+        PayMethod.Alipay => "支付宝",
+        PayMethod.BankCard => "银行卡",
+        PayMethod.Other => "其他",
+        PayMethod.Unpaid => "未支付",
+        _ => m.ToString()
+    };
+
+    /// <summary>把 mode/year/month/from/to 解析为 [start,end) UTC 窗口、中文周期标签与分桶粒度。</summary>
+    private static (DateTime Start, DateTime End, string Label, bool MonthlyBuckets) ResolveWindow(
+        string mode, int? year, int? month, DateTime? from, DateTime? to, int cutoff)
+    {
+        switch ((mode ?? "month").Trim().ToLowerInvariant())
+        {
+            case "year":
+            {
+                var y = year ?? BusinessDayCalculator.TodayBusinessDate(cutoff).Year;
+                var (s, _) = BusinessDayCalculator.MonthRangeOf(y, 1, cutoff);
+                var (_, e) = BusinessDayCalculator.MonthRangeOf(y, 12, cutoff);
+                return (s, e, $"{y}年", true);
+            }
+            case "range":
+            {
+                if (from is null || to is null)
+                    throw new ArgumentException("range 模式需要 from 与 to");
+                var s = DateTime.SpecifyKind(from.Value, DateTimeKind.Utc);
+                var e = DateTime.SpecifyKind(to.Value, DateTimeKind.Utc);
+                if (e <= s) throw new ArgumentException("结束时间必须大于开始时间");
+                var fromLabel = ToBeijing(s).ToString("yyyy-MM-dd");
+                var toLabel = ToBeijing(e.AddSeconds(-1)).ToString("yyyy-MM-dd");
+                return (s, e, $"{fromLabel} ~ {toLabel}", false);
+            }
+            default:
+            {
+                var today = BusinessDayCalculator.TodayBusinessDate(cutoff);
+                var y = year ?? today.Year;
+                var m = month ?? today.Month;
+                if (m < 1 || m > 12) throw new ArgumentException("月份不合法");
+                var (s, e) = BusinessDayCalculator.MonthRangeOf(y, m, cutoff);
+                return (s, e, $"{y}年{m:D2}月", false);
+            }
+        }
+    }
+
+    [HttpGet("revenue/export")]
+    [Authorize(Policy = "ShopStaff")]
+    public async Task<IActionResult> ExportRevenueReport(
+        [FromQuery] long storeId,
+        [FromQuery] string mode = "month",
+        [FromQuery] int? year = null,
+        [FromQuery] int? month = null,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
+        CancellationToken ct = default)
+    {
+        var cutoff = await GetCutoffAsync(storeId, ct);
+        DateTime start, end; string label; bool monthlyBuckets;
+        try { (start, end, label, monthlyBuckets) = ResolveWindow(mode, year, month, from, to, cutoff); }
+        catch (ArgumentException ex) { return BadRequest(new { code = "InvalidRange", message = ex.Message }); }
+
+        var storeName = await _db.Stores.AsNoTracking()
+            .Where(s => s.Id == storeId).Select(s => s.Name).FirstOrDefaultAsync(ct) ?? $"门店#{storeId}";
+
+        var completed = _db.Orders.AsNoTracking()
+            .Where(o => o.StoreId == storeId && o.Status == OrderStatus.Completed
+                        && o.CompletedAt >= start && o.CompletedAt < end);
+        var timed = _db.TimedRoomSessions.AsNoTracking()
+            .Where(s => s.StoreId == storeId && s.Status == TimedRoomSessionStatus.Settled
+                        && s.OrderId == null && s.EndedAt != null
+                        && s.EndedAt >= start && s.EndedAt < end);
+
+        // 按支付方式（订单 + 计时房合并）
+        var orderPay = await completed.GroupBy(o => o.PayMethod)
+            .Select(g => new { g.Key, Sum = g.Sum(o => o.PaidAmount) }).ToListAsync(ct);
+        var timedPay = await timed.GroupBy(s => s.PayMethod)
+            .Select(g => new { g.Key, Sum = g.Sum(s => s.Amount) }).ToListAsync(ct);
+        var payAgg = new Dictionary<PayMethod, decimal>();
+        foreach (var p in orderPay) payAgg[p.Key] = payAgg.GetValueOrDefault(p.Key) + p.Sum;
+        foreach (var p in timedPay) payAgg[p.Key] = payAgg.GetValueOrDefault(p.Key) + p.Sum;
+        var payRows = new[]
+            {
+                PayMethod.Cash, PayMethod.MemberCard, PayMethod.Wechat,
+                PayMethod.Alipay, PayMethod.BankCard, PayMethod.Other
+            }
+            .Select(m => new RevenuePayRow(PayMethodLabel(m), payAgg.GetValueOrDefault(m)))
+            .ToList();
+
+        var orderRevenue = await completed.SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
+        var timedRevenue = await timed.SumAsync(s => (decimal?)s.Amount, ct) ?? 0m;
+        var revenue = orderRevenue + timedRevenue;
+        var orderCount = await completed.CountAsync(ct);
+        var rounds = await _db.OrderItems.AsNoTracking()
+            .Where(oi => oi.Order.StoreId == storeId && oi.Order.Status == OrderStatus.Completed
+                         && oi.Order.CompletedAt >= start && oi.Order.CompletedAt < end)
+            .SumAsync(oi => (int?)oi.Quantity, ct) ?? 0;
+
+        var refunded = _db.Orders.AsNoTracking()
+            .Where(o => o.StoreId == storeId && o.Status == OrderStatus.Refunded
+                        && o.CompletedAt >= start && o.CompletedAt < end);
+        var refundCount = await refunded.CountAsync(ct);
+        var refundAmount = await refunded.SumAsync(o => (decimal?)o.PaidAmount, ct) ?? 0m;
+
+        var recharges = _db.MemberRechargeRecords.AsNoTracking()
+            .Where(rr => rr.StoreId == storeId && rr.CreatedAt >= start && rr.CreatedAt < end);
+        var rechargeCount = await recharges.CountAsync(ct);
+        var rechargeAmount = await recharges.SumAsync(rr => (decimal?)rr.Amount, ct) ?? 0m;
+
+        // 分期明细：按日（month/range）或按月（year）
+        var orderBucketRows = await completed
+            .Select(o => new { o.CompletedAt, o.PaidAmount, Rounds = o.Items.Sum(i => i.Quantity) })
+            .ToListAsync(ct);
+        var timedBucketRows = await timed
+            .Select(s => new { s.EndedAt, s.Amount }).ToListAsync(ct);
+
+        string KeyOf(DateTime utc) => monthlyBuckets
+            ? ToBeijing(utc).ToString("yyyy-MM")
+            : BusinessDayCalculator.BusinessDateOf(utc, cutoff).ToString("yyyy-MM-dd");
+
+        var buckets = new SortedDictionary<string, (int Count, decimal Rev, int Rounds)>();
+        foreach (var o in orderBucketRows)
+        {
+            var k = KeyOf(o.CompletedAt!.Value);
+            var cur = buckets.GetValueOrDefault(k);
+            buckets[k] = (cur.Count + 1, cur.Rev + o.PaidAmount, cur.Rounds + o.Rounds);
+        }
+        foreach (var t in timedBucketRows)
+        {
+            var k = KeyOf(t.EndedAt!.Value);
+            var cur = buckets.GetValueOrDefault(k);
+            buckets[k] = (cur.Count, cur.Rev + t.Amount, cur.Rounds);
+        }
+        var periods = buckets
+            .Select(b => new RevenuePeriodRow(b.Key, b.Value.Count, b.Value.Rev, b.Value.Rounds))
+            .ToList();
+
+        var data = new RevenueReportData(
+            storeName, label, DateTime.UtcNow.AddHours(8),
+            revenue, orderCount, rounds,
+            refundCount, refundAmount,
+            rechargeCount, rechargeAmount,
+            payRows,
+            monthlyBuckets ? "月份" : "日期",
+            periods);
+
+        var bytes = ReportExcelBuilder.BuildRevenueReport(data);
+        return File(bytes, XlsxContentType, $"收益报表_{storeName}_{label}.xlsx");
+    }
+
+    [HttpGet("revenue-detail/export")]
+    [Authorize(Policy = "ShopStaff")]
+    public async Task<IActionResult> ExportRevenueDetail(
+        [FromQuery] long storeId,
+        [FromQuery] string mode = "month",
+        [FromQuery] int? year = null,
+        [FromQuery] int? month = null,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
+        CancellationToken ct = default)
+    {
+        var cutoff = await GetCutoffAsync(storeId, ct);
+        DateTime start, end; string label;
+        try { (start, end, label, _) = ResolveWindow(mode, year, month, from, to, cutoff); }
+        catch (ArgumentException ex) { return BadRequest(new { code = "InvalidRange", message = ex.Message }); }
+
+        var storeName = await _db.Stores.AsNoTracking()
+            .Where(s => s.Id == storeId).Select(s => s.Name).FirstOrDefaultAsync(ct) ?? $"门店#{storeId}";
+
+        // 已完成服务订单
+        var orderRows = await _db.Orders.AsNoTracking()
+            .Where(o => o.StoreId == storeId && o.Status == OrderStatus.Completed
+                        && o.CompletedAt >= start && o.CompletedAt < end)
+            .Select(o => new
+            {
+                o.CompletedAt,
+                o.OrderNo,
+                MemberName = o.Member != null ? o.Member.Name : null,
+                MemberPhone = o.Member != null ? o.Member.Phone : null,
+                o.PaidAmount,
+                o.PayMethod,
+                Cashier = o.CashierUser != null ? (o.CashierUser.RealName ?? o.CashierUser.Username) : null,
+                o.Remark,
+                Items = o.Items.Select(i => new
+                {
+                    i.ServiceName,
+                    i.Quantity,
+                    Tech = i.Technician.RealName ?? i.Technician.Username
+                }).ToList()
+            })
+            .ToListAsync(ct);
+
+        // 计时房独立流水（未挂订单）
+        var timedRows = await _db.TimedRoomSessions.AsNoTracking()
+            .Where(s => s.StoreId == storeId && s.Status == TimedRoomSessionStatus.Settled
+                        && s.OrderId == null && s.EndedAt != null
+                        && s.EndedAt >= start && s.EndedAt < end)
+            .Select(s => new
+            {
+                s.EndedAt,
+                RoomNo = s.Room.RoomNo,
+                MemberName = s.Member != null ? s.Member.Name : null,
+                MemberPhone = s.Member != null ? s.Member.Phone : null,
+                s.CustomerName,
+                s.Amount,
+                s.PayMethod,
+                s.BilledMinutes,
+                Operator = s.OperatorUser != null ? (s.OperatorUser.RealName ?? s.OperatorUser.Username) : null,
+                s.Remark
+            })
+            .ToListAsync(ct);
+
+        var rows = new List<RevenueDetailRow>();
+        foreach (var o in orderRows)
+        {
+            var items = string.Join("；", o.Items.Select(i => $"{i.ServiceName}×{i.Quantity}"));
+            var techs = string.Join("、", o.Items.Select(i => i.Tech).Where(t => t != null).Distinct());
+            rows.Add(new RevenueDetailRow(
+                ToBeijing(o.CompletedAt!.Value),
+                "服务订单",
+                o.OrderNo,
+                o.MemberName ?? "散客",
+                o.MemberPhone,
+                items,
+                techs,
+                o.Items.Sum(i => i.Quantity),
+                o.PaidAmount,
+                PayMethodLabel(o.PayMethod),
+                o.Cashier ?? "",
+                o.Remark));
+        }
+        foreach (var t in timedRows)
+        {
+            rows.Add(new RevenueDetailRow(
+                ToBeijing(t.EndedAt!.Value),
+                "计时房",
+                $"房间 {t.RoomNo}",
+                t.MemberName ?? t.CustomerName ?? "散客",
+                t.MemberPhone,
+                $"计时房费（{t.BilledMinutes}分钟）",
+                "",
+                0,
+                t.Amount,
+                PayMethodLabel(t.PayMethod),
+                t.Operator ?? "",
+                t.Remark));
+        }
+        rows = rows.OrderBy(r => r.Time).ToList();
+
+        var data = new RevenueDetailData(storeName, label, DateTime.UtcNow.AddHours(8), rows);
+        var bytes = ReportExcelBuilder.BuildRevenueDetail(data);
+        return File(bytes, XlsxContentType, $"收益明细_{storeName}_{label}.xlsx");
     }
 }

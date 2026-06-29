@@ -5,7 +5,7 @@
 ; 发新版只需改下面 MyAppVersion，并保持 AppId 不变（覆盖升级靠同一 AppId）。
 
 #define MyAppName "齐源按摩门店SaaS系统"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "天津齐源科技有限公司"
 #define MyAppExeName "MassageSaas.Cs.exe"
 ; 自包含发布产物目录（先跑 backend\publish-cs.ps1 生成）

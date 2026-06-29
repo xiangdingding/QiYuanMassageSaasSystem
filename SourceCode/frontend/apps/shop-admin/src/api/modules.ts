@@ -321,8 +321,21 @@ export const reportsApi = {
   serviceTrend: (storeId: number, months: number) =>
     http().get<ServicePopularityTrend>('/reports/service-trend', { params: { storeId, months } }).then((r) => r.data),
   technicianQuality: (storeId: number, from: string, to: string) =>
-    http().get<TechnicianQuality[]>('/reports/technician-quality', { params: { storeId, from, to } }).then((r) => r.data)
+    http().get<TechnicianQuality[]>('/reports/technician-quality', { params: { storeId, from, to } }).then((r) => r.data),
+  exportRevenue: (storeId: number, q: RevenueExportQuery) =>
+    http().get('/reports/revenue/export', { params: { storeId, ...q }, responseType: 'blob' }),
+  exportRevenueDetail: (storeId: number, q: RevenueExportQuery) =>
+    http().get('/reports/revenue-detail/export', { params: { storeId, ...q }, responseType: 'blob' })
 };
+
+/** 收益导出周期口径：mode=year|month|range；year/month/range 各取所需字段。 */
+export interface RevenueExportQuery {
+  mode: 'year' | 'month' | 'range';
+  year?: number;
+  month?: number;
+  from?: string;
+  to?: string;
+}
 
 export interface SubscriptionPlan {
   id: number;

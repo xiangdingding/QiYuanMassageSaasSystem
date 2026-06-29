@@ -104,7 +104,13 @@ else {
     'MassageSaas.Domain.dll', 'MassageSaas.Domain.pdb',
     'MassageSaas.Infrastructure.dll', 'MassageSaas.Infrastructure.pdb',
     'MassageSaas.Shared.dll', 'MassageSaas.Shared.pdb',
-    'web.config'
+    'web.config',
+    # 报表 Excel 导出引入的第三方依赖（ClosedXML 及其传递依赖）。
+    # 这些是新增 NuGet 包，服务器旧部署没有，增量包必须带上；重复部署同名文件安全。
+    # 之后若再增删第三方依赖，记得同步这里（或用 -Full 打完整包）。
+    'ClosedXML.dll', 'ClosedXML.Parser.dll',
+    'DocumentFormat.OpenXml.dll', 'DocumentFormat.OpenXml.Framework.dll',
+    'ExcelNumberFormat.dll', 'RBush.dll', 'SixLabors.Fonts.dll'
   )
   $incPaths = $incNames |
     ForEach-Object { Join-Path $outDir $_ } |

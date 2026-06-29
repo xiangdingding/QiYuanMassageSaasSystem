@@ -664,5 +664,108 @@
             </Border>
         </TabItem>
 
+        <!--  收益导出（收益报表 / 收益明细 Excel，可按年/月/区间）  -->
+        <TabItem Header="收益导出">
+            <Border Margin="0,8,0,0"
+                    Padding="16"
+                    Background="White"
+                    CornerRadius="4">
+                <StackPanel MaxWidth="640" HorizontalAlignment="Left">
+                    <TextBlock Margin="0,0,0,4"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Text="收益导出" />
+                    <TextBlock Margin="0,0,0,12"
+                               Foreground="#909399"
+                               Text="导出当前门店的收益报表（汇总）与收益明细（逐笔），支持按年 / 按月 / 自定义日期区间。" />
+
+                    <!--  周期口径  -->
+                    <StackPanel Margin="0,0,0,12" Orientation="Horizontal">
+                        <TextBlock Width="80"
+                                   VerticalAlignment="Center"
+                                   Text="统计周期" />
+                        <ComboBox Width="160"
+                                  AutomationProperties.Name="统计周期口径"
+                                  SelectedValue="{Binding ExportMode}"
+                                  SelectedValuePath="Tag"
+                                  Style="{StaticResource FilterCombo}">
+                            <ComboBoxItem Content="按月" Tag="month" />
+                            <ComboBoxItem Content="按年" Tag="year" />
+                            <ComboBoxItem Content="日期区间" Tag="range" />
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!--  按月  -->
+                    <StackPanel Margin="0,0,0,12"
+                                Orientation="Horizontal"
+                                Visibility="{Binding IsMonthMode, Converter={StaticResource BoolToVisible}}">
+                        <TextBlock Width="80"
+                                   VerticalAlignment="Center"
+                                   Text="选择月份" />
+                        <DatePicker Width="200"
+                                    AutomationProperties.Name="导出月份（取所选日期所在月）"
+                                    SelectedDate="{Binding ExportMonth}"
+                                    Style="{StaticResource FilterDatePicker}" />
+                        <TextBlock Margin="8,0,0,0"
+                                   VerticalAlignment="Center"
+                                   Foreground="#909399"
+                                   Text="取该日所在整月" />
+                    </StackPanel>
+
+                    <!--  按年  -->
+                    <StackPanel Margin="0,0,0,12"
+                                Orientation="Horizontal"
+                                Visibility="{Binding IsYearMode, Converter={StaticResource BoolToVisible}}">
+                        <TextBlock Width="80"
+                                   VerticalAlignment="Center"
+                                   Text="选择年份" />
+                        <DatePicker Width="200"
+                                    AutomationProperties.Name="导出年份（取所选日期所在年）"
+                                    SelectedDate="{Binding ExportYear}"
+                                    Style="{StaticResource FilterDatePicker}" />
+                        <TextBlock Margin="8,0,0,0"
+                                   VerticalAlignment="Center"
+                                   Foreground="#909399"
+                                   Text="取该日所在整年" />
+                    </StackPanel>
+
+                    <!--  日期区间  -->
+                    <StackPanel Margin="0,0,0,12"
+                                Orientation="Horizontal"
+                                Visibility="{Binding IsRangeMode, Converter={StaticResource BoolToVisible}}">
+                        <TextBlock Width="80"
+                                   VerticalAlignment="Center"
+                                   Text="日期区间" />
+                        <DatePicker Width="160"
+                                    AutomationProperties.Name="导出起始日期"
+                                    SelectedDate="{Binding ExportFrom}"
+                                    Style="{StaticResource FilterDatePicker}" />
+                        <TextBlock VerticalAlignment="Center" Text=" ~ " />
+                        <DatePicker Width="160"
+                                    AutomationProperties.Name="导出结束日期"
+                                    SelectedDate="{Binding ExportTo}"
+                                    Style="{StaticResource FilterDatePicker}" />
+                    </StackPanel>
+
+                    <!--  导出按钮  -->
+                    <StackPanel Margin="80,8,0,0" Orientation="Horizontal">
+                        <Button Padding="16,0"
+                                AutomationProperties.Name="导出收益报表"
+                                Command="{Binding ExportRevenueReportCommand}"
+                                Content="导出收益报表"
+                                IsEnabled="{Binding IsBusy, Converter={StaticResource BoolInverse}}"
+                                Style="{StaticResource PrimaryBtn}" />
+                        <Button Margin="12,0,0,0"
+                                Padding="16,0"
+                                AutomationProperties.Name="导出收益明细"
+                                Command="{Binding ExportRevenueDetailCommand}"
+                                Content="导出收益明细"
+                                IsEnabled="{Binding IsBusy, Converter={StaticResource BoolInverse}}"
+                                Style="{StaticResource GhostBtn}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </TabItem>
+
     </TabControl>
 </UserControl>
