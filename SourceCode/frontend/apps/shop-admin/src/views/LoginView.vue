@@ -40,12 +40,18 @@
         <div class="footer-link">
           还没有账号？<router-link to="/register">免费注册（30 天试用）</router-link>
         </div>
+        <div class="footer-link">
+          <a :href="CS_DOWNLOAD_URL" aria-label="下载电脑客户端安装程序（桌面版）">⬇ 下载电脑客户端（桌面版）</a>
+        </div>
       </el-form>
       <p class="trust-note" role="note">
         <span class="trust-icon" aria-hidden="true">🛡️</span>
         本系统由阿里云提供数据存储、备份均由阿里巴巴（中国）提供，更值得托付！
       </p>
     </el-card>
+    <footer class="beian">
+      <a href="http://beian.miit.gov.cn/" target="_blank" rel="noopener">津ICP备2026008317号</a>
+    </footer>
   </div>
 </template>
 
@@ -58,6 +64,7 @@ import { authApi } from '@/api/modules';
 import { useAuthStore } from '@/stores/auth';
 import { useAppStore } from '@/stores/app';
 import { usePrefsStore } from '@/stores/prefs';
+import { CS_DOWNLOAD_URL } from '@/config';
 
 const prefs = usePrefsStore();
 
@@ -171,4 +178,18 @@ async function submit() {
   font-size: 16px;
   flex-shrink: 0;
 }
+.beian {
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 13px;
+}
+.beian a {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.beian a:hover { color: #fff; text-decoration: underline; }
 </style>

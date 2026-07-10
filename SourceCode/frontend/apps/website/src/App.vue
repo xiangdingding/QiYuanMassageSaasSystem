@@ -40,8 +40,9 @@
             盲人技师切到无障碍模式，同样独立、有尊严地使用。
           </p>
           <div class="hero-actions">
-            <button class="btn btn-primary btn-lg" @click="openConsult('hero')">免费申请开通</button>
+            <a class="btn btn-primary btn-lg" :href="loginUrl" target="_blank" rel="noopener">免费申请开通</a>
             <a class="btn btn-outline btn-lg" :href="loginUrl" target="_blank" rel="noopener">已有账号 · 登录</a>
+            <a class="btn btn-outline btn-lg" :href="csDownloadUrl">⬇ 下载电脑客户端</a>
           </div>
           <div class="hero-stats">
             <div class="stat"><b>4</b><span>端协同</span></div>
@@ -185,6 +186,9 @@
           <span>© {{ year }} 齐源 · 按摩门店 SaaS</span>
         </div>
       </div>
+      <div class="beian">
+        <a href="http://beian.miit.gov.cn/" target="_blank" rel="noopener">津ICP备2026008317号</a>
+      </div>
     </footer>
 
     <!-- 悬浮咨询按钮 -->
@@ -239,8 +243,10 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
 import { consultationApi } from './api';
 
-// 店铺登录入口地址：按实际部署改成 shop-admin 的访问地址（默认同源 /login）
-const loginUrl = '/login';
+// 店铺登录 / 申请开通入口：租户端 shop-admin 的访问地址
+const loginUrl = 'https://shop.massage.qiyuanrj.com/';
+// 电脑客户端（C/S 桌面版）安装包下载地址
+const csDownloadUrl = 'https://massage.qiyuanrj.com/saas-setup/%E9%BD%90%E6%BA%90%E6%8C%89%E6%91%A9SaaS-Setup-1.0.1.exe';
 
 const year = new Date().getFullYear();
 
@@ -504,6 +510,15 @@ async function submit() {
 .footer-meta { display: flex; align-items: center; gap: 22px; font-size: 14px; }
 .footer-meta a:hover, .link-btn:hover { color: #fff; }
 .link-btn { background: none; border: none; color: var(--brand-200); cursor: pointer; font: inherit; padding: 0; }
+.beian {
+  text-align: center;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+}
+.beian a { color: var(--brand-200); }
+.beian a:hover { color: #fff; }
 
 /* 悬浮咨询按钮 */
 .fab {

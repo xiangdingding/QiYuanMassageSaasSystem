@@ -337,6 +337,8 @@ p { margin: 0; }
 .footer-bar .container { display: flex; justify-content: space-between; gap: 16px; padding-top: 18px; padding-bottom: 18px; flex-wrap: wrap; }
 .footer-bar span { font-size: 13px; color: #7c8da1; }
 .footer-products { color: #5f7286; }
+.footer-bar .beian { margin-left: 12px; color: #7c8da1; }
+.footer-bar .beian:hover { color: #aebccd; }
 
 /* ===== 浮动电话 ===== */
 .float-call {

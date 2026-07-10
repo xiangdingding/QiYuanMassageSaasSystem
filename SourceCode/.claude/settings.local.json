@@ -31,7 +31,16 @@
       "Bash(Select-Object -Last 40)",
       "PowerShell(Stop-Process *)",
       "Bash(echo \"exit: $?\")",
-      "PowerShell(& \"D:\\\\Project\\\\QiYuanProject\\\\齐源盲人按摩Saas系统\\\\Documents\\\\操作手册\\\\_gen.ps1\")"
+      "PowerShell(& \"D:\\\\Project\\\\QiYuanProject\\\\齐源盲人按摩Saas系统\\\\Documents\\\\操作手册\\\\_gen.ps1\")",
+      "PowerShell(powershell -ExecutionPolicy Bypass -File \"D:\\\\Project\\\\QiYuanProject\\\\齐源盲人按摩Saas系统\\\\SourceCode\\\\website\\\\publish-site.ps1\")",
+      "Bash(keytool -genkeypair -v -keystore qiyuan-massage-release.jks -alias qiyuan-massage -keyalg RSA -keysize 2048 -validity 10000 -storepass Qiyuan@2026 -keypass Qiyuan@2026 -dname 'CN=Qiyuan Massage, OU=Mobile, O=Tianjin Qiyuan Technology Co Ltd, L=Tianjin, ST=Tianjin, C=CN')",
+      "Bash(keytool -list -v -keystore qiyuan-massage-release.jks -alias qiyuan-massage -storepass 'Qiyuan@2026')",
+      "Bash(keytool -exportcert -keystore qiyuan-massage-release.jks -alias qiyuan-massage -storepass 'Qiyuan@2026' -file /tmp/qy_cert.der)",
+      "Bash(openssl x509 *)",
+      "Bash(git check-ignore *)",
+      "Bash(./gradlew :app:signingReport --console=plain)",
+      "Bash(npm run *)",
+      "Bash(npx cap *)"
     ]
   }
 }

@@ -63,6 +63,7 @@
               <el-dropdown-menu>
                 <el-dropdown-item command="help" aria-label="打开使用帮助，快捷键 F1">使用帮助（F1）</el-dropdown-item>
               <el-dropdown-item command="profile">个人设置</el-dropdown-item>
+                <el-dropdown-item command="downloadCs" aria-label="下载电脑客户端安装程序（桌面版）">下载电脑版</el-dropdown-item>
                 <el-dropdown-item command="toggleA11y" :aria-label="prefs.isA11y ? '关闭无障碍模式，回到正常显示' : '切换到无障碍模式（字号放大、焦点加粗、读屏优化）'">
                   {{ prefs.isA11y ? '关闭无障碍模式' : '开启无障碍模式' }}
                 </el-dropdown-item>
@@ -128,6 +129,7 @@ import { usePrefsStore } from '@/stores/prefs';
 import { helpApi, subscriptionsApi } from '@/api/modules';
 import type { PlatformManual, UserRole } from '@/api/types';
 import ProfileDialog from '@/views/components/ProfileDialog.vue';
+import { CS_DOWNLOAD_URL } from '@/config';
 
 const profileVisible = ref(false);
 
@@ -274,6 +276,8 @@ function onCommand(cmd: string) {
     profileVisible.value = true;
   } else if (cmd === 'help') {
     openHelp();
+  } else if (cmd === 'downloadCs') {
+    window.open(CS_DOWNLOAD_URL, '_blank');
   } else if (cmd === 'toggleA11y') {
     prefs.toggle();
   }

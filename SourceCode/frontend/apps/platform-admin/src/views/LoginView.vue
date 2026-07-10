@@ -30,6 +30,9 @@
       </el-form>
       <p class="tip">默认平台管理员：admin / admin@123（首次登录后请尽快修改）</p>
     </el-card>
+    <footer class="beian">
+      <a href="http://beian.miit.gov.cn/" target="_blank" rel="noopener">津ICP备2026008317号</a>
+    </footer>
   </div>
 </template>
 
@@ -74,12 +77,26 @@ async function submit() {
 
 <style scoped>
 .login-bg {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #1f3a5f 0%, #2c5282 100%);
 }
+.beian {
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 13px;
+}
+.beian a {
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+}
+.beian a:hover { color: #fff; text-decoration: underline; }
 .login-card {
   width: 380px;
   padding: 16px 8px;
